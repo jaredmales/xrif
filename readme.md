@@ -17,20 +17,20 @@ $ sudo ldconfig
 
 # Header Format
 
-Field | Bytes |  value
--------------------------------
-0     | 0-3   | 'x' 'r' 'i' 'f' [magic number]
-1     | 4-7   | uint32_t version number of xrif protocol
-2     | 8-11  | uint32_t total size of header [offset to beginning of data, minimum is 48]
-3     | 12-15 | uint32_t width of a frame
-4     | 16-19 | uint32_t height of a frame
-5     | 20-23 | uint32_t depth of a frame [allows cubes, IFU spectra, etc]
-6     | 24-27 | uint32_t number of frames
-7     | 28-29 | uint16_t typecode [is uint8_t in struct, but alignment]
-7     | 30-31 | uint16_t difference method
-8     | 32-33 | uint16_t reorder method
-9     | 34-35 | uint16_t compression method
-10    | 36-47 | Reserved, used for method specific parameters. 
+| Field | Bytes |  value
+|-------|-------|-----------------
+| 0     | 0-3   | 'x' 'r' 'i' 'f' [magic number]
+| 1     | 4-7   | uint32_t version number of xrif protocol
+| 2     | 8-11  | uint32_t total size of header [offset to beginning of data, minimum is 48]
+| 3     | 12-15 | uint32_t width of a frame
+| 4     | 16-19 | uint32_t height of a frame
+| 5     | 20-23 | uint32_t depth of a frame [allows cubes, IFU spectra, etc]
+| 6     | 24-27 | uint32_t number of frames
+| 7     | 28-29 | uint16_t typecode [is uint8_t in struct, but alignment]
+| 7     | 30-31 | uint16_t difference method
+| 8     | 32-33 | uint16_t reorder method
+| 9     | 34-35 | uint16_t compression method
+| 10    | 36-47 | Reserved, used for method specific parameters. 
 
 
 The size of the data is specified by width*height*depth*sizeof(typecode)*frames

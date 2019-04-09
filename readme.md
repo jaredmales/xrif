@@ -1,6 +1,6 @@
 # xrif
 
-A fast high perforance compression system.
+A fast high performance compression system.
 
 # Building
 

@@ -1,3 +1,22 @@
+# xrif
+
+A fast high perforance compression system.
+
+# Building
+
+For a standard posix system, you should only need to do these steps:
+```
+$ mkdir build 
+$ cd build 
+$ cmake ..
+$ make
+$ make test
+$ sudo make install
+$ sudo ldconfig
+```
+
+# Header Format
+
 Field | Bytes |  value
 -------------------------------
 0     | 0-3   | 'x' 'r' 'i' 'f' [magic number]

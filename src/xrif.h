@@ -66,6 +66,7 @@ typedef uint32_t dimensionT;
 typedef int xrif_error_t;
 
 #define XRIF_NOERROR (0)
+#define XRIF_ERROR_NULLPTR (-5)
 #define XRIF_ERROR_NOT_SETUP    (-10)
 #define XRIF_ERROR_INVALID_SIZE (-20)
 #define XRIF_ERROR_INSUFFICIENT_SIZE (-25)
@@ -193,15 +194,15 @@ xrif_error_t xrif_initialize_handle( xrif_t * handle /**< [out] the xrif handle 
 /** After setting these parameters, a call to one of the allocate or set functions
   * will succceed.
   *
-  * \returns 0 on success
-  * \returns < 0 on error, with an appropreate xrif error code.
+  * \returns XRIF_NOERROR on success
+  * \returns < 0 on error, with an appropriate xrif error code. [no errors currently implemented]
   */
-xrif_error_t xrif_setup( xrif_t * handle, ///< [out] the xrif handled to be set up
-                         dimensionT w,
-                         dimensionT h,
-                         dimensionT d,
-                         dimensionT f,
-                         xrif_typecode_t c
+xrif_error_t xrif_setup( xrif_t * handle,  ///< [in/out] the xrif handled to be set up
+                         dimensionT w,     ///< [in] the width of a single frame of data, in pixels
+                         dimensionT h,     ///< [in] the height of a single frame of data, in pixels
+                         dimensionT d,     ///< [in] the depth of a single frame of data, in pixels
+                         dimensionT f,     ///< [in] the number of frames of data, each frame having w X h x d pixels
+                         xrif_typecode_t c ///< [in] the code specifying the data type
                        );
 
 /// Set the raw data buffer to a pre-allocated pointer
@@ -210,12 +211,12 @@ xrif_error_t xrif_setup( xrif_t * handle, ///< [out] the xrif handled to be set 
   * 
   * This pointer will not be free()-ed on a call to xrif_destroy_handle.
   *
-  * \returns 0 on success
-  * \returns -1 on error, and handle->error will be set.
+  * \returns XRIF_NOERROR on success
+  * \returns XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   */  
 xrif_error_t xrif_set_raw( xrif_t * handle,  ///< [in/out] the xrif handle
-                           char * raw,            ///< [in] the pointer to a pre-allocated block
-                           size_t size            ///< [in] the size of the pre-allocated block
+                           void * raw,       ///< [in] the pointer to a pre-allocated block
+                           size_t size       ///< [in] the size of the pre-allocated block
                          );
 
 /// Allocate the raw buffer based on the already set stream dimensions.
@@ -233,16 +234,16 @@ xrif_error_t xrif_allocate_raw( xrif_t * handle /**< [in/out] the xrif object to
 
 /// Set the rordered (working) data buffer to a pre-allocated pointer
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
-  * This will return an error if size is too small for the currently set values.
+  * 
   * 
   * This pointer will not be free()-ed on a call to xrif_destroy_handle.
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
   */  
-xrif_error_t xrif_set_reordered( xrif_t * handle, ///< [in/out] the xrif object to modify
-                                 char * reordered,     ///< [in] pointer to a pre-allocated block
-                                 size_t size           ///< [in] the size of the pre-allocated block
+xrif_error_t xrif_set_reordered( xrif_t * handle,  ///< [in/out] the xrif object to modify
+                                 void * reordered, ///< [in] pointer to a pre-allocated block
+                                 size_t size       ///< [in] the size of the pre-allocated block
                                );
 
 /// Allocate the reordered buffer based on the already set stream dimensions.
@@ -255,16 +256,16 @@ xrif_error_t xrif_allocate_reordered( xrif_t * handle /**< [in/out] the xrif obj
 
 /// Set the compressed data buffer to a pre-allocated pointer
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
-  * This will return an error if size is too small for the currently set values.
+  * 
   * 
   * This pointer will not be free()-ed on a call to xrif_destroy_handle.
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
   */  
-xrif_error_t xrif_set_compressed( xrif_t * handle, ///< [in/out] the xrif object to modify
-                                  char * reordered,
-                                  size_t size
+xrif_error_t xrif_set_compressed( xrif_t * handle,  ///< [in/out] the xrif object to modify
+                                  void * reordered, ///< [in] pointer to a pre-allocated block
+                                  size_t size       ///< [in] the size of the pre-allocated block
                                 );
 
 /// Allocate the compressed buffer based on the already set stream dimensions.

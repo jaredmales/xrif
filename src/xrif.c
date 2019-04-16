@@ -10,6 +10,8 @@
 
 xrif_error_t xrif_initialize_handle( xrif_t * handle )
 {
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   
    handle->width = 0;
    handle->height = 0;
    handle->depth = 0;
@@ -57,6 +59,8 @@ xrif_error_t xrif_setup( xrif_t * handle,
                          xrif_typecode_t c
                        )
 {
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   
    handle->width = w;
    handle->height = h;
    handle->depth = d;
@@ -69,10 +73,11 @@ xrif_error_t xrif_setup( xrif_t * handle,
 }
 
 xrif_error_t xrif_set_raw( xrif_t * handle,
-                  char * raw,          
-                  size_t size          
-                )
+                           void * raw,          
+                           size_t size          
+                         )
 {
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
    if(handle->raw_buffer && handle->own_raw )
    {
@@ -85,10 +90,32 @@ xrif_error_t xrif_set_raw( xrif_t * handle,
    
    handle->raw_buffer_size = size;
    
-   if((handle->raw_buffer != NULL && handle->raw_buffer_size == 0) || (handle->raw_buffer ==0 && handle->raw_buffer_size != 0)) 
+   if((handle->raw_buffer != NULL && handle->raw_buffer_size == 0) || (handle->raw_buffer == 0 && handle->raw_buffer_size != 0)) 
    {
       return XRIF_ERROR_INVALID_SIZE;
    }
+   
+   //Check if we meet minimum size requirement based on compress_on_raw value
+   size_t minSz;
+   
+   if(handle->compress_on_raw)
+   {
+      //Set size to be the larger of LZ4_compressBound and the data size:
+   
+      minSz = LZ4_compressBound(handle->width * handle->height * handle->depth * handle->frames * handle->data_size);
+   
+      if(minSz < handle->width * handle->height * handle->depth * handle->frames * handle->data_size) 
+      {
+         minSz = handle->width * handle->height * handle->depth * handle->frames * handle->data_size;
+      }
+   }
+   else
+   {
+      //Just set to the minimum size
+      minSz = handle->width * handle->height * handle->depth * handle->frames * handle->data_size;
+   }
+      
+   if(handle->raw_buffer_size < minSz) return XRIF_ERROR_INSUFFICIENT_SIZE;
    
    return XRIF_NOERROR;
 }
@@ -133,10 +160,11 @@ xrif_error_t xrif_allocate_raw( xrif_t * handle )
 }
 
 xrif_error_t xrif_set_reordered( xrif_t * handle,
-                        char * reordered,
-                        size_t size
-                    )
+                                 void * reordered,
+                                 size_t size
+                               )
 {
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
    if(handle->reordered_buffer && handle->own_reordered )
    {
@@ -150,13 +178,19 @@ xrif_error_t xrif_set_reordered( xrif_t * handle,
    handle->own_reordered = 0;
    
    
-   if((handle->reordered_buffer != NULL && handle->reordered_buffer_size == 0) || (handle->reordered_buffer == 0 && handle->reordered_buffer_size != 0)) return XRIF_ERROR_INVALID_SIZE;
+   if((handle->reordered_buffer != NULL && handle->reordered_buffer_size == 0) || (handle->reordered_buffer == 0 && handle->reordered_buffer_size != 0))
+   {
+      return XRIF_ERROR_INVALID_SIZE;
+   }
+   
+   if(handle->reordered_buffer_size < handle->width * handle->height * handle->depth * handle->frames * handle->data_size) return XRIF_ERROR_INSUFFICIENT_SIZE;
    
    return 0;
 }
 
 xrif_error_t xrif_allocate_reordered( xrif_t * handle )
 {
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
    if(handle->reordered_buffer && handle->own_reordered)
    {
@@ -177,10 +211,12 @@ xrif_error_t xrif_allocate_reordered( xrif_t * handle )
 }
 
 xrif_error_t xrif_set_compressed( xrif_t * handle, 
-                         char * compressed,    
-                         size_t size           
-                       )
+                                  void * compressed,    
+                                  size_t size           
+                                )
 {
+
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
    if(handle->compressed_buffer && handle->own_compressed )
    {
@@ -194,7 +230,6 @@ xrif_error_t xrif_set_compressed( xrif_t * handle,
    handle->compressed_buffer_size = size;
    
    if((handle->compressed_buffer != NULL && handle->compressed_buffer_size == 0) || (handle->compressed_buffer == 0 && handle->compressed_buffer_size != 0)) return XRIF_ERROR_INVALID_SIZE;
-   
    
    if(handle->compressed_buffer_size < LZ4_compressBound(handle->width * handle->height * handle->depth * handle->frames * handle->data_size)) return XRIF_ERROR_INSUFFICIENT_SIZE;
    

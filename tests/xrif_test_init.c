@@ -4,7 +4,7 @@
 
 #include "../src/xrif.h"
 
-START_TEST (handle_initialization)
+START_TEST (initialize_handle_noerror)
 {
    //Verify that all fields are initialized to their defaults.
    
@@ -40,7 +40,19 @@ START_TEST (handle_initialization)
 }
 END_TEST
 
-START_TEST (handle_setup)
+START_TEST (initialize_handle_nullptr)
+{
+   //Verify that all fields are initialized to their defaults.
+   
+   xrif_t * hand = NULL;
+   
+   xrif_error_t rv = xrif_initialize_handle(hand);
+
+   ck_assert( rv == XRIF_ERROR_NULLPTR );
+}
+END_TEST
+
+START_TEST (setup_noerror)
 {
    //Verfiy that the setup function sets only the expected members
    
@@ -81,6 +93,240 @@ START_TEST (handle_setup)
    ck_assert( rv == XRIF_NOERROR );
 }
 END_TEST
+
+START_TEST (setup_nullptr)
+{
+   //Verfiy that the setup function returns an error on a null ptr
+   
+   xrif_error_t rv = xrif_initialize_handle(NULL);
+   
+   ck_assert( rv == XRIF_ERROR_NULLPTR );
+   
+}
+END_TEST
+
+START_TEST (set_raw_noerrors)
+{
+   //Verfiy that the raw buffer setup works properly
+   
+   xrif_t hand;
+   
+   xrif_error_t rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+      
+   //First do this with compress_on_raw == false
+   hand.compress_on_raw = 0;
+   int16_t * buff;
+   
+   rv = xrif_set_raw( &hand, buff, 120*120*3*120*sizeof(int16_t));
+   
+   ck_assert( hand.own_raw == 0 );
+   ck_assert( hand.raw_buffer == (char *) buff );
+   ck_assert( hand.raw_buffer_size = 120*120*3*120*sizeof(int16_t) );
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   //And then do this with compress_on_raw == true
+   hand.compress_on_raw = 1;
+   
+   rv = xrif_set_raw( &hand, buff, LZ4_compressBound( 120*120*3*120*sizeof(int16_t) ));
+   
+   ck_assert( hand.own_raw == 0 );
+   ck_assert( hand.raw_buffer == (char *) buff );
+   ck_assert( hand.raw_buffer_size = LZ4_compressBound( 120*120*3*120*sizeof(int16_t) ) );
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+START_TEST (set_raw_errors)
+{
+   //Verfiy that the raw buffer returns expected errors.
+   
+   xrif_error_t rv = xrif_set_raw(NULL,0,0);
+   ck_assert( rv == XRIF_ERROR_NULLPTR );
+   
+   xrif_t hand;
+   
+   rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+ 
+   // Test case where buffer is not null, but size is 0
+   int16_t * buff = (uint16_t *) 10;
+   
+   rv = xrif_set_raw( &hand, buff, 0); 
+   
+   ck_assert( rv == XRIF_ERROR_INVALID_SIZE );
+   
+   buff = NULL;
+   
+   rv = xrif_set_raw( &hand, buff, 10); 
+   
+   ck_assert( rv == XRIF_ERROR_INVALID_SIZE );
+   
+   //--Now test errors on wrong sizes
+   //First do this with compress_on_raw == false
+   hand.compress_on_raw = 0;
+   
+   rv = xrif_set_raw( &hand, buff, 0.5*120*120*3*120*sizeof(int16_t));
+   
+   ck_assert( hand.own_raw == 0 );
+   ck_assert( hand.raw_buffer == (char *) buff );
+   ck_assert( hand.raw_buffer_size = 0.5*120*120*3*120*sizeof(int16_t) );
+   
+   ck_assert( rv == XRIF_ERROR_INSUFFICIENT_SIZE );
+   
+   //And then do this with compress_on_raw == true
+   hand.compress_on_raw = 1;
+   
+   rv = xrif_set_raw( &hand, buff,  0.5*120*120*3*120*sizeof(int16_t) );
+   
+   ck_assert( hand.own_raw == 0 );
+   ck_assert( hand.raw_buffer == (char *) buff );
+   ck_assert( hand.raw_buffer_size = 0.5*120*120*3*120*sizeof(int16_t)  );
+   
+   ck_assert( rv == XRIF_ERROR_INSUFFICIENT_SIZE );
+}
+END_TEST
+
+
+
+START_TEST (set_reordered_noerrors)
+{
+   //Verfiy that the reordered buffer setup works properly
+   
+   xrif_t hand;
+   
+   xrif_error_t rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+      
+   int16_t * buff;
+   
+   rv = xrif_set_reordered( &hand, buff, 120*120*3*120*sizeof(int16_t));
+   
+   ck_assert( hand.own_reordered == 0 );
+   ck_assert( hand.reordered_buffer == (char *) buff );
+   ck_assert( hand.reordered_buffer_size = 120*120*3*120*sizeof(int16_t) );
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+START_TEST (set_reordered_errors)
+{
+   //Verfiy that the raw buffer returns expected errors.
+   
+   xrif_error_t rv = xrif_set_reordered(NULL,0,0);
+   ck_assert( rv == XRIF_ERROR_NULLPTR );
+   
+   xrif_t hand;
+   
+   rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+ 
+   // Test case where buffer is not null, but size is 0
+   int16_t * buff = (uint16_t *) 10;
+   
+   rv = xrif_set_reordered( &hand, buff, 0); 
+   
+   ck_assert( rv == XRIF_ERROR_INVALID_SIZE );
+   
+   buff = NULL;
+   
+   rv = xrif_set_reordered( &hand, buff, 10); 
+   
+   ck_assert( rv == XRIF_ERROR_INVALID_SIZE );
+}
+END_TEST
+
+START_TEST (set_compressed_noerrors)
+{
+   //Verfiy that the compress buffer setup works properly
+   
+   xrif_t hand;
+   
+   xrif_error_t rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+      
+   int16_t * buff;
+   size_t lz4sz = LZ4_compressBound(120*120*3*120*sizeof(int16_t));
+   
+   rv = xrif_set_compressed( &hand, buff, lz4sz);
+   
+   ck_assert( hand.own_compressed == 0 );
+   ck_assert( hand.compressed_buffer == (char *) buff );
+   ck_assert( hand.compressed_buffer_size = lz4sz);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+START_TEST (set_compressed_errors)
+{
+   //Verfiy that the raw buffer returns expected errors.
+   
+   xrif_error_t rv = xrif_set_compressed(NULL,0,0);
+   ck_assert( rv == XRIF_ERROR_NULLPTR );
+   
+   xrif_t hand;
+   
+   rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+ 
+   // Test case where buffer is not null, but size is 0
+   int16_t * buff = (uint16_t *) 10;
+   
+   rv = xrif_set_compressed( &hand, buff, 0); 
+   
+   ck_assert( rv == XRIF_ERROR_INVALID_SIZE );
+   
+   buff = NULL;
+   
+   rv = xrif_set_compressed( &hand, buff, 10); 
+   
+   ck_assert( rv == XRIF_ERROR_INVALID_SIZE );
+   
+   //Check that not matching LZ4_compressBound returns error
+   buff = (uint16_t *) 10;
+   rv = xrif_set_compressed( &hand, buff, 1024); 
+   ck_assert( rv == XRIF_ERROR_INSUFFICIENT_SIZE );
+}
+END_TEST
+
+//-------------------------------------------------------------------
 
 START_TEST (header_write)
 {
@@ -199,8 +445,16 @@ Suite * initandalloc_suite(void)
     /* Core test case */
     tc_core = tcase_create("Initial Setups");
 
-    tcase_add_test(tc_core, handle_initialization);
-    tcase_add_test(tc_core, handle_setup );
+    tcase_add_test(tc_core, initialize_handle_noerror);
+    tcase_add_test(tc_core, initialize_handle_nullptr);
+    tcase_add_test(tc_core, setup_noerror );
+    tcase_add_test(tc_core, setup_nullptr );
+    tcase_add_test(tc_core, set_raw_noerrors);
+    tcase_add_test(tc_core, set_raw_noerrors);
+    tcase_add_test(tc_core, set_reordered_noerrors);
+    tcase_add_test(tc_core, set_reordered_errors);
+    tcase_add_test(tc_core, set_compressed_noerrors);
+    tcase_add_test(tc_core, set_compressed_errors);
     suite_add_tcase(s, tc_core);
 
     return s;

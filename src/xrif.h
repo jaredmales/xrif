@@ -110,7 +110,8 @@ extern "C"
   *
   * Options related to compression level and speed are also provided.
   * 
-  * Values of this structure should generally be changed by one of the xrif_set_*() functions,
+  * It is intended that this structure be interacted with via the xrif_t typedef, which is a pointer
+  * to xrif_handle. Values of this structure should generally be changed by one of the xrif_set_*() functions,
   * to allow for error checking and consistency.  Unless you know what you're doing, of course.
   * 
   */ 
@@ -170,7 +171,25 @@ typedef struct
    struct timespec ts_undifference_start;
    struct timespec ts_undifference_done;
    
-} xrif_t;
+} xrif_handle;
+
+/// The xrif handle pointer type.  This is the main interface to the xrif library.
+typedef xrif_handle* xrif_t;
+
+/// Allocate a handle and initialize it.
+/**
+  *
+  * \returns
+  */ 
+xrif_error_t xrif_new(xrif_t * handle_ptr /**< [out] a pointer to an xrif handle. */);
+
+/// Deallocate a handle, including any memory that it owns.
+/**
+  *
+  * \returns
+  */ 
+xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been initialized with xrif_malloc */);
+
 
 /** \name Initialization, Setup, and Allocation 
   *
@@ -188,7 +207,7 @@ typedef struct
   * \returns 0 on success
   * \returns < 0 on error, with an appropreate xrif error code.
   */ 
-xrif_error_t xrif_initialize_handle( xrif_t * handle /**< [out] the xrif handle to initialize */);
+xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to initialize */);
 
 /// Set the basic parameters of an xrif handle
 /** After setting these parameters, a call to one of the allocate or set functions
@@ -197,13 +216,13 @@ xrif_error_t xrif_initialize_handle( xrif_t * handle /**< [out] the xrif handle 
   * \returns XRIF_NOERROR on success
   * \returns < 0 on error, with an appropriate xrif error code. [no errors currently implemented]
   */
-xrif_error_t xrif_setup( xrif_t * handle,  ///< [in/out] the xrif handled to be set up
-                         dimensionT w,     ///< [in] the width of a single frame of data, in pixels
-                         dimensionT h,     ///< [in] the height of a single frame of data, in pixels
-                         dimensionT d,     ///< [in] the depth of a single frame of data, in pixels
-                         dimensionT f,     ///< [in] the number of frames of data, each frame having w X h x d pixels
-                         xrif_typecode_t c ///< [in] the code specifying the data type
-                       );
+xrif_error_t xrif_set_size( xrif_t handle,  ///< [in/out] the xrif handle to be set up
+                            dimensionT w,     ///< [in] the width of a single frame of data, in pixels
+                            dimensionT h,     ///< [in] the height of a single frame of data, in pixels
+                            dimensionT d,     ///< [in] the depth of a single frame of data, in pixels
+                            dimensionT f,     ///< [in] the number of frames of data, each frame having w X h x d pixels
+                            xrif_typecode_t c ///< [in] the code specifying the data type
+                          );
 
 /// Set the raw data buffer to a pre-allocated pointer
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
@@ -214,7 +233,7 @@ xrif_error_t xrif_setup( xrif_t * handle,  ///< [in/out] the xrif handled to be 
   * \returns XRIF_NOERROR on success
   * \returns XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   */  
-xrif_error_t xrif_set_raw( xrif_t * handle,  ///< [in/out] the xrif handle
+xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
                            void * raw,       ///< [in] the pointer to a pre-allocated block
                            size_t size       ///< [in] the size of the pre-allocated block
                          );
@@ -229,7 +248,7 @@ xrif_error_t xrif_set_raw( xrif_t * handle,  ///< [in/out] the xrif handle
   * \returns 0 on success
   * \returns -1 on error, and handle->error will be set.
   */
-xrif_error_t xrif_allocate_raw( xrif_t * handle /**< [in/out] the xrif object to modify */);
+xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to modify */);
 
 
 /// Set the rordered (working) data buffer to a pre-allocated pointer
@@ -241,7 +260,7 @@ xrif_error_t xrif_allocate_raw( xrif_t * handle /**< [in/out] the xrif object to
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
   */  
-xrif_error_t xrif_set_reordered( xrif_t * handle,  ///< [in/out] the xrif object to modify
+xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object to modify
                                  void * reordered, ///< [in] pointer to a pre-allocated block
                                  size_t size       ///< [in] the size of the pre-allocated block
                                );
@@ -252,7 +271,7 @@ xrif_error_t xrif_set_reordered( xrif_t * handle,  ///< [in/out] the xrif object
   * \returns 0 on success
   * \returns -1 on error, and handle->error will be set.
   */
-xrif_error_t xrif_allocate_reordered( xrif_t * handle /**< [in/out] the xrif object to modify */);
+xrif_error_t xrif_allocate_reordered( xrif_t handle /**< [in/out] the xrif object to modify */);
 
 /// Set the compressed data buffer to a pre-allocated pointer
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
@@ -263,7 +282,7 @@ xrif_error_t xrif_allocate_reordered( xrif_t * handle /**< [in/out] the xrif obj
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
   */  
-xrif_error_t xrif_set_compressed( xrif_t * handle,  ///< [in/out] the xrif object to modify
+xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object to modify
                                   void * reordered, ///< [in] pointer to a pre-allocated block
                                   size_t size       ///< [in] the size of the pre-allocated block
                                 );
@@ -274,13 +293,13 @@ xrif_error_t xrif_set_compressed( xrif_t * handle,  ///< [in/out] the xrif objec
   * \returns 0 on success
   * \returns -1 on error, and handle->error will be set.
   */
-xrif_error_t xrif_allocate_compressed( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif handle */);
 
 
 /// Allocate all memory buffers according to the configuration specified in the handle.
 /**
   */ 
-xrif_error_t xrif_allocate( xrif_t * handle,  ///< [in/out] the xrif object to be allocated
+xrif_error_t xrif_allocate( xrif_t handle,  ///< [in/out] the xrif object to be allocated
                             dimensionT w,
                             dimensionT h,
                             dimensionT d,
@@ -295,7 +314,7 @@ xrif_error_t xrif_allocate( xrif_t * handle,  ///< [in/out] the xrif object to b
   * \returns 0 on success
   * \returns <0 on error, with the appropriate code
   */
-xrif_error_t xrif_destroy_handle( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_destroy_handle( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// @}
 
@@ -307,10 +326,10 @@ xrif_error_t xrif_destroy_handle( xrif_t * handle /**< [in/out] the xrif handle 
   */
 
 xrif_error_t xrif_write_header( char * header,
-                                xrif_t * handle 
+                                xrif_t handle 
                               );
 
-xrif_error_t xrif_read_header( xrif_t * handle,
+xrif_error_t xrif_read_header( xrif_t handle,
                                uint32_t * header_size,
                                char * header
                              );
@@ -332,7 +351,7 @@ xrif_error_t xrif_read_header( xrif_t * handle,
   * \returns an xrif error code otherwise.
   * 
   */
-xrif_error_t xrif_encode( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_encode( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Decode data from the xrif format 
 /** Calls xrif_decompress, xrif_unreorder, and xrif_undifference.
@@ -344,7 +363,7 @@ xrif_error_t xrif_encode( xrif_t * handle /**< [in/out] the xrif handle */);
   * \returns an xrif error code otherwise.
   * 
   */
-xrif_error_t xrif_decode( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_decode( xrif_t handle /**< [in/out] the xrif handle */);
 
 
 /// @}
@@ -354,9 +373,9 @@ xrif_error_t xrif_decode( xrif_t * handle /**< [in/out] the xrif handle */);
   * @{
   */
 
-xrif_error_t xrif_difference( xrif_t * handle );
+xrif_error_t xrif_difference( xrif_t handle );
 
-xrif_error_t xrif_undifference( xrif_t * handle );
+xrif_error_t xrif_undifference( xrif_t handle );
 
 /// Difference all images writh respect to previous image, for short integer data type.
 /**
@@ -364,7 +383,7 @@ xrif_error_t xrif_undifference( xrif_t * handle );
   * \returns 0 on success.
   * \returns <0 on error, with the appropreate error code.
   */ 
-xrif_error_t xrif_difference_previous_sint16( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Difference all images writh respect to the first image, for short integer data type.
 /**
@@ -372,10 +391,10 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t * handle /**< [in/out] the 
   * \returns 0 on success.
   * \returns <0 on error, with the appropreate error code.
   */ 
-xrif_error_t xrif_difference_first_sint16( xrif_t * handle/**< [in/out] the xrif handle */ );
+xrif_error_t xrif_difference_first_sint16( xrif_t handle/**< [in/out] the xrif handle */ );
 
 
-xrif_error_t xrif_difference_sint16_rgb( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Reverse the differencing operation, w.r.t. the previous image, for short integer data type.
 /**
@@ -383,7 +402,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t * handle /**< [in/out] the xrif 
   * \returns 0 on success.
   * \returns <0 on error, with the appropreate error code.
   */ 
-xrif_error_t xrif_undifference_previous_sint16( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_undifference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
 ///@}
 
@@ -396,14 +415,14 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t * handle /**< [in/out] th
   * \returns XRIF_ERROR_NONE on success
   * \returns an error code on an error.
   */ 
-xrif_error_t xrif_reorder( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_reorder( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Un-reorder the data using the method specified by `reorder_method`
 /**
   * \returns XRIF_ERROR_NONE on success
   * \returns an error code on an error.
   */ 
-xrif_error_t xrif_unreorder( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_unreorder( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Perform no re-ordering, simply copy raw to reordered.
 /** Primarilly for testing and benchmarking.
@@ -411,28 +430,28 @@ xrif_error_t xrif_unreorder( xrif_t * handle /**< [in/out] the xrif handle */);
   * \returns 0 on success.
   * \returns <0 on error, with the appropriate error code.
   */ 
-xrif_error_t xrif_reorder_none( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ );
 
-xrif_error_t xrif_reorder_bytepack( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */ );
 
-xrif_error_t xrif_reorder_bytepack_sxrif_error_t16( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bytepack_sxrif_error_t16( xrif_t handle /**< [in/out] the xrif handle */ );
 
-xrif_error_t xrif_reorder_bytepack_renibble( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */ );
 
-xrif_error_t xrif_reorder_bytepack_renibble_short( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bytepack_renibble_short( xrif_t handle /**< [in/out] the xrif handle */ );
 
-xrif_error_t xrif_reorder_bitpack( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bitpack( xrif_t handle /**< [in/out] the xrif handle */ );
       
-xrif_error_t xrif_reorder_bitpack_sint16( xrif_t * handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
          
-xrif_error_t xrif_unreorder_none( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_unreorder_none( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_unreorder_bytepack( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_unreorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_unreorder_bitpack( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_unreorder_bitpack( xrif_t handle /**< [in/out] the xrif handle */);
 
 ///@}
 
@@ -440,22 +459,22 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t * handle /**< [in/out] the xrif hand
   *
   * @{
   */ 
-xrif_error_t xrif_compress( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_compress( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_decompress(xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_decompress(xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_compress_none( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_compress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_decompress_none( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_compress_lz4( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_decompress_lz4( xrif_t * handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
 
 ///@}
 
 
-size_t xrif_typesize( xrif_typecode_t type_code);
+size_t xrif_handleypesize( xrif_typecode_t type_code);
 
 #ifdef __cplusplus
 //extern "C"

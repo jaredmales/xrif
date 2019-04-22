@@ -8,7 +8,28 @@
 
 #include "xrif.h"
 
-xrif_error_t xrif_initialize_handle( xrif_t * handle )
+xrif_error_t xrif_new(xrif_t * handle_ptr)
+{
+   *handle_ptr = (xrif_t) malloc( sizeof(xrif_handle) );
+   
+   if( *handle_ptr == 0) return XRIF_ERROR_MALLOC;
+   
+   return xrif_initialize_handle(*handle_ptr);
+   
+}
+
+xrif_error_t xrif_delete(xrif_t handle )
+{
+   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   
+   xrif_error_t rv = xrif_destroy_handle( handle );
+   
+   free(handle);
+   
+   return rv;
+}
+
+xrif_error_t xrif_initialize_handle( xrif_t handle )
 {
    if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
@@ -51,13 +72,13 @@ xrif_error_t xrif_initialize_handle( xrif_t * handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_setup( xrif_t * handle,
-                         dimensionT w,
-                         dimensionT h,
-                         dimensionT d,
-                         dimensionT f,
-                         xrif_typecode_t c
-                       )
+xrif_error_t xrif_set_size( xrif_t handle,
+                            dimensionT w,
+                            dimensionT h,
+                            dimensionT d,
+                            dimensionT f,
+                            xrif_typecode_t c
+                          )
 {
    if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
@@ -67,12 +88,12 @@ xrif_error_t xrif_setup( xrif_t * handle,
    handle->frames = f;
    handle->type_code = c;
    
-   handle->data_size = xrif_typesize(handle->type_code);
+   handle->data_size = xrif_handleypesize(handle->type_code);
    
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_set_raw( xrif_t * handle,
+xrif_error_t xrif_set_raw( xrif_t handle,
                            void * raw,          
                            size_t size          
                          )
@@ -120,7 +141,7 @@ xrif_error_t xrif_set_raw( xrif_t * handle,
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_allocate_raw( xrif_t * handle )
+xrif_error_t xrif_allocate_raw( xrif_t handle )
 {
    if(handle->raw_buffer && handle->own_raw )
    {
@@ -159,7 +180,7 @@ xrif_error_t xrif_allocate_raw( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_set_reordered( xrif_t * handle,
+xrif_error_t xrif_set_reordered( xrif_t handle,
                                  void * reordered,
                                  size_t size
                                )
@@ -188,7 +209,7 @@ xrif_error_t xrif_set_reordered( xrif_t * handle,
    return 0;
 }
 
-xrif_error_t xrif_allocate_reordered( xrif_t * handle )
+xrif_error_t xrif_allocate_reordered( xrif_t handle )
 {
    if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
@@ -210,7 +231,7 @@ xrif_error_t xrif_allocate_reordered( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_set_compressed( xrif_t * handle, 
+xrif_error_t xrif_set_compressed( xrif_t handle, 
                                   void * compressed,    
                                   size_t size           
                                 )
@@ -236,7 +257,7 @@ xrif_error_t xrif_set_compressed( xrif_t * handle,
    return 0;
 }
 
-xrif_error_t xrif_allocate_compressed( xrif_t * handle )
+xrif_error_t xrif_allocate_compressed( xrif_t handle )
 {
    if(handle->compressed_buffer && handle->own_compressed )
    {
@@ -261,18 +282,18 @@ xrif_error_t xrif_allocate_compressed( xrif_t * handle )
 }
 
 
-xrif_error_t xrif_allocate( xrif_t * handle,
-                   dimensionT w,
-                   dimensionT h,
-                   dimensionT d,
-                   dimensionT f,
-                   xrif_typecode_t c
-                 )
+xrif_error_t xrif_allocate( xrif_t handle,
+                            dimensionT w,
+                            dimensionT h,
+                            dimensionT d,
+                            dimensionT f,
+                            xrif_typecode_t c
+                          )
 {
    xrif_error_t rv;
-   rv = xrif_setup(handle, w, h, d, f, c);
+   rv = xrif_set_size(handle, w, h, d, f, c);
    if(rv < 0) return rv;
-   
+    
    rv = xrif_allocate_raw(handle);
    if(rv < 0) return rv;
    
@@ -289,7 +310,7 @@ xrif_error_t xrif_allocate( xrif_t * handle,
 
 }
 
-xrif_error_t xrif_destroy_handle( xrif_t * handle )
+xrif_error_t xrif_destroy_handle( xrif_t handle )
 {
    if(handle->reordered_buffer && handle->own_reordered)
    {
@@ -306,13 +327,12 @@ xrif_error_t xrif_destroy_handle( xrif_t * handle )
       free(handle->compressed_buffer);
    }
    
-   xrif_initialize_handle(handle);
+   return xrif_initialize_handle(handle);
    
-   return 0;
 }
 
 xrif_error_t xrif_write_header( char * header,
-                                xrif_t * handle 
+                                xrif_t handle 
                               )
 {
    header[0] = 'x';
@@ -352,7 +372,7 @@ xrif_error_t xrif_write_header( char * header,
 }
 
 
-xrif_error_t xrif_read_header( xrif_t * handle,
+xrif_error_t xrif_read_header( xrif_t handle,
                                uint32_t * header_size,
                                char * header
                              )
@@ -379,7 +399,7 @@ xrif_error_t xrif_read_header( xrif_t * handle,
    
    handle->type_code = *((uint16_t *) &header[28]);
 
-   handle->data_size = xrif_typesize(handle->type_code);
+   handle->data_size = xrif_handleypesize(handle->type_code);
    
    handle->difference_method = *((uint16_t *) &header[30]);
    
@@ -395,7 +415,7 @@ xrif_error_t xrif_read_header( xrif_t * handle,
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_encode( xrif_t * handle )
+xrif_error_t xrif_encode( xrif_t handle )
 {
    xrif_error_t rv; 
    
@@ -422,7 +442,7 @@ xrif_error_t xrif_encode( xrif_t * handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_decode( xrif_t * handle )
+xrif_error_t xrif_decode( xrif_t handle )
 {
    xrif_error_t rv;
    
@@ -449,7 +469,7 @@ xrif_error_t xrif_decode( xrif_t * handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_difference( xrif_t * handle )
+xrif_error_t xrif_difference( xrif_t handle )
 {
    int method = handle->difference_method;
    
@@ -466,7 +486,7 @@ xrif_error_t xrif_difference( xrif_t * handle )
    }
 }
 
-xrif_error_t xrif_undifference( xrif_t * handle )
+xrif_error_t xrif_undifference( xrif_t handle )
 {
    int method = handle->difference_method;
    
@@ -483,7 +503,7 @@ xrif_error_t xrif_undifference( xrif_t * handle )
    }
 }
 
-xrif_error_t xrif_difference_previous_sint16( xrif_t * handle )
+xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
 {
    for(int n=0; n < handle->frames-1; ++n)
    {
@@ -514,7 +534,7 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_difference_first_sint16( xrif_t * handle )
+xrif_error_t xrif_difference_first_sint16( xrif_t handle )
 {
    for(int n=0; n < handle->frames-1; ++n)
    {
@@ -544,7 +564,7 @@ xrif_error_t xrif_difference_first_sint16( xrif_t * handle )
 
 
 
-xrif_error_t xrif_difference_sint16_rgb( xrif_t * handle )
+xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
 {
    for(int n=0; n < handle->frames-1; ++n)
    {
@@ -613,7 +633,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_undifference_previous_sint16( xrif_t * handle )
+xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
 {
    for(int n=1; n < handle->frames; ++n)
    {
@@ -642,7 +662,7 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_reorder( xrif_t * handle )
+xrif_error_t xrif_reorder( xrif_t handle )
 {
    int method = handle->reorder_method;
    
@@ -663,7 +683,7 @@ xrif_error_t xrif_reorder( xrif_t * handle )
    }
 }
 
-xrif_error_t xrif_unreorder( xrif_t * handle )
+xrif_error_t xrif_unreorder( xrif_t handle )
 {
    int method = handle->reorder_method;
    
@@ -685,7 +705,7 @@ xrif_error_t xrif_unreorder( xrif_t * handle )
 }
 
 
-xrif_error_t xrif_reorder_none( xrif_t * handle )
+xrif_error_t xrif_reorder_none( xrif_t handle )
 {
    size_t npix = handle->width * handle->height * handle->depth * handle->frames; 
    
@@ -694,7 +714,7 @@ xrif_error_t xrif_reorder_none( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_reorder_bytepack( xrif_t * handle )
+xrif_error_t xrif_reorder_bytepack( xrif_t handle )
 {
    
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
@@ -738,7 +758,7 @@ xrif_error_t xrif_reorder_bytepack( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_reorder_bytepack_renibble( xrif_t * handle )
+xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
 {
    #include "bitshift_and_nibbles.inc"
    
@@ -805,7 +825,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t * handle )
 
 
 
-xrif_error_t xrif_reorder_bitpack( xrif_t * handle )
+xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 {
    //#include "circle_left_shift_one.inc"
    #include "bit_to_position.inc"
@@ -878,7 +898,7 @@ xrif_error_t xrif_reorder_bitpack( xrif_t * handle )
       
 
          
-xrif_error_t xrif_unreorder_none( xrif_t * handle )
+xrif_error_t xrif_unreorder_none( xrif_t handle )
 {
    size_t npix = handle->width * handle->height * handle->depth * handle->frames; 
    
@@ -887,7 +907,7 @@ xrif_error_t xrif_unreorder_none( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_unreorder_bytepack( xrif_t * handle )
+xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
 {
    int_fast8_t x1, x2;
 
@@ -928,7 +948,7 @@ xrif_error_t xrif_unreorder_bytepack( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t * handle )
+xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
 {
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
    
@@ -982,7 +1002,7 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_unreorder_bitpack( xrif_t * handle )
+xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
 {
 
    for(size_t pix=0; pix<handle->width*handle->height* handle->depth *handle->data_size; ++pix)
@@ -1030,7 +1050,7 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t * handle )
 
 
 
-xrif_error_t xrif_compress( xrif_t * handle )
+xrif_error_t xrif_compress( xrif_t handle )
 {
    int method = handle->compress_method;
    
@@ -1048,7 +1068,7 @@ xrif_error_t xrif_compress( xrif_t * handle )
       
 }
 
-xrif_error_t xrif_decompress( xrif_t * handle )
+xrif_error_t xrif_decompress( xrif_t handle )
 {
    int method = handle->compress_method;
    
@@ -1066,7 +1086,7 @@ xrif_error_t xrif_decompress( xrif_t * handle )
       
 }
 
-xrif_error_t xrif_compress_none( xrif_t * handle )
+xrif_error_t xrif_compress_none( xrif_t handle )
 {
    int size = handle->width*handle->height* handle->depth *handle->frames*handle->data_size;
    
@@ -1096,7 +1116,7 @@ xrif_error_t xrif_compress_none( xrif_t * handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_decompress_none( xrif_t * handle )
+xrif_error_t xrif_decompress_none( xrif_t handle )
 {
    int size = handle->width*handle->height*handle->frames* handle->depth *handle->data_size;
    
@@ -1124,7 +1144,7 @@ xrif_error_t xrif_decompress_none( xrif_t * handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_compress_lz4( xrif_t * handle )
+xrif_error_t xrif_compress_lz4( xrif_t handle )
 {
    int size = handle->width*handle->height* handle->depth *handle->frames*handle->data_size;
    
@@ -1148,7 +1168,7 @@ xrif_error_t xrif_compress_lz4( xrif_t * handle )
    return 0;
 }
 
-xrif_error_t xrif_decompress_lz4( xrif_t * handle )
+xrif_error_t xrif_decompress_lz4( xrif_t handle )
 {
    int size = handle->width*handle->height*handle->frames* handle->depth *handle->data_size;
    
@@ -1170,7 +1190,7 @@ xrif_error_t xrif_decompress_lz4( xrif_t * handle )
    return 0;
 }
 
-size_t xrif_typesize( xrif_typecode_t type_code)
+size_t xrif_handleypesize( xrif_typecode_t type_code)
 {
    switch( type_code )
    {

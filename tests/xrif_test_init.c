@@ -1,14 +1,45 @@
 
 
 #include <check.h>
+#include <malloc.h>
 
 #include "../src/xrif.h"
+
+extern void *__libc_malloc(size_t size);
+
+int malloc_hook_active = 0;
+
+void* my_malloc_hook (size_t size, void *caller)
+{
+  void *result;
+
+  // deactivate hooks for logging
+  malloc_hook_active = 0;
+
+  result = malloc(size);
+
+  fprintf(stderr, "malloc\n");
+
+  // reactivate hooks
+  malloc_hook_active = 1;
+
+  return result;
+}
+
+void* malloc (size_t size)
+{
+  void *caller = __builtin_return_address(0);
+  if (malloc_hook_active)
+    return my_malloc_hook(size, caller);
+  return __libc_malloc(size);
+}
+
 
 START_TEST (initialize_handle_noerror)
 {
    //Verify that all fields are initialized to their defaults.
    
-   xrif_t hand;
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
@@ -44,7 +75,7 @@ START_TEST (initialize_handle_nullptr)
 {
    //Verify that all fields are initialized to their defaults.
    
-   xrif_t * hand = NULL;
+   xrif_handle * hand = NULL;
    
    xrif_error_t rv = xrif_initialize_handle(hand);
 
@@ -56,13 +87,13 @@ START_TEST (setup_noerror)
 {
    //Verfiy that the setup function sets only the expected members
    
-   xrif_t hand;
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 1024,64,32,1000, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 1024,64,32,1000, XRIF_TYPECODE_INT16);
    
    ck_assert_int_eq( hand.width, 1024);
    ck_assert_int_eq( hand.height, 64);
@@ -109,13 +140,13 @@ START_TEST (set_raw_noerrors)
 {
    //Verfiy that the raw buffer setup works properly
    
-   xrif_t hand;
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_NOERROR );
       
@@ -152,13 +183,13 @@ START_TEST (set_raw_errors)
    xrif_error_t rv = xrif_set_raw(NULL,0,0);
    ck_assert( rv == XRIF_ERROR_NULLPTR );
    
-   xrif_t hand;
+   xrif_handle hand;
    
    rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_NOERROR );
  
@@ -206,13 +237,13 @@ START_TEST (set_reordered_noerrors)
 {
    //Verfiy that the reordered buffer setup works properly
    
-   xrif_t hand;
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_NOERROR );
       
@@ -236,13 +267,13 @@ START_TEST (set_reordered_errors)
    xrif_error_t rv = xrif_set_reordered(NULL,0,0);
    ck_assert( rv == XRIF_ERROR_NULLPTR );
    
-   xrif_t hand;
+   xrif_handle hand;
    
    rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_NOERROR );
  
@@ -265,13 +296,13 @@ START_TEST (set_compressed_noerrors)
 {
    //Verfiy that the compress buffer setup works properly
    
-   xrif_t hand;
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_NOERROR );
       
@@ -296,13 +327,13 @@ START_TEST (set_compressed_errors)
    xrif_error_t rv = xrif_set_compressed(NULL,0,0);
    ck_assert( rv == XRIF_ERROR_NULLPTR );
    
-   xrif_t hand;
+   xrif_handle hand;
    
    rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_NOERROR );
  
@@ -326,18 +357,40 @@ START_TEST (set_compressed_errors)
 }
 END_TEST
 
-//-------------------------------------------------------------------
 
-START_TEST (header_write)
+START_TEST (allocate_raw_noerrors)
 {
-   //This test verifies that header fields are correctly populated
-   xrif_t hand;
+   //Verfiy that the compress buffer setup works properly
+   
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,120,1,1000, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,120,3,120, XRIF_TYPECODE_INT16);
+   
+   ck_assert( rv == XRIF_NOERROR );
+      
+   rv = xrif_allocate_raw(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+//-------------------------------------------------------------------
+
+START_TEST (header_write)
+{
+   //This test verifies that header fields are correctly populated
+   xrif_handle hand;
+   
+   xrif_error_t rv = xrif_initialize_handle(&hand);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_set_size(&hand, 120,120,1,1000, XRIF_TYPECODE_INT16);
       
    ck_assert( rv == XRIF_NOERROR );
    
@@ -374,13 +427,13 @@ START_TEST (header_read)
    //This test writes a setup handle to a header
    //Then reads it to a new handle, verifying that members are set properly.
    
-   xrif_t hand;
+   xrif_handle hand;
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
    ck_assert( rv == XRIF_NOERROR );
    
-   rv = xrif_setup(&hand, 120,240,2,1000, XRIF_TYPECODE_INT16);
+   rv = xrif_set_size(&hand, 120,240,2,1000, XRIF_TYPECODE_INT16);
       
    ck_assert( rv == XRIF_NOERROR );
    
@@ -393,7 +446,7 @@ START_TEST (header_read)
    ck_assert( rv == XRIF_NOERROR );
    
    //New handle to populate with read from header
-   xrif_t hand2;
+   xrif_handle hand2;
    
    rv = xrif_initialize_handle(&hand2);
    
@@ -449,6 +502,7 @@ Suite * initandalloc_suite(void)
     tcase_add_test(tc_core, initialize_handle_nullptr);
     tcase_add_test(tc_core, setup_noerror );
     tcase_add_test(tc_core, setup_nullptr );
+    tcase_add_test(tc_core, allocate_raw_noerrors);
     tcase_add_test(tc_core, set_raw_noerrors);
     tcase_add_test(tc_core, set_raw_noerrors);
     tcase_add_test(tc_core, set_reordered_noerrors);

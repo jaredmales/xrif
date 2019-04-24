@@ -22,7 +22,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <complex.h>
+//#include <complex.h>
 
 #include "lz4/lz4.h"
 #include "lz4/lz4hc.h"

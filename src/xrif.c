@@ -1217,9 +1217,9 @@ size_t xrif_handleypesize( xrif_typecode_t type_code)
       case XRIF_TYPECODE_DOUBLE:
          return sizeof(double);
       case XRIF_TYPECODE_COMPLEX_FLOAT:
-         return sizeof(float complex);
+         return sizeof(float[2]);
       case XRIF_TYPECODE_COMPLEX_DOUBLE:
-         return sizeof(double complex);
+         return sizeof(double[2]);
    }
    
    return 0;

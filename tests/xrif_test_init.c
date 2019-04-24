@@ -152,23 +152,23 @@ START_TEST (set_raw_noerrors)
       
    //First do this with compress_on_raw == false
    hand.compress_on_raw = 0;
-   int16_t * buff;
+   int16_t buff;
    
-   rv = xrif_set_raw( &hand, buff, 120*120*3*120*sizeof(int16_t));
+   rv = xrif_set_raw( &hand, &buff, 120*120*3*120*sizeof(int16_t));
    
    ck_assert( hand.own_raw == 0 );
-   ck_assert( hand.raw_buffer == (char *) buff );
+   ck_assert( hand.raw_buffer == (char *) &buff );
    ck_assert( hand.raw_buffer_size = 120*120*3*120*sizeof(int16_t) );
-   
+
    ck_assert( rv == XRIF_NOERROR );
    
    //And then do this with compress_on_raw == true
    hand.compress_on_raw = 1;
    
-   rv = xrif_set_raw( &hand, buff, LZ4_compressBound( 120*120*3*120*sizeof(int16_t) ));
+   rv = xrif_set_raw( &hand, &buff, LZ4_compressBound( 120*120*3*120*sizeof(int16_t) ));
    
    ck_assert( hand.own_raw == 0 );
-   ck_assert( hand.raw_buffer == (char *) buff );
+   ck_assert( hand.raw_buffer == (char *) &buff );
    ck_assert( hand.raw_buffer_size = LZ4_compressBound( 120*120*3*120*sizeof(int16_t) ) );
    
    ck_assert( rv == XRIF_NOERROR );
@@ -247,12 +247,12 @@ START_TEST (set_reordered_noerrors)
    
    ck_assert( rv == XRIF_NOERROR );
       
-   int16_t * buff;
+   int16_t buff;
    
-   rv = xrif_set_reordered( &hand, buff, 120*120*3*120*sizeof(int16_t));
+   rv = xrif_set_reordered( &hand, &buff, 120*120*3*120*sizeof(int16_t));
    
    ck_assert( hand.own_reordered == 0 );
-   ck_assert( hand.reordered_buffer == (char *) buff );
+   ck_assert( hand.reordered_buffer == (char *) &buff );
    ck_assert( hand.reordered_buffer_size = 120*120*3*120*sizeof(int16_t) );
    
    ck_assert( rv == XRIF_NOERROR );
@@ -306,13 +306,13 @@ START_TEST (set_compressed_noerrors)
    
    ck_assert( rv == XRIF_NOERROR );
       
-   int16_t * buff;
+   int16_t buff;
    size_t lz4sz = LZ4_compressBound(120*120*3*120*sizeof(int16_t));
    
-   rv = xrif_set_compressed( &hand, buff, lz4sz);
+   rv = xrif_set_compressed( &hand, &buff, lz4sz);
    
    ck_assert( hand.own_compressed == 0 );
-   ck_assert( hand.compressed_buffer == (char *) buff );
+   ck_assert( hand.compressed_buffer == (char *) &buff );
    ck_assert( hand.compressed_buffer_size = lz4sz);
    
    ck_assert( rv == XRIF_NOERROR );

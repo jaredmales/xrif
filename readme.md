@@ -4,6 +4,18 @@ A fast high performance compression system.
 
 # Building
 
+## Dependencies
+
+The only dependencies are the `check` unit testing framework and `subunit` streaming system.
+
+On CentOS:
+```
+$ sudo yum install check-devel
+$ sudo yum install subunit-devel
+```
+
+## Configure, Make, and Install
+
 For a standard posix system, you should only need to do these steps:
 ```
 $ mkdir build 

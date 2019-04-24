@@ -28,27 +28,8 @@ extern "C"
 #include "lz4/lz4hc.h"
 
 
-/// The type used for storing the width and height and depth dimensions of images.
-typedef uint32_t dimensionT;
 
-   
 
-#define BIT15 (32768)
-#define BIT14 (16384)
-#define BIT13 (8192)
-#define BIT12 (4096)
-#define BIT11 (2048)
-#define BIT10 (1024)
-#define BIT09 (512)
-#define BIT08 (256)
-#define BIT07 (128)
-#define BIT06 (64)
-#define BIT05 (32)
-#define BIT04 (16)
-#define BIT03 (8)
-#define BIT02 (4)
-#define BIT01 (2)
-#define BIT00 (1)
 
 #define XRIF_VERSION (0)
 #define XRIF_HEADER_SIZE (48)
@@ -68,6 +49,8 @@ typedef uint32_t dimensionT;
 #define XRIF_COMPRESS_DEFAULT (100)
 #define XRIF_COMPRESS_LZ4 (100)
 
+/// The type used for storing the width and height and depth dimensions of images.
+typedef uint32_t xrif_dimension_t;
 
 typedef int xrif_error_t;
 
@@ -119,15 +102,16 @@ typedef uint8_t xrif_typecode_t;
   */ 
 typedef struct
 {
-   dimensionT width;     ///< The width of a single image, in pixels
-   dimensionT height;    ///< The height of a single image, in pixels
-   dimensionT depth;     ///< The depth of a single image, in pixels
-   dimensionT frames;    ///< The number of frames in the stream
+   xrif_dimension_t width;     ///< The width of a single image, in pixels
+   xrif_dimension_t height;    ///< The height of a single image, in pixels
+   xrif_dimension_t depth;     ///< The depth of a single image, in pixels
+   xrif_dimension_t frames;    ///< The number of frames in the stream
    
    xrif_typecode_t type_code;  ///< The code specifying the data type of the pixels
    
    size_t data_size;     ///< The size of the pixels, bytes.
 
+   size_t raw_size;         ///< Size of the stream before compression
    size_t compressed_size;  ///< Size of the stream after compression
    
    int difference_method; ///< The difference method to use.
@@ -219,10 +203,10 @@ xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to
   * \returns < 0 on error, with an appropriate xrif error code. [no errors currently implemented]
   */
 xrif_error_t xrif_set_size( xrif_t handle,  ///< [in/out] the xrif handle to be set up
-                            dimensionT w,     ///< [in] the width of a single frame of data, in pixels
-                            dimensionT h,     ///< [in] the height of a single frame of data, in pixels
-                            dimensionT d,     ///< [in] the depth of a single frame of data, in pixels
-                            dimensionT f,     ///< [in] the number of frames of data, each frame having w X h x d pixels
+                            xrif_dimension_t w,     ///< [in] the width of a single frame of data, in pixels
+                            xrif_dimension_t h,     ///< [in] the height of a single frame of data, in pixels
+                            xrif_dimension_t d,     ///< [in] the depth of a single frame of data, in pixels
+                            xrif_dimension_t f,     ///< [in] the number of frames of data, each frame having w X h x d pixels
                             xrif_typecode_t c ///< [in] the code specifying the data type
                           );
 
@@ -302,10 +286,10 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif hand
 /**
   */ 
 xrif_error_t xrif_allocate( xrif_t handle,  ///< [in/out] the xrif object to be allocated
-                            dimensionT w,
-                            dimensionT h,
-                            dimensionT d,
-                            dimensionT f,
+                            xrif_dimension_t w,
+                            xrif_dimension_t h,
+                            xrif_dimension_t d,
+                            xrif_dimension_t f,
                             xrif_typecode_t c
                           );
 
@@ -476,7 +460,91 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */
 ///@}
 
 
-size_t xrif_handleypesize( xrif_typecode_t type_code);
+/** \name Performance
+  *
+  * @{
+  */ 
+
+/// Calculate the compression ratio 
+/** 
+  * \returns the ratio of compressed_size to raw_size.
+  */ 
+double xrif_compression_ratio( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to encode the data
+/**
+  * \returns the difference in the timespecs marking the beginning of differencing the end of compression 
+  */ 
+double xrif_encode_time ( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the encode rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_encode_time
+  */ 
+double xrif_encode_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to difference the data
+/**
+  * \returns the difference in the timespecs marking the beginning of reordering the beginning of differencing 
+  */ 
+double xrif_difference_time( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the differencing rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_difference_time
+  */ 
+double xrif_difference_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to reorder the data
+/**
+  * \returns the difference in the timespecs marking the beginning of compression and the beginning of reordering
+  */ 
+double xrif_reorder_time( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the reordering rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_reorder_time
+  */ 
+double xrif_reorder_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to compress the differenced and reordered data
+/**
+  * \returns the difference in the timespecs marking the beginning of reordering and the end of compression
+  */ 
+double xrif_compress_time( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the compression rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_compress_time
+  */ 
+double xrif_compress_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+
+
+///@}
+
+
+/** \name Utilities
+  *
+  * @{
+  */ 
+
+/// Return the size of the type specified by the code.
+/**
+  * \returns the equivalent to `sizeof(type)` for the specified type code.
+  */  
+size_t xrif_typesize( xrif_typecode_t type_code /**< [in] the type code*/);
+
+/// Calculate the difference between two timespecs.
+/** Calculates `ts1-ts0` in `double` precision.
+  * 
+  * \returns the difference in seconds between the two timespecs 
+  */
+double xrif_ts_difference( struct timespec * ts1, ///< [in] the end time
+                           struct timespec * ts0  ///< [in] the start time
+                         );
+
+///@}
 
 #ifdef __cplusplus
 //extern "C"

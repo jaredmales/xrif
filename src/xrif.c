@@ -8,6 +8,24 @@
 
 #include "xrif.h"
 
+#define BIT15 (32768)
+#define BIT14 (16384)
+#define BIT13 (8192)
+#define BIT12 (4096)
+#define BIT11 (2048)
+#define BIT10 (1024)
+#define BIT09 (512)
+#define BIT08 (256)
+#define BIT07 (128)
+#define BIT06 (64)
+#define BIT05 (32)
+#define BIT04 (16)
+#define BIT03 (8)
+#define BIT02 (4)
+#define BIT01 (2)
+#define BIT00 (1)
+
+
 xrif_error_t xrif_new(xrif_t * handle_ptr)
 {
    *handle_ptr = (xrif_t) malloc( sizeof(xrif_handle) );
@@ -42,6 +60,7 @@ xrif_error_t xrif_initialize_handle( xrif_t handle )
    
    handle->data_size = 0;
 
+   handle->raw_size = 0;
    handle->compressed_size = 0;
    
    handle->difference_method = XRIF_DIFFERENCE_DEFAULT;
@@ -73,10 +92,10 @@ xrif_error_t xrif_initialize_handle( xrif_t handle )
 }
 
 xrif_error_t xrif_set_size( xrif_t handle,
-                            dimensionT w,
-                            dimensionT h,
-                            dimensionT d,
-                            dimensionT f,
+                            xrif_dimension_t w,
+                            xrif_dimension_t h,
+                            xrif_dimension_t d,
+                            xrif_dimension_t f,
                             xrif_typecode_t c
                           )
 {
@@ -88,7 +107,9 @@ xrif_error_t xrif_set_size( xrif_t handle,
    handle->frames = f;
    handle->type_code = c;
    
-   handle->data_size = xrif_handleypesize(handle->type_code);
+   handle->data_size = xrif_typesize(handle->type_code);
+   
+   handle->raw_size = w*h*d*f*handle->data_size;
    
    return XRIF_NOERROR;
 }
@@ -283,10 +304,10 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle )
 
 
 xrif_error_t xrif_allocate( xrif_t handle,
-                            dimensionT w,
-                            dimensionT h,
-                            dimensionT d,
-                            dimensionT f,
+                            xrif_dimension_t w,
+                            xrif_dimension_t h,
+                            xrif_dimension_t d,
+                            xrif_dimension_t f,
                             xrif_typecode_t c
                           )
 {
@@ -399,7 +420,7 @@ xrif_error_t xrif_read_header( xrif_t handle,
    
    handle->type_code = *((uint16_t *) &header[28]);
 
-   handle->data_size = xrif_handleypesize(handle->type_code);
+   handle->data_size = xrif_typesize(handle->type_code);
    
    handle->difference_method = *((uint16_t *) &header[30]);
    
@@ -1190,7 +1211,52 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle )
    return 0;
 }
 
-size_t xrif_handleypesize( xrif_typecode_t type_code)
+double xrif_compression_ratio( xrif_t handle )
+{
+   return ((double)handle->compressed_size)/((double)handle->raw_size);
+}
+
+double xrif_encode_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_compress_done, &handle->ts_difference_start);
+}
+
+double xrif_encode_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) /xrif_encode_time(handle);
+}
+   
+double xrif_difference_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_reorder_start, &handle->ts_difference_start);
+}
+
+double xrif_difference_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) / xrif_difference_time(handle);
+}
+
+double xrif_reorder_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_compress_start, &handle->ts_reorder_start);
+}
+
+double xrif_reorder_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) /xrif_reorder_time(handle);
+}
+
+double xrif_compress_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_compress_done, &handle->ts_compress_start);
+}
+
+double xrif_compress_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) /xrif_compress_time(handle);
+}
+
+size_t xrif_typesize( xrif_typecode_t type_code)
 {
    switch( type_code )
    {
@@ -1223,4 +1289,11 @@ size_t xrif_handleypesize( xrif_typecode_t type_code)
    }
    
    return 0;
+}
+
+double xrif_ts_difference( struct timespec * ts1,
+                           struct timespec * ts0
+                         )
+{
+   return ((double)ts1->tv_sec) + ((double)ts1->tv_nsec)/1e9 - ((double)ts0->tv_sec) - ((double)ts0->tv_nsec)/1e9;
 }

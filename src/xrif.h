@@ -9,6 +9,12 @@
 #ifndef xrif_xrif_h
 #define xrif_xrif_h
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+   
 #ifndef LZ4_MEMORY_USAGE
 #define LZ4_MEMORY_USAGE (20)
 #endif
@@ -99,10 +105,6 @@ typedef uint8_t xrif_typecode_t;
 
 /// @}
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
    
 /// The xrif library configuration structure, organizing various parameters used by the functions.
 /** This structure provides setup and management of memory allocation, though externally allocated

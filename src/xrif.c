@@ -88,6 +88,18 @@ xrif_error_t xrif_initialize_handle( xrif_t handle )
    handle->compressed_buffer = 0;
    handle->compressed_buffer_size = 0;
    
+   handle->calc_performance = 1; 
+   
+   handle->compression_ratio = 0;
+   handle->encode_time = 0;
+   handle->encode_rate = 0;
+   handle->difference_time = 0;
+   handle->difference_rate = 0;
+   handle->reorder_time = 0;
+   handle->reorder_rate = 0;
+   handle->compress_time = 0;
+   handle->compress_rate = 0;
+   
    return XRIF_NOERROR;
 }
 
@@ -460,6 +472,20 @@ xrif_error_t xrif_encode( xrif_t handle )
    
    clock_gettime(CLOCK_REALTIME, &handle->ts_compress_done);
 
+   
+   if(handle->calc_performance)
+   {
+      handle->compression_ratio = xrif_compression_ratio(handle);
+      handle->encode_time = xrif_encode_time(handle);
+      handle->encode_rate = xrif_encode_rate(handle);
+      handle->difference_time = xrif_difference_time(handle);
+      handle->difference_rate = xrif_difference_rate(handle);
+      handle->reorder_time = xrif_reorder_time(handle);
+      handle->reorder_rate = xrif_reorder_rate(handle);
+      handle->compress_time = xrif_compress_time(handle);
+      handle->compress_rate = xrif_compress_rate(handle);
+   }
+   
    return XRIF_NOERROR;
 }
 

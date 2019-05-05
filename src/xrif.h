@@ -146,7 +146,19 @@ typedef struct
                                     *  in size, but this is not a strict requirement in practice for most streams.  It must be at least width*height*depth*frames*data_size.  
                                     *  If this library is used to allocate it, it will be the larger of the two.*/
                                     
-                                    
+                  
+   unsigned char calc_performance; ///< Flag (true/false) controlling whether performance metrics are calculated.  Default is true.
+   
+   double compression_ratio;
+   double encode_time;
+   double encode_rate;
+   double difference_time;
+   double difference_rate;
+   double reorder_time;
+   double reorder_rate;
+   double compress_time;
+   double compress_rate;
+   
    struct timespec ts_difference_start;
    struct timespec ts_reorder_start;
    struct timespec ts_compress_start;
@@ -187,8 +199,10 @@ xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been i
   * calls to allocate functions or xrif_destroy_handle
   * will safely succeed.
   *
-  * This function must only be called on an xrif handle which does
-  * not already have memory alocated -- otherwise memory leaks will occur!
+  * In general this should not be called independently, rather you should use
+  * xrif_new.  If you do, this function must only be called on an xrif handle which does
+  * not already have memory alocated -- otherwise memory leaks will occur! 
+  * 
   * 
   * \returns 0 on success
   * \returns < 0 on error, with an appropreate xrif error code.

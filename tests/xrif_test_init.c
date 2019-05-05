@@ -83,6 +83,48 @@ START_TEST (initialize_handle_nullptr)
 }
 END_TEST
 
+START_TEST (new_delete_noerror)
+{
+   //Verify that all fields are initialized to their defaults.
+   
+   xrif_t hand = 0;
+   
+   xrif_error_t rv = xrif_new(&hand);
+   
+   ck_assert( hand != NULL);
+   ck_assert_int_eq( hand->width, 0);
+   ck_assert_int_eq( hand->height, 0);
+   ck_assert_int_eq( hand->depth, 0);
+   ck_assert_int_eq( hand->frames, 0);
+   ck_assert_int_eq( hand->type_code, 0);
+   ck_assert_int_eq( hand->data_size, 0);
+   ck_assert_int_eq( hand->compressed_size, 0);
+   ck_assert_int_eq( hand->difference_method, XRIF_DIFFERENCE_DEFAULT);
+   ck_assert_int_eq( hand->reorder_method, XRIF_REORDER_DEFAULT);
+   ck_assert_int_eq( hand->compress_method, XRIF_COMPRESS_DEFAULT);
+   ck_assert_int_eq( hand->lz4_acceleration, 1);
+   ck_assert_int_eq( hand->omp_parallel, 0);
+   ck_assert_int_eq( hand->omp_numthreads, 1);
+   ck_assert_int_eq( hand->compress_on_raw, 1);
+   ck_assert_int_eq( hand->own_raw, 0);
+   ck_assert( hand->raw_buffer == NULL );
+   ck_assert_int_eq( hand->raw_buffer_size, 0);
+   ck_assert_int_eq( hand->own_reordered, 0);
+   ck_assert( hand->reordered_buffer == NULL );
+   ck_assert_int_eq( hand->reordered_buffer_size, 0);
+   ck_assert_int_eq( hand->own_compressed, 0);
+   ck_assert( hand->compressed_buffer == NULL );
+   ck_assert_int_eq( hand->compressed_buffer_size, 0);
+   
+   ck_assert( rv == XRIF_NOERROR );
+   
+   rv = xrif_delete(hand);
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+
 START_TEST (setup_noerror)
 {
    //Verfiy that the setup function sets only the expected members
@@ -500,6 +542,7 @@ Suite * initandalloc_suite(void)
 
     tcase_add_test(tc_core, initialize_handle_noerror);
     tcase_add_test(tc_core, initialize_handle_nullptr);
+    tcase_add_test(tc_core, new_delete_noerror);
     tcase_add_test(tc_core, setup_noerror );
     tcase_add_test(tc_core, setup_nullptr );
     tcase_add_test(tc_core, allocate_raw_noerrors);

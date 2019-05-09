@@ -26,6 +26,30 @@ $ make test
 $ sudo make install
 $ sudo ldconfig
 ```
+# Basic Usage
+The below code shows the steps needed to initialize an xrif handle and use it to compress a cube of images.
+
+```
+int16_t * source_data;
+// ... allocate and populate source_data with `planes` images of size `rows X cols`
+
+xrif_t xrif;
+xrif_error_t rv;
+rv = xrif_new(&xrif);
+
+rv = xrif_set_size(xrif, rows, cols, 1, planes, XRIF_TYPECODE_INT16); // For a cube with `planes` images of size `rows X cols` `int int16_t`
+
+rv = xrif_allocate(xrif);
+
+memcpy( xrif->raw, source_data, rows*cols*planes*sizeof(int16_t));
+
+rv = xrif_encode(xrif);
+
+rv = xrif_decode(xrif);
+
+memcpy(source_data, xrif->raw, rows*cols*planes*sizeof(int16_t));
+
+```
 
 # Header Format
 

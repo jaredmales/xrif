@@ -51,6 +51,10 @@ memcpy(source_data, xrif->raw, rows*cols*planes*sizeof(int16_t));
 
 ```
 
+The library provides ways to use `source_data` directly (avoiding the memcpy), and control over which algorithms are used at each step of the compression.
+
+Note that only `int16` monochrome images are fully supported at this time.
+
 # Header Format
 
 | Field | Bytes |  value

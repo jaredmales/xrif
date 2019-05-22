@@ -513,6 +513,7 @@ START_TEST (header_write)
       
    ck_assert( rv == XRIF_NOERROR );
    
+   hand.compressed_size = 256; 
    
    char header[XRIF_HEADER_SIZE];
    
@@ -535,9 +536,11 @@ START_TEST (header_write)
    ck_assert( *((uint16_t *) &header[30]) == hand.difference_method);
    ck_assert( *((uint16_t *) &header[32]) == hand.reorder_method);
    ck_assert( *((uint16_t *) &header[34]) == hand.compress_method);
-   ck_assert( *((uint16_t *) &header[36]) == hand.lz4_acceleration);
-   ck_assert( *((uint16_t *) &header[38]) == 0);
-   ck_assert( *((uint64_t *) &header[40]) == 0);
+   ck_assert( *((uint32_t *) &header[36]) == hand.compressed_size);
+   ck_assert( *((uint16_t *) &header[40]) == hand.lz4_acceleration);
+   ck_assert( *((uint16_t *) &header[42]) == 0);
+   ck_assert( *((uint16_t *) &header[44]) == 0);
+   ck_assert( *((uint16_t *) &header[46]) == 0);
 }
 END_TEST
 
@@ -556,6 +559,7 @@ START_TEST (header_read)
       
    ck_assert( rv == XRIF_NOERROR );
    
+   hand.compressed_size = 1025;
    hand.lz4_acceleration = 10; //Change this from init value
    
    char header[XRIF_HEADER_SIZE];
@@ -583,10 +587,10 @@ START_TEST (header_read)
    ck_assert_int_eq( hand2.frames, 1000);
    ck_assert_int_eq( hand2.type_code, XRIF_TYPECODE_INT16);
    ck_assert_int_eq( hand2.data_size, sizeof(int16_t));
+   ck_assert_int_eq( hand2.compressed_size, 1025);
    ck_assert_int_eq( hand2.lz4_acceleration, 10);
    
    //And we check that everything else is unaltered
-   ck_assert_int_eq( hand2.compressed_size, 0);
    ck_assert_int_eq( hand2.difference_method, XRIF_DIFFERENCE_DEFAULT);
    ck_assert_int_eq( hand2.reorder_method, XRIF_REORDER_DEFAULT);
    ck_assert_int_eq( hand2.compress_method, XRIF_COMPRESS_DEFAULT);

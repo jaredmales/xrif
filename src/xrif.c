@@ -471,11 +471,13 @@ xrif_error_t xrif_write_header( char * header,
 
    *((uint16_t *) &header[34]) = handle->compress_method;
 
-   memset(&header[36], 0, 12);
+   *((uint32_t *) &header[36]) = handle->compressed_size;
+   
+   memset(&header[40], 0, 8);
    
    if(handle->compress_method == XRIF_COMPRESS_LZ4)
    {
-      *((uint16_t *) &header[36]) = handle->lz4_acceleration;
+      *((uint16_t *) &header[40]) = handle->lz4_acceleration;
    }
    
    return XRIF_NOERROR;
@@ -518,9 +520,11 @@ xrif_error_t xrif_read_header( xrif_t handle,
 
    handle->compress_method = *((uint16_t *) &header[34]);
 
+   handle->compressed_size = *((uint32_t *) &header[36]);
+   
    if(handle->compress_method == XRIF_COMPRESS_LZ4)
    {
-      handle->lz4_acceleration = *((uint16_t *) &header[36]);
+      handle->lz4_acceleration = *((uint16_t *) &header[40]);
    }
    
    return XRIF_NOERROR;

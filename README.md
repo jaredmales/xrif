@@ -70,7 +70,8 @@ Note that only `int16` monochrome images are fully supported at this time.
 | 7     | 30-31 | `uint16_t` difference method
 | 8     | 32-33 | `uint16_t` reorder method
 | 9     | 34-35 | `uint16_t` compression method
-| 10    | 36-47 | Reserved, used for method specific parameters. 
+| 10    | 36-39 | `uint32_t` size of compressed data 
+| 10    | 40-47 | Reserved, used for method specific parameters. 
 
 The current version is `0`
 
@@ -100,5 +101,5 @@ Compression method can be:
 | 0    | none
 | 100  | LZ4
 
-If Compression method is LZ4 then bytes 36-37 are `uint16_t` containing the `lz4_acceleration` parameter.
+If Compression method is LZ4 then bytes 40-41 are `uint16_t` containing the `lz4_acceleration` parameter.
 

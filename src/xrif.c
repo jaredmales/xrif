@@ -288,7 +288,7 @@ xrif_error_t xrif_allocate_raw( xrif_t handle )
    
    handle->own_raw = 1;
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_set_reordered( xrif_t handle,
@@ -317,7 +317,7 @@ xrif_error_t xrif_set_reordered( xrif_t handle,
    
    if(handle->reordered_buffer_size < handle->width * handle->height * handle->depth * handle->frames * handle->data_size) return XRIF_ERROR_INSUFFICIENT_SIZE;
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_allocate_reordered( xrif_t handle )
@@ -339,7 +339,7 @@ xrif_error_t xrif_allocate_reordered( xrif_t handle )
    
    handle->own_reordered = 1;
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_set_compressed( xrif_t handle, 
@@ -365,7 +365,7 @@ xrif_error_t xrif_set_compressed( xrif_t handle,
    
    if(handle->compressed_buffer_size < LZ4_compressBound(handle->width * handle->height * handle->depth * handle->frames * handle->data_size)) return XRIF_ERROR_INSUFFICIENT_SIZE;
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_allocate_compressed( xrif_t handle )
@@ -389,7 +389,7 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle )
    
    handle->own_compressed = 1;
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 
@@ -417,7 +417,7 @@ xrif_error_t xrif_allocate( xrif_t handle,
       if(rv < 0) return rv;
    }
    
-   return 0;
+   return XRIF_NOERROR;
 
 }
 
@@ -602,6 +602,8 @@ xrif_error_t xrif_difference( xrif_t handle )
    
    switch( method )
    {
+      case XRIF_DIFFERENCE_NONE:
+         return XRIF_NOERROR;
       case XRIF_DIFFERENCE_PREVIOUS:
          return xrif_difference_previous_sint16(handle);
       case XRIF_DIFFERENCE_FIRST:
@@ -619,6 +621,8 @@ xrif_error_t xrif_undifference( xrif_t handle )
    
    switch( method )
    {
+      case XRIF_DIFFERENCE_NONE:
+         return XRIF_NOERROR;
       case XRIF_DIFFERENCE_PREVIOUS:
          return xrif_undifference_previous_sint16(handle);
       case XRIF_DIFFERENCE_FIRST:
@@ -656,7 +660,38 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
    } 
    
    
-   return 0;
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_difference_previous_uint64( xrif_t handle )
+{
+   for(int n=0; n < handle->frames-1; ++n)
+   {
+      size_t n_stride0 = (handle->frames - 2 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*handle->height*handle->width;
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+         
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
+               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            
+               ((int64_t *) handle->raw_buffer)[idx] = (((uint64_t *)handle->raw_buffer)[idx] - ((uint64_t*)handle->raw_buffer)[idx0]);
+            }
+         }
+         
+      }
+   } 
+   
+   
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_difference_first_sint16( xrif_t handle )
@@ -684,10 +719,36 @@ xrif_error_t xrif_difference_first_sint16( xrif_t handle )
          }
       }
    }   
-   return 0;
+   return XRIF_NOERROR;
 }
 
+xrif_error_t xrif_difference_first_uint64( xrif_t handle )
+{
+   for(int n=0; n < handle->frames-1; ++n)
+   {
+      size_t n_stride0 = 0;// * handle->height*handle->width*handle->depth;
+      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
 
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*handle->height*handle->width;
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+         
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
+               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            
+               ((int64_t *) handle->raw_buffer)[idx] = ((uint64_t *)handle->raw_buffer)[idx] - ((uint64_t*)handle->raw_buffer)[idx0];
+            }
+         }
+      }
+   }   
+   return XRIF_NOERROR;
+}
 
 xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
 {
@@ -755,7 +816,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
          }
       }
    }
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
@@ -769,22 +830,51 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
       {
          size_t kk_stride = kk*handle->height*handle->width;
          
-      for(int ii=0; ii< handle->width; ++ii)
-      {
-         size_t ii_stride = ii*handle->height;
-         
-         for(int jj=0; jj< handle->height; ++jj)
+         for(int ii=0; ii< handle->width; ++ii)
          {
-            size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-            size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            size_t ii_stride = ii*handle->height;
             
-            ((short *) handle->raw_buffer)[idx] = ((short *)handle->raw_buffer)[idx] + ((short*)handle->raw_buffer)[idx0];
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
+               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+               
+               ((short *) handle->raw_buffer)[idx] = ((short *)handle->raw_buffer)[idx] + ((short*)handle->raw_buffer)[idx0];
+            }
          }
-      }
       }
    }
    
-   return 0;
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_undifference_previous_uint64( xrif_t handle )
+{
+   for(int n=1; n < handle->frames; ++n)
+   {
+      size_t n_stride0 = (n-1) * handle->height*handle->width*handle->depth;
+      size_t n_stride =  n * handle->height*handle->width*handle->depth;
+      
+      for(int kk=0; kk<handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*handle->height*handle->width;
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+            
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
+               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+               
+               ((uint64_t *) handle->raw_buffer)[idx] = ((int64_t *)handle->raw_buffer)[idx] + ((int64_t *)handle->raw_buffer)[idx0];
+            }
+         }
+      }
+   }
+   
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_reorder( xrif_t handle )
@@ -836,7 +926,7 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
    
    memcpy(handle->reordered_buffer, handle->raw_buffer, npix*handle->data_size);
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_reorder_bytepack( xrif_t handle )
@@ -880,7 +970,7 @@ xrif_error_t xrif_reorder_bytepack( xrif_t handle )
    }
    #endif
 
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
@@ -943,7 +1033,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    }
    #endif
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 
@@ -1018,7 +1108,7 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
    }
    #endif
    
-   return 0;
+   return XRIF_NOERROR;
 }
       
 
@@ -1029,7 +1119,7 @@ xrif_error_t xrif_unreorder_none( xrif_t handle )
    
    memcpy(handle->raw_buffer, handle->reordered_buffer, npix*handle->data_size);
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
@@ -1070,7 +1160,7 @@ xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
    }
    #endif
       
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
@@ -1124,7 +1214,7 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
    }
    #endif
 
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
@@ -1170,7 +1260,7 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
    }
    #endif
 
-   return 0;
+   return XRIF_NOERROR;
 }
 
 
@@ -1290,7 +1380,7 @@ xrif_error_t xrif_compress_lz4( xrif_t handle )
    handle->compressed_size = LZ4_compress_fast ( handle->reordered_buffer, compressed_buffer, size, compressed_size, handle->lz4_acceleration);
    
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_decompress_lz4( xrif_t handle )
@@ -1312,7 +1402,7 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle )
 
    if(size != size_decomp) return -1;
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 double xrif_compression_ratio( xrif_t handle )
@@ -1392,7 +1482,7 @@ size_t xrif_typesize( xrif_typecode_t type_code)
          return sizeof(double[2]);
    }
    
-   return 0;
+   return XRIF_NOERROR;
 }
 
 double xrif_ts_difference( struct timespec * ts1,

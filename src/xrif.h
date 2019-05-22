@@ -463,6 +463,14 @@ xrif_error_t xrif_undifference( xrif_t handle );
   */ 
 xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Difference all images writh respect to previous image, for uint64_t data type
+/**
+  *
+  * \returns 0 on success.
+  * \returns <0 on error, with the appropreate error code.
+  */ 
+xrif_error_t xrif_difference_previous_uint64( xrif_t handle /**< [in/out] the xrif handle */);
+
 /// Difference all images writh respect to the first image, for short integer data type.
 /**
   *
@@ -471,6 +479,13 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xr
   */ 
 xrif_error_t xrif_difference_first_sint16( xrif_t handle/**< [in/out] the xrif handle */ );
 
+/// Difference all images writh respect to the first image, for uint64_t data type.
+/**
+  *
+  * \returns 0 on success.
+  * \returns <0 on error, with the appropreate error code.
+  */ 
+xrif_error_t xrif_difference_first_uint64( xrif_t handle/**< [in/out] the xrif handle */ );
 
 xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif handle */);
 

@@ -78,13 +78,15 @@ matter of this Agreement.
 */
 
 #include <check.h>
-#include <malloc.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "../src/xrif.h"
 
-extern void *__libc_malloc(size_t size);
 
+#ifdef __GLIBC__
 int malloc_hook_active = 0;
+extern void *__libc_malloc(size_t size);
 
 void* my_malloc_hook (size_t size, void *caller)
 {
@@ -110,6 +112,7 @@ void* malloc (size_t size)
     return my_malloc_hook(size, caller);
   return __libc_malloc(size);
 }
+#endif
 
 
 START_TEST (initialize_handle_noerror)

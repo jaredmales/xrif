@@ -2,3 +2,4 @@
 build/*
 init/*
 
+.DS_Store

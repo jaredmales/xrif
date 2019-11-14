@@ -103,17 +103,20 @@ matter of this Agreement.
 #define BIT01 (2)
 #define BIT00 (1)
 
-
+// Allocate an xrif_handle object, which is pointed to by an xrif_t
 xrif_error_t xrif_new(xrif_t * handle_ptr)
 {
+   if( handle_ptr == NULL) return XRIF_ERROR_NULLPTR;
+   
    *handle_ptr = (xrif_t) malloc( sizeof(xrif_handle) );
    
-   if( *handle_ptr == 0) return XRIF_ERROR_MALLOC;
+   if( *handle_ptr == NULL) return XRIF_ERROR_MALLOC;
    
    return xrif_initialize_handle(*handle_ptr);
    
 }
 
+// De-allocate an xrif_handle object, which is pointed to by an xrif_t
 xrif_error_t xrif_delete(xrif_t handle )
 {
    if( handle == NULL) return XRIF_ERROR_NULLPTR;
@@ -329,7 +332,8 @@ xrif_error_t xrif_allocate_reordered( xrif_t handle )
       free(handle->reordered_buffer);
    }
    
-   handle->reordered_buffer = (char *) malloc( handle->width * handle->height * handle->depth * handle->frames * handle->data_size);
+   // *********** Allocating an extra frame to allow for odd number of pixels in reorder step ************************
+   handle->reordered_buffer = (char *) malloc( handle->width * handle->height * handle->depth * (handle->frames+1) * handle->data_size);
    
    if(handle->reordered_buffer == NULL) 
    {
@@ -656,6 +660,9 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
             
+               //int F = ((short *)handle->raw_buffer)[idx];
+               //int L = ((short*)handle->raw_buffer)[idx0];
+               //unsigned short D = abs(F-L);
                ((short *) handle->raw_buffer)[idx] = (((short *)handle->raw_buffer)[idx] - ((short*)handle->raw_buffer)[idx0]);
             }
          }
@@ -987,12 +994,16 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    unsigned char * reordered_buffer = (unsigned char *) handle->reordered_buffer + handle->width*handle->height* handle->depth *handle->data_size;
    unsigned char * reordered_buffer2 = (unsigned char*) reordered_buffer + npix;
    
-   memset(reordered_buffer2, 0, npix);
+   memset(reordered_buffer2, 0, npix+1);
    
    for(size_t pix=0; pix<handle->width*handle->height* handle->depth *handle->data_size; ++pix)
    {
       handle->reordered_buffer[pix] = handle->raw_buffer[pix];
    }
+   
+   size_t halfoff = ((double) npix)/2.0 + 0.5;
+   size_t oneoff = 0;
+   if(halfoff > npix/2) oneoff = 0;
    
    #ifndef XRIF_NO_OMP
    #pragma omp parallel if (handle->omp_parallel > 0) 
@@ -1030,7 +1041,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
       const unsigned char * bsn = &bitshift_and_nibbles[ ((unsigned short) raw_buffer[pix]) * 6 + (pix&1)*3];
       reordered_buffer[pix] = (char) bsn[0];
       reordered_buffer2[pix/2] += bsn[1];
-      reordered_buffer2[pix/2 + npix/2] += bsn[2];
+      reordered_buffer2[pix/2 + oneoff + halfoff] += bsn[2];
       /**/
    }
    #ifndef XRIF_NO_OMP
@@ -1039,10 +1050,6 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    
    return XRIF_NOERROR;
 }
-
-
-
-
 
 xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 {
@@ -1180,6 +1187,10 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
       handle->raw_buffer[pix] = handle->reordered_buffer[pix];
    }
    
+   size_t halfoff = ((double) npix)/2 + 0.5;
+   size_t oneoff = 0;
+   if(halfoff > npix/2) oneoff = 0;
+   
    #ifndef XRIF_NO_OMP
    #pragma omp parallel if (handle->omp_parallel > 0) 
    {
@@ -1194,13 +1205,13 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
       unsigned short nib2 = 0;
       if(pix % 2 == 0)
       {
-         nib1 |= (reordered_buffer2[pix/2]) >> 4; 
-         nib2 |= reordered_buffer2[pix/2 + npix/2] &240; 
+         nib1 |= (reordered_buffer2[pix/2+oneoff]) >> 4; 
+         nib2 |= reordered_buffer2[pix/2+oneoff + halfoff] &240; 
       }
       else
       {
          nib1 |= reordered_buffer2[pix/2] & 15;
-         nib2 |= (reordered_buffer2[pix/2 + npix/2] & 15) << 4;
+         nib2 |= (reordered_buffer2[pix/2 + oneoff + halfoff] & 15) << 4;
       }
       
       byte1 |= (nib1 << 8);

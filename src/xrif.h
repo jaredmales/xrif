@@ -100,6 +100,10 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+   
+#include <stdio.h> //just for debug
+   
+   
 //#include <complex.h>
 
 #include "lz4/lz4.h"
@@ -118,7 +122,7 @@ extern "C"
 #define XRIF_DIFFERENCE_FIRST (200)
 
 #define XRIF_REORDER_NONE (-1)
-#define XRIF_REORDER_DEFAULT (200)
+#define XRIF_REORDER_DEFAULT (100)
 #define XRIF_REORDER_BYTEPACK (100)
 #define XRIF_REORDER_BYTEPACK_RENIBBLE (200)
 #define XRIF_REORDER_BITPACK (300)
@@ -249,20 +253,22 @@ typedef struct
    
 } xrif_handle;
 
-/// The xrif handle pointer type.  This is the main interface to the xrif library.
+/// The xrif handle pointer type.  This provides the main interface to the xrif library.
 typedef xrif_handle* xrif_t;
 
 /// Allocate a handle and initialize it.
-/**
-  *
-  * \returns
+/** The argument is a pointer to `xrif_t`, making it the address of an `xrif_handle` pointer.
+  * 
+  * \returns XRIF_ERROR_NULLPTR if a null pointer is passed
+  * \returns XRIF_ERROR_MALLOC on an allocation error
+  * \returns XRIF_NOERROR on success
   */ 
 xrif_error_t xrif_new(xrif_t * handle_ptr /**< [out] a pointer to an xrif handle. */);
 
 /// Deallocate a handle, including any memory that it owns.
 /**
-  *
-  * \returns
+  * \returns XRIF_ERROR_NULLPTR if a null pointer is passed
+  * \returns XRIF_NOERROR on success
   */ 
 xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been initialized with xrif_malloc */);
 

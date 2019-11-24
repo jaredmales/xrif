@@ -46,5 +46,6 @@ if(CHECK_FOUND AND SUBUNIT_FOUND)
 add_subdirectory(tests)
 enable_testing()
 add_test(xrif_test_init tests/xrif_test_init)
+add_test(xrif_test_whitenoise tests/xrif_test_whitenoise)
 endif()
 

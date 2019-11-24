@@ -194,13 +194,19 @@ xrif_error_t xrif_set_size( xrif_t handle,
 {
    if( handle == NULL) return XRIF_ERROR_NULLPTR;
    
+   if(w == 0 || h == 0 || d == 0 || f == 0) return XRIF_ERROR_INVALID_SIZE;
+   
+   size_t sz = xrif_typesize(c);
+   
+   if(sz == 0) return XRIF_ERROR_INVALID_TYPE;
+   
    handle->width = w;
    handle->height = h;
    handle->depth = d;
    handle->frames = f;
    handle->type_code = c;
    
-   handle->data_size = xrif_typesize(handle->type_code);
+   handle->data_size = sz;
    
    handle->raw_size = w*h*d*f*handle->data_size;
    
@@ -397,18 +403,10 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle )
 }
 
 
-xrif_error_t xrif_allocate( xrif_t handle,
-                            xrif_dimension_t w,
-                            xrif_dimension_t h,
-                            xrif_dimension_t d,
-                            xrif_dimension_t f,
-                            xrif_typecode_t c
-                          )
+xrif_error_t xrif_allocate( xrif_t handle )
 {
    xrif_error_t rv;
-   rv = xrif_set_size(handle, w, h, d, f, c);
-   if(rv < 0) return rv;
-    
+   
    rv = xrif_allocate_raw(handle);
    if(rv < 0) return rv;
    
@@ -900,10 +898,12 @@ xrif_error_t xrif_reorder( xrif_t handle )
          return xrif_reorder_none(handle);
       case XRIF_REORDER_BYTEPACK:
          return xrif_reorder_bytepack(handle);
+      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BYTEPACK_RENIBBLE:
          return xrif_reorder_bytepack_renibble(handle);
       case XRIF_REORDER_BITPACK:
          return xrif_reorder_bitpack(handle);
+      #endif
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -921,10 +921,12 @@ xrif_error_t xrif_unreorder( xrif_t handle )
          return xrif_unreorder_none(handle);
       case XRIF_REORDER_BYTEPACK:
          return xrif_unreorder_bytepack(handle);
+      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BYTEPACK_RENIBBLE:
          return xrif_unreorder_bytepack_renibble(handle);
       case XRIF_REORDER_BITPACK:
-         return xrif_unreorder_bitpack(handle);
+         return xrif_unreorder_bitpack(handle); 
+      #endif
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -1495,9 +1497,9 @@ size_t xrif_typesize( xrif_typecode_t type_code)
          return sizeof(float[2]);
       case XRIF_TYPECODE_COMPLEX_DOUBLE:
          return sizeof(double[2]);
+      default:
+         return 0;
    }
-   
-   return XRIF_NOERROR;
 }
 
 double xrif_ts_difference( struct timespec * ts1,
@@ -1505,4 +1507,51 @@ double xrif_ts_difference( struct timespec * ts1,
                          )
 {
    return ((double)ts1->tv_sec) + ((double)ts1->tv_nsec)/1e9 - ((double)ts0->tv_sec) - ((double)ts0->tv_nsec)/1e9;
+}
+
+const char * xrif_difference_method_string( int diff_method )
+{
+   switch(diff_method)
+   {
+      case XRIF_DIFFERENCE_NONE:
+         return "none";
+      case XRIF_DIFFERENCE_PREVIOUS:
+         return "previous";
+      case XRIF_DIFFERENCE_FIRST:
+         return "first";
+      default:
+         return "unknown";
+   }
+}
+
+const char * xrif_reorder_method_string( int reorder_method )
+{
+   switch(reorder_method)
+   {
+      case XRIF_REORDER_NONE:
+         return "none";
+      case XRIF_REORDER_BYTEPACK:
+         return "bytepack";
+      #ifdef XRIF_EXPERIMENTAL
+      case XRIF_REORDER_BYTEPACK_RENIBBLE:
+         return "bytepack w/ renibble";
+      case XRIF_REORDER_BITPACK:
+         return "bitpack";
+      #endif
+      default:
+         return "unknown";
+   }
+}
+
+const char * xrif_compress_method_string( int compress_method )
+{
+   switch(compress_method)
+   {
+      case XRIF_COMPRESS_NONE:
+         return "none";
+      case XRIF_COMPRESS_LZ4:
+         return "LZ4";
+      default:
+         return "unknown";
+   }
 }

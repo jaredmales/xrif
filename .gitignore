@@ -2,4 +2,6 @@
 build/*
 init/*
 
+doc/html
+
 .DS_Store

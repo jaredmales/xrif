@@ -124,9 +124,14 @@ extern "C"
 #define XRIF_REORDER_NONE (-1)
 #define XRIF_REORDER_DEFAULT (100)
 #define XRIF_REORDER_BYTEPACK (100)
+   
+#ifdef XRIF_EXPERIMENTAL
+   
 #define XRIF_REORDER_BYTEPACK_RENIBBLE (200)
 #define XRIF_REORDER_BITPACK (300)
 
+#endif
+   
 #define XRIF_COMPRESS_NONE (-1)
 #define XRIF_COMPRESS_DEFAULT (100)
 #define XRIF_COMPRESS_LZ4 (100)
@@ -134,20 +139,35 @@ extern "C"
 /// The type used for storing the width and height and depth dimensions of images.
 typedef uint32_t xrif_dimension_t;
 
+/** \defgroup error_codes Error Codes
+  * \brief Error codes used by the xrif library
+  * 
+  * This library defines an error code type (merely an int) and a number of codes, all less than zero, to report errors.
+  * In general we avoid in-band error reporting, with a few exceptions (e.g. xrif_typesize).
+  *
+  * @{
+  */
+
+/// The error reporting type.  
 typedef int xrif_error_t;
 
 #define XRIF_NOERROR (0)
 #define XRIF_ERROR_NULLPTR (-5)
 #define XRIF_ERROR_NOT_SETUP    (-10)
 #define XRIF_ERROR_INVALID_SIZE (-20)
+#define XRIF_ERROR_INVALID_TYPE (-22)
 #define XRIF_ERROR_INSUFFICIENT_SIZE (-25)
 #define XRIF_ERROR_MALLOC (-30)
 #define XRIF_ERROR_NOTIMPL (-100)
 #define XRIF_ERROR_BADHEADER (-1000);
 #define XRIF_ERROR_WRONGVERSION (-1010);
 
+///@}
 
-/** \name Typecodes for storing the type of the data.  These are identical to the ImageStreamIO data types.
+/** \defgroup typecodes Type Codes 
+  * \brief Type codes for storing the type of the data.  
+  * 
+  * These are identical to the ImageStreamIO data types.
   * @{
   */
 
@@ -170,7 +190,11 @@ typedef uint8_t xrif_typecode_t;
 
 /// @}
 
-   
+
+/** \defgroup xrif_interface The main xrif library interface 
+  * @{
+  */
+
 /// The xrif library configuration structure, organizing various parameters used by the functions.
 /** This structure provides setup and management of memory allocation, though externally allocated
   * buffers can be used when desired.
@@ -270,11 +294,12 @@ xrif_error_t xrif_new(xrif_t * handle_ptr /**< [out] a pointer to an xrif handle
   * \returns XRIF_ERROR_NULLPTR if a null pointer is passed
   * \returns XRIF_NOERROR on success
   */ 
-xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been initialized with xrif_malloc */);
+xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been initialized with xrif_new */);
 
+///@}
 
-/** \name Initialization, Setup, and Allocation 
-  *
+/** \defgroup xrif_init Initialization, Setup, and Allocation 
+  * \ingroup xrif_interface
   * @{
   */
 
@@ -287,9 +312,8 @@ xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been i
   * xrif_new.  If you do, this function must only be called on an xrif handle which does
   * not already have memory alocated -- otherwise memory leaks will occur! 
   * 
-  * 
-  * \returns 0 on success
-  * \returns < 0 on error, with an appropreate xrif error code.
+  * \returns XRIF_ERROR_NULLPTR if handle is NULL.
+  * \returns XRIF_NOERROR on success
   */ 
 xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to initialize */);
 
@@ -297,15 +321,17 @@ xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to
 /** After setting these parameters, a call to one of the allocate or set functions
   * will succceed.
   *
+  * \returns XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns XRIF_ERROR_INVALID_SIZE if any of `w`, `h`, `d`, or `f` are 0.
+  * \returns XRIF_ERROR_INVALID_TYPE if `c` specifies an invalid type code
   * \returns XRIF_NOERROR on success
-  * \returns < 0 on error, with an appropriate xrif error code. [no errors currently implemented]
   */
-xrif_error_t xrif_set_size( xrif_t handle,  ///< [in/out] the xrif handle to be set up
-                            xrif_dimension_t w,     ///< [in] the width of a single frame of data, in pixels
-                            xrif_dimension_t h,     ///< [in] the height of a single frame of data, in pixels
-                            xrif_dimension_t d,     ///< [in] the depth of a single frame of data, in pixels
-                            xrif_dimension_t f,     ///< [in] the number of frames of data, each frame having w X h x d pixels
-                            xrif_typecode_t c ///< [in] the code specifying the data type
+xrif_error_t xrif_set_size( xrif_t handle,      ///< [in/out] the xrif handle to be set up
+                            xrif_dimension_t w, ///< [in] the width of a single frame of data, in pixels
+                            xrif_dimension_t h, ///< [in] the height of a single frame of data, in pixels
+                            xrif_dimension_t d, ///< [in] the depth of a single frame of data, in pixels
+                            xrif_dimension_t f, ///< [in] the number of frames of data, each frame having w X h x d pixels
+                            xrif_typecode_t c   ///< [in] the code specifying the data type
                           );
 
 /// Set the raw data buffer to a pre-allocated pointer
@@ -314,8 +340,8 @@ xrif_error_t xrif_set_size( xrif_t handle,  ///< [in/out] the xrif handle to be 
   * 
   * This pointer will not be free()-ed on a call to xrif_destroy_handle.
   *
-  * \returns XRIF_NOERROR on success
   * \returns XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
+  * \returns XRIF_NOERROR on success
   */  
 xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
                            void * raw,       ///< [in] the pointer to a pre-allocated block
@@ -381,15 +407,14 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif hand
 
 
 /// Allocate all memory buffers according to the configuration specified in the handle.
-/**
+/** You must call \ref xrif_set_size prior to calling this function.
+  * 
+  * \returns XRIF_ERROR_NOT_SETUP if the handle has not been configured
+  * \returns XRIF_ERROR_MALLOC on an error from `malloc`
+  * \returns XRIF_NOERROR on success. 
   */ 
-xrif_error_t xrif_allocate( xrif_t handle,  ///< [in/out] the xrif object to be allocated
-                            xrif_dimension_t w,
-                            xrif_dimension_t h,
-                            xrif_dimension_t d,
-                            xrif_dimension_t f,
-                            xrif_typecode_t c
-                          );
+xrif_error_t xrif_allocate( xrif_t handle   /**< [in/out] the xrif object to be allocated */);
+
 
 /// Destroy a handle, de-allocating owned pointers and re-initializing
 /** Free()s the raw and reordered buffers (if owned by this handle) and 
@@ -403,7 +428,8 @@ xrif_error_t xrif_destroy_handle( xrif_t handle /**< [in/out] the xrif handle */
 /// @}
 
 /** \name Header Processing 
-  *
+  * \ingroup xrif_interface
+  * 
   * These functions populate or read the xrif header.
   *
   * @{
@@ -417,9 +443,11 @@ xrif_error_t xrif_read_header( xrif_t handle,
                                uint32_t * header_size,
                                char * header
                              );
-
 ///@}
-/** \name Encoding & Decoding
+
+/** \defgroup xrif_encode Encoding & Decoding
+  * \ingroup xrif_interface
+  * 
   * These functions perform a complete cycle of encode and decode.
   *
   * @{
@@ -452,8 +480,9 @@ xrif_error_t xrif_decode( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// @}
 
-/** \name Differencing
-  *
+/** \defgroup xrif_diff Differencing
+  * \ingroup xrif_encode
+  * 
   * @{
   */
 
@@ -505,7 +534,8 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle /**< [in/out] the 
 
 ///@}
 
-/** \name Reordering
+/** \defgroup xrif_reorder Reordering
+  * \ingroup xrif_encode 
   * @{
   */
 
@@ -554,8 +584,9 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle /**< [in/out] the xrif handle
 
 ///@}
 
-/** \name Compression 
-  *
+/** \defgroup xrif_compress Compression 
+  * \ingroup xrif_encode
+  * 
   * @{
   */ 
 xrif_error_t xrif_compress( xrif_t handle /**< [in/out] the xrif handle */);
@@ -573,8 +604,9 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */
 ///@}
 
 
-/** \name Performance
-  *
+/** \defgroup xrif_performance Performance Measurements
+  * \ingroup xrif_interface
+  * 
   * @{
   */ 
 
@@ -637,7 +669,7 @@ double xrif_compress_rate( xrif_t handle /**< [in/out] the xrif handle */);
 ///@}
 
 
-/** \name Utilities
+/** \defgroup xrif_utils Utilities
   *
   * @{
   */ 
@@ -645,6 +677,7 @@ double xrif_compress_rate( xrif_t handle /**< [in/out] the xrif handle */);
 /// Return the size of the type specified by the code.
 /**
   * \returns the equivalent to `sizeof(type)` for the specified type code.
+  * \returns 0 if the `type_code` is invalid
   */  
 size_t xrif_typesize( xrif_typecode_t type_code /**< [in] the type code*/);
 
@@ -656,6 +689,30 @@ size_t xrif_typesize( xrif_typecode_t type_code /**< [in] the type code*/);
 double xrif_ts_difference( struct timespec * ts1, ///< [in] the end time
                            struct timespec * ts0  ///< [in] the start time
                          );
+
+/// Get a string describing the difference method
+/** Returns a pointer to a string describing the difference method.
+  *
+  * \returns a pointer to the string if `diff_method` is valid
+  * \returns NULL if `diff_method` is not valid
+  */  
+const char * xrif_difference_method_string( int diff_method /**< [in] the difference method */);
+
+/// Get a string describing the reordering method
+/** Returns a pointer to a string describing the reordering method.
+  *
+  * \returns a pointer to the string if `reorder_method` is valid
+  * \returns NULL if `reorder_method` is not valid
+  */  
+const char * xrif_reorder_method_string( int reorder_method /**< [in] the reorder method*/);
+
+/// Get a string describing the compression method
+/** Returns a pointer to a string describing the compression method.
+  *
+  * \returns a pointer to the string if `compress_method` is valid
+  * \returns NULL if `compress_method` is not valid
+  */  
+const char * xrif_compress_method_string( int compress_method /**< [in] the compression method*/);
 
 ///@}
 

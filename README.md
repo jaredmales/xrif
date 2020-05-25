@@ -1,6 +1,6 @@
 # xrif
 
-A fast high performance compression system.
+A fast, high performance, lossless compression system.
 
 # Building
 
@@ -92,7 +92,7 @@ Reorder method can be:
 | 0    | none
 | 100  | bytepack
 | 200  | bytepack-renibble
-| 300  | bitpack
+| 300  | bitpack [warning: bitpack is broken, do not use]
 
 Compression method can be:
 
@@ -103,3 +103,6 @@ Compression method can be:
 
 If Compression method is LZ4 then bytes 40-41 are `uint16_t` containing the `lz4_acceleration` parameter.
 
+# Code Documentation
+
+The code documentation is here: [https://jaredmales.github.io/xrif/](https://jaredmales.github.io/xrif/) 

@@ -1,7 +1,7 @@
 
 /* This file is part of the xrif library.
 
-Copyright (c) 2019, The Arizona Board of Regents on behalf of The
+Copyright (c) 2019, 2020, The Arizona Board of Regents on behalf of The
 University of Arizona
 
 All rights reserved.

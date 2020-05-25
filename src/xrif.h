@@ -8,7 +8,7 @@
 
 /* This file is part of the xrif library.
 
-Copyright (c) 2019, The Arizona Board of Regents on behalf of The
+Copyright (c) 2019, 2020, The Arizona Board of Regents on behalf of The
 University of Arizona
 
 All rights reserved.
@@ -120,16 +120,15 @@ extern "C"
 #define XRIF_DIFFERENCE_DEFAULT (100)
 #define XRIF_DIFFERENCE_PREVIOUS (100)
 #define XRIF_DIFFERENCE_FIRST (200)
+#define XRIF_DIFFERENCE_PIXEL (300)
 
 #define XRIF_REORDER_NONE (-1)
 #define XRIF_REORDER_DEFAULT (100)
 #define XRIF_REORDER_BYTEPACK (100)
-   
-#ifdef XRIF_EXPERIMENTAL
-   
 #define XRIF_REORDER_BYTEPACK_RENIBBLE (200)
-#define XRIF_REORDER_BITPACK (300)
-
+#ifdef XRIF_EXPERIMENTAL
+   //bitpack does not currently work.
+   #define XRIF_REORDER_BITPACK (300)
 #endif
    
 #define XRIF_COMPRESS_NONE (-1)
@@ -196,7 +195,7 @@ typedef uint8_t xrif_typecode_t;
   */
 
 /// The xrif library configuration structure, organizing various parameters used by the functions.
-/** This structure provides setup and management of memory allocation, though externally allocated
+/** This structure provides for setup and management of memory allocation, though externally allocated
   * buffers can be used when desired.
   *
   * Options related to compression level and speed are also provided.
@@ -490,7 +489,7 @@ xrif_error_t xrif_difference( xrif_t handle );
 
 xrif_error_t xrif_undifference( xrif_t handle );
 
-/// Difference all images writh respect to previous image, for short integer data type.
+/// Difference all images with respect to previous image, for short integer data type.
 /**
   *
   * \returns 0 on success.
@@ -498,7 +497,7 @@ xrif_error_t xrif_undifference( xrif_t handle );
   */ 
 xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Difference all images writh respect to previous image, for uint64_t data type
+/// Difference all images with respect to previous image, for uint64_t data type
 /**
   *
   * \returns 0 on success.
@@ -506,7 +505,7 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xr
   */ 
 xrif_error_t xrif_difference_previous_uint64( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Difference all images writh respect to the first image, for short integer data type.
+/// Difference all images with respect to the first image, for short integer data type.
 /**
   *
   * \returns 0 on success.
@@ -514,7 +513,7 @@ xrif_error_t xrif_difference_previous_uint64( xrif_t handle /**< [in/out] the xr
   */ 
 xrif_error_t xrif_difference_first_sint16( xrif_t handle/**< [in/out] the xrif handle */ );
 
-/// Difference all images writh respect to the first image, for uint64_t data type.
+/// Difference all images with respect to the first image, for uint64_t data type.
 /**
   *
   * \returns 0 on success.
@@ -523,6 +522,14 @@ xrif_error_t xrif_difference_first_sint16( xrif_t handle/**< [in/out] the xrif h
 xrif_error_t xrif_difference_first_uint64( xrif_t handle/**< [in/out] the xrif handle */ );
 
 xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Difference each image with respect to its first pixel, for short integer data type.
+/**
+  *
+  * \returns 0 on success.
+  * \returns <0 on error, with the appropreate error code.
+  */ 
+xrif_error_t xrif_difference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Reverse the differencing operation, w.r.t. the previous image, for short integer data type.
 /**
@@ -533,6 +540,15 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif ha
 xrif_error_t xrif_undifference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
 ///@}
+
+/// Reverse the differencing operation on each image with respect to its first pixel, for short integer data type.
+/**
+  *
+  * \returns 0 on success.
+  * \returns <0 on error, with the appropreate error code.
+  */ 
+xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
+
 
 /** \defgroup xrif_reorder Reordering
   * \ingroup xrif_encode 
@@ -573,7 +589,6 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle /**< [in/out] the xrif handle *
       
 xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
-         
 xrif_error_t xrif_unreorder_none( xrif_t handle /**< [in/out] the xrif handle */);
 
 xrif_error_t xrif_unreorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */);

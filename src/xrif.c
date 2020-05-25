@@ -8,7 +8,7 @@
 
 /* This file is part of the xrif library.
 
-Copyright (c) 2019, The Arizona Board of Regents on behalf of The
+Copyright (c) 2019, 2020, The Arizona Board of Regents on behalf of The
 University of Arizona
 
 All rights reserved.
@@ -614,6 +614,8 @@ xrif_error_t xrif_difference( xrif_t handle )
          return xrif_difference_previous_sint16(handle);
       case XRIF_DIFFERENCE_FIRST:
          return xrif_difference_first_sint16(handle);
+      case XRIF_DIFFERENCE_PIXEL:
+         return xrif_difference_pixel_sint16(handle);
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -633,6 +635,8 @@ xrif_error_t xrif_undifference( xrif_t handle )
          return xrif_undifference_previous_sint16(handle);
       case XRIF_DIFFERENCE_FIRST:
          return XRIF_ERROR_NOTIMPL;
+      case XRIF_DIFFERENCE_PIXEL:
+         return xrif_difference_pixel_sint16(handle);
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -754,6 +758,31 @@ xrif_error_t xrif_difference_first_uint64( xrif_t handle )
                ((int64_t *) handle->raw_buffer)[idx] = ((uint64_t *)handle->raw_buffer)[idx] - ((uint64_t*)handle->raw_buffer)[idx0];
             }
          }
+      }
+   }   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_difference_pixel_sint16( xrif_t handle )
+{
+   for(int n=0; n < handle->frames-1; ++n)
+   {
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t idx0 = kk*handle->height*handle->width;
+         short pix0 = ((short*)handle->raw_buffer)[idx0];  //To avoid an extra if, we are going to overwrite this
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx = idx0 + ii_stride  + jj;
+            
+               ((short *) handle->raw_buffer)[idx] = ((short *) handle->raw_buffer)[idx] - pix0;
+            }
+         }
+         ((short*)handle->raw_buffer)[idx0] = pix0; //Now restore the first pixel.
       }
    }   
    return XRIF_NOERROR;
@@ -886,6 +915,31 @@ xrif_error_t xrif_undifference_previous_uint64( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
+{
+   for(int n=0; n < handle->frames-1; ++n)
+   {
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t idx0 = kk*handle->height*handle->width;
+         short pix0 = ((short*)handle->raw_buffer)[idx0]; //To avoid an extra if, we are going to overwrite this
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx = idx0 + ii_stride  + jj;
+            
+               ((short *) handle->raw_buffer)[idx] = ((short *) handle->raw_buffer)[idx] + pix0;
+            }
+         }
+         ((short*)handle->raw_buffer)[idx0] = pix0; //Now restore the first pixel.
+      }
+   }   
+   return XRIF_NOERROR;
+}
+
 xrif_error_t xrif_reorder( xrif_t handle )
 {
    int method = handle->reorder_method;
@@ -898,9 +952,9 @@ xrif_error_t xrif_reorder( xrif_t handle )
          return xrif_reorder_none(handle);
       case XRIF_REORDER_BYTEPACK:
          return xrif_reorder_bytepack(handle);
-      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BYTEPACK_RENIBBLE:
          return xrif_reorder_bytepack_renibble(handle);
+      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BITPACK:
          return xrif_reorder_bitpack(handle);
       #endif
@@ -921,9 +975,9 @@ xrif_error_t xrif_unreorder( xrif_t handle )
          return xrif_unreorder_none(handle);
       case XRIF_REORDER_BYTEPACK:
          return xrif_unreorder_bytepack(handle);
-      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BYTEPACK_RENIBBLE:
          return xrif_unreorder_bytepack_renibble(handle);
+      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BITPACK:
          return xrif_unreorder_bitpack(handle); 
       #endif
@@ -993,11 +1047,16 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
    
    short * raw_buffer = (short*)(handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
+   
+   //Get pointer that starts one image into the handle->reordered_buffer.  This area is 2*npix bytes long
    unsigned char * reordered_buffer = (unsigned char *) handle->reordered_buffer + handle->width*handle->height* handle->depth *handle->data_size;
+   
+   //Get point that starts halfway through, splitting at npix bytes
    unsigned char * reordered_buffer2 = (unsigned char*) reordered_buffer + npix;
    
    memset(reordered_buffer2, 0, npix+1);
    
+   //Set the first part of the reordered buffer to the first frame (always the reference frame)
    for(size_t pix=0; pix<handle->width*handle->height* handle->depth *handle->data_size; ++pix)
    {
       handle->reordered_buffer[pix] = handle->raw_buffer[pix];
@@ -1018,27 +1077,34 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
        * And maybe we'll implement some defines to avoid lookup tables . . .
        */
       /*
-      int_fast16_t s = raw_buffer[pix];
-      int_fast16_t sbit = (s < 0);
+      int_fast16_t s = raw_buffer[pix]; //Get the first 2 bytes
+      int_fast16_t sbit = (s < 0); //and the signbit
 
-      s *= (1-2*sbit);
+      s *= (1-2*sbit); //make it positive
       
-      unsigned short us = ( (s) << 1) | sbit;
+      unsigned short us = ( (s) << 1) | sbit; //This moves the sign bit
        
-      reordered_buffer[pix] = ((char *)(&us))[0]; //
+      reordered_buffer[pix] = ((char *)(&us))[0]; //store first byte, which includes the sign bit?
 
       // Note: A pre-calculated table look-up for just nibble values produced slightly slower code.
+      unsigned short nib1, nib2;
+      
       if(pix % 2 == 0)
       {
-         reordered_buffer2[pix/2] += ((unsigned char *)(&us))[1] << 4;
-         reordered_buffer2[pix/2 + npix/2] += ((unsigned char *)(&us))[1] & 240;
+         nib1 = ((unsigned char *)(&us))[1] << 4; //Move low 4 to high 4
+         nib2 = ((unsigned char *)(&us))[1] & 240; //Select the high 4
       }
       else
       {
-         reordered_buffer2[pix/2] += (((unsigned char *)(&us))[1] & 15);
-         reordered_buffer2[pix/2 + npix/2] += ((unsigned char *)(&us))[1] >> 4;
+         nib1 = (((unsigned char *)(&us))[1] & 15); //Select the low 4
+         nib2 = ((unsigned char *)(&us))[1] >> 4; //Move the high 4 to the low 4
       }
+      
+      reordered_buffer2[pix/2] |= nib1;
+      reordered_buffer2[pix/2 + oneoff + halfoff] |= nib2;
+         
       /**/
+      //Here we use a lookup table calculated according to the above algorithm:
 
       const unsigned char * bsn = &bitshift_and_nibbles[ ((unsigned short) raw_buffer[pix]) * 6 + (pix&1)*3];
       reordered_buffer[pix] = (char) bsn[0];
@@ -1091,9 +1157,10 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
       int_fast16_t s = raw_buffer[pix];
       int_fast16_t sbit = (s < 0);
 
-      s *= (1-2*sbit);
+      s *= (1-2*sbit); //make positive
       
-      unsigned short us = ( (s) << 1) | sbit;
+      unsigned short us = ( (s) << 1) | sbit; //shift by 1, putting sign bit in highest entropy spot
+      
       //Attempt with lookup table is slower, leaving this in to document this, possibly for future defines:
       //unsigned short us = left_shift_one[*((unsigned short *) &raw_buffer[pix])];
 
@@ -1113,9 +1180,11 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
       {      
          reordered_buffer[sbyte8 +  bits2[b]*stride] +=  bit_to_position[st1 + bits2[b]];
       }
+      
+      printf("%ld/%d ", sbit, reordered_buffer[pix]);
    }
    
-   
+   printf("\n");
    
    #ifndef XRIF_NO_OMP
    }
@@ -1207,8 +1276,8 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
       unsigned short nib2 = 0;
       if(pix % 2 == 0)
       {
-         nib1 |= (reordered_buffer2[pix/2+oneoff]) >> 4; 
-         nib2 |= reordered_buffer2[pix/2+oneoff + halfoff] &240; 
+         nib1 |= ((reordered_buffer2[pix/2+oneoff])) >> 4;  
+         nib2 |= reordered_buffer2[pix/2+oneoff + halfoff] & 240; 
       }
       else
       {
@@ -1219,12 +1288,20 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
       byte1 |= (nib1 << 8);
       byte1 |= (nib2 << 8);
       
-      int_fast16_t sbit = (byte1 & 1);
-
-      int_fast16_t s = (byte1 >> 1);
       
-      raw_buffer[pix] = s*(1-2*sbit);
+      unsigned int sbit = (byte1 & 1);
 
+      unsigned int s = (byte1 >> 1);
+      
+      
+      if(sbit == 1 && s == 0) 
+      {
+         raw_buffer[pix] = -32768;
+      }
+      else
+      {
+         raw_buffer[pix] = s*(1-2*sbit);
+      }
    }
    
    #ifndef XRIF_NO_OMP
@@ -1264,14 +1341,27 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
 
       char sbit = (reordered_buffer[sbyte] >> bit) & 1;
       
+      printf("%d/%d ", sbit, reordered_buffer[pix]);
+      
       for(int_fast8_t b=1; b<16;++b)
       {
          raw_buffer[pix] |= ((reordered_buffer[sbyte +  b*stride] >> bit) & 1) << (b-1);
       }
-      if(sbit) raw_buffer[pix]*=-1;
+      //if(sbit) raw_buffer[pix]*=-1;
       //raw_buffer[pix] *= (1-2*sbit);
       
+      //printf("%d/%x ", sbit, raw_buffer[pix]);
+      
+      if(sbit == 1)
+      {
+         if(raw_buffer[pix] == 0) raw_buffer[pix] = -32768;
+         else raw_buffer[pix]*=-1;
+      }
+      
+      
    }
+   
+   printf("\n\n");
    
    #ifndef XRIF_NO_OMP
    }
@@ -1532,9 +1622,9 @@ const char * xrif_reorder_method_string( int reorder_method )
          return "none";
       case XRIF_REORDER_BYTEPACK:
          return "bytepack";
-      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BYTEPACK_RENIBBLE:
          return "bytepack w/ renibble";
+      #ifdef XRIF_EXPERIMENTAL
       case XRIF_REORDER_BITPACK:
          return "bitpack";
       #endif

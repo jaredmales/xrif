@@ -89,6 +89,38 @@ matter of this Agreement.
    #define XRIF_TEST_TRIALS (100)
 #endif
 
+int fill_int14_white( int16_t * buffer,
+                      size_t size 
+                    )
+{
+   
+   if(buffer == NULL) return -1;
+   if(size < 1) return -1;
+   
+   for( size_t i = 0; i < size; ++i ) 
+   {
+      buffer[i] = -8192 + (((double) rand())/RAND_MAX)*(8191-(-8182));
+   }
+   
+   return 0;
+}
+
+int fill_uint14_white( int16_t * buffer,
+                      size_t size 
+                    )
+{
+   
+   if(buffer == NULL) return -1;
+   if(size < 1) return -1;
+   
+   for( size_t i = 0; i < size; ++i ) 
+   {
+      buffer[i] = (((double) rand())/RAND_MAX)*(16383);
+   }
+   
+   return 0;
+}
+
 int fill_int16_white( int16_t * buffer,
                       size_t size 
                     )
@@ -99,7 +131,7 @@ int fill_int16_white( int16_t * buffer,
    
    for( size_t i = 0; i < size; ++i ) 
    {
-      buffer[i] = SHRT_MIN + (((double) rand())/RAND_MAX)*(SHRT_MAX-SHRT_MIN);
+      buffer[i] = -32768 + (((double) rand())/RAND_MAX)*(32767-(-32768));
    }
    
    return 0;
@@ -114,7 +146,7 @@ int fill_uint16_white( uint16_t * buffer,
    
    for( size_t i = 0; i < size; ++i ) 
    {
-      buffer[i] = (((double) rand())/RAND_MAX)*(USHRT_MAX);
+      buffer[i] = (((double) rand())/RAND_MAX)*(65535);
    }
    
    return 0;
@@ -555,6 +587,92 @@ START_TEST (reorder_bytepack_renibble_int16_white)
 }
 END_TEST
 
+//Verify that xrif reorder-unreorder cycle works for signed 16 bit integers in the bitpack method
+//for int16_t
+START_TEST (reorder_bitpack_int16_white)
+{
+   xrif_t hand = NULL;
+   
+   xrif_error_t rv = xrif_new(&hand);
+   
+   ck_assert( hand != NULL);
+   ck_assert( rv == XRIF_NOERROR );
+ 
+   //Must have at least 64 pixels, and an even number, for bitpack
+   int ws[] = {33};//, 33, 47, 64}; //widths of images
+   int hs[] = {32};//, 33, 47, 64}; //heights of images
+   int ps[] = {3};//,4,5,27,63,64}; //planes of the cube
+   
+   // Intialize the random number sequence
+   srand((unsigned) time(NULL));
+   
+   int fail = 0;
+   for(int q=0; q< XRIF_TEST_TRIALS; ++q)
+   {
+      for(int w =0; w < sizeof(ws)/sizeof(ws[0]); ++w)
+      {
+         for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
+         {
+            for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
+            {
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               rv = xrif_allocate_raw(hand);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               rv = xrif_allocate_reordered(hand);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               int16_t * buffer = (int16_t *) hand->raw_buffer;
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               ck_assert( rv == 0);
+      
+               int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
+               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
+      
+               xrif_difference_previous_sint16(hand);
+               xrif_reorder_bitpack(hand);
+               
+               xrif_unreorder_bitpack(hand);
+               xrif_undifference_previous_sint16(hand);
+               
+               
+               int neq = 0;
+               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               {
+                  if(buffer[i] != compbuff[i]) 
+                  {
+                     ++neq;
+                  }
+               }
+               
+               if(neq > 0)
+               {
+                  ++fail;
+                  
+                  ck_assert(fail == 0);
+                  exit(-1);
+               }
+               
+               
+               free(compbuff);
+               xrif_destroy_handle(hand);
+            }//p
+         }//h
+      }//w
+   }//q
+   
+   
+   ck_assert( fail == 0 );
+   
+   rv = xrif_delete(hand);
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+
 //Verify that xrif reorder-unreorder cycle works for unsigned 16 bit integers in the bytepack method
 //for uint16_t
 START_TEST (reorder_bytepack_uint16_white)
@@ -636,87 +754,6 @@ START_TEST (reorder_bytepack_uint16_white)
 }
 END_TEST
 
-//Verify that xrif reorder-unreorder cycle works for signed 16 bit integers in the bitpack method
-//for int16_t
-START_TEST (reorder_bitpack_int16_white)
-{
-   xrif_t hand = NULL;
-   
-   xrif_error_t rv = xrif_new(&hand);
-   
-   ck_assert( hand != NULL);
-   ck_assert( rv == XRIF_NOERROR );
- 
-   int ws[] = {2, 6,33, 47, 64}; //widths of images
-   int hs[] = {2, 6,33, 47, 64}; //heights of images
-   int ps[] = {2, 3,4,5,27,63,64}; //planes of the cube
-   
-   // Intialize the random number sequence
-   srand((unsigned) time(NULL));
-   
-   int fail = 0;
-   for(int q=0; q< XRIF_TEST_TRIALS; ++q)
-   {
-      for(int w =0; w < sizeof(ws)/sizeof(ws[0]); ++w)
-      {
-         for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
-         {
-            for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
-            {
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
-               ck_assert( rv == XRIF_NOERROR );
-      
-               rv = xrif_allocate_raw(hand);
-               ck_assert( rv == XRIF_NOERROR );
-      
-               rv = xrif_allocate_reordered(hand);
-               ck_assert( rv == XRIF_NOERROR );
-      
-               int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
-               ck_assert( rv == 0);
-      
-               int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
-      
-               xrif_difference_previous_sint16(hand);
-               xrif_reorder_bitpack(hand);
-               
-               xrif_unreorder_bitpack(hand);
-               xrif_undifference_previous_sint16(hand);
-               
-               
-               int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
-               {
-                  if(buffer[i] != compbuff[i]) 
-                  {
-                     ++neq;
-                  }
-               }
-               
-               if(neq > 0)
-               {
-                  ++fail;
-                  exit(-1);
-               }
-               
-               
-               free(compbuff);
-               xrif_destroy_handle(hand);
-            }//p
-         }//h
-      }//w
-   }//q
-   
-   
-   ck_assert( fail == 0 );
-   
-   rv = xrif_delete(hand);
-   ck_assert( rv == XRIF_NOERROR );
-   
-}
-END_TEST
 
 //Verify that xrif reorder-unreorder cycle works for unsigned 16 bit integers in the bytepack+renibble method
 //for uint16_t
@@ -801,6 +838,92 @@ START_TEST (reorder_bytepack_renibble_uint16_white)
 }
 END_TEST
 
+//Verify that xrif reorder-unreorder cycle works for signed 16 bit integers in the bitpack method
+//for int16_t
+START_TEST (reorder_bitpack_uint16_white)
+{
+   xrif_t hand = NULL;
+   
+   xrif_error_t rv = xrif_new(&hand);
+   
+   ck_assert( hand != NULL);
+   ck_assert( rv == XRIF_NOERROR );
+ 
+   //Must have at least 64 pixels, and an even number, for bitpack
+   int ws[] = {33};//, 33, 47, 64}; //widths of images
+   int hs[] = {32};//, 33, 47, 64}; //heights of images
+   int ps[] = {3};//,4,5,27,63,64}; //planes of the cube
+   
+   // Intialize the random number sequence
+   srand((unsigned) time(NULL));
+   
+   int fail = 0;
+   for(int q=0; q< XRIF_TEST_TRIALS; ++q)
+   {
+      for(int w =0; w < sizeof(ws)/sizeof(ws[0]); ++w)
+      {
+         for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
+         {
+            for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
+            {
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               rv = xrif_allocate_raw(hand);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               rv = xrif_allocate_reordered(hand);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               int16_t * buffer = (int16_t *) hand->raw_buffer;
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               ck_assert( rv == 0);
+      
+               int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
+               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
+      
+               xrif_difference_previous_sint16(hand);
+               xrif_reorder_bitpack(hand);
+               
+               xrif_unreorder_bitpack(hand);
+               xrif_undifference_previous_sint16(hand);
+               
+               
+               int neq = 0;
+               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               {
+                  if(buffer[i] != compbuff[i]) 
+                  {
+                     ++neq;
+                  }
+               }
+               
+               if(neq > 0)
+               {
+                  ++fail;
+                  
+                  ck_assert(fail == 0);
+                  exit(-1);
+               }
+               
+               
+               free(compbuff);
+               xrif_destroy_handle(hand);
+            }//p
+         }//h
+      }//w
+   }//q
+   
+   
+   ck_assert( fail == 0 );
+   
+   rv = xrif_delete(hand);
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+
 Suite * whitenoise_suite(void)
 {
     Suite *s;
@@ -828,11 +951,11 @@ Suite * whitenoise_suite(void)
     tcase_add_test(tc_core, reorder_bytepack_renibble_int16_white);
     tcase_add_test(tc_core, reorder_bytepack_renibble_uint16_white);
 #endif   
+    /*
+    tcase_add_test(tc_core, reorder_bitpack_int16_white);
+    tcase_add_test(tc_core, reorder_bitpack_uint16_white);
+    */
     
-    //tcase_add_test(tc_core, reorder_bitpack_int16_white);
-    
-    
-    //tcase_add_test(tc_core, short_unsigned_white);
     suite_add_tcase(s, tc_core);
 
     return s;

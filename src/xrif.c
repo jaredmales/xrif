@@ -1121,7 +1121,6 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
 
 xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 {
-   //#include "circle_left_shift_one.inc"
    #include "bit_to_position.inc"
    #include "set_bits.inc"
    
@@ -1130,40 +1129,53 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
       handle->reordered_buffer[pix] = handle->raw_buffer[pix];
    }
    
-   short * raw_buffer = (short *) (handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
-   unsigned short * reordered_buffer = (unsigned short *) (handle->reordered_buffer + handle->width* handle->depth *handle->height*handle->data_size);
+   int16_t * raw_buffer = (int16_t *) (handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
+   uint16_t * reordered_buffer = (uint16_t *) (handle->reordered_buffer + handle->width* handle->depth *handle->height*handle->data_size);
    
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
 
    memset(reordered_buffer, 0, npix*2);
       
    size_t stride = npix/16;
-   
+
    #ifndef XRIF_NO_OMP
    #pragma omp parallel if (handle->omp_parallel > 0) 
    {
    #pragma omp for
    #endif
+      
   
    for(size_t pix = 0; pix<npix; ++pix)
    {
-      size_t sbyte = pix/16;
+      size_t sbyte = pix/16; //This is the starting byte for this pixel
+      int_fast8_t bit = pix % 16; //This is the bit position for this pixel
      
-      size_t sbyte8 = sbyte + 8*stride;
-      //if(sbyte == 0) continue;
-      int_fast8_t bit = pix % 16;
       
+      //--- Reordering sign bit [left in to document]
+      //int16_t s = raw_buffer[pix];
+      //int8_t sbit = (s < 0);
+      //s *= (1-2*sbit); //make positive
+      //uint16_t us = ( (s) << 1) | sbit; //shift by 1, putting sign bit in highest entropy spot
       
-      int_fast16_t s = raw_buffer[pix];
-      int_fast16_t sbit = (s < 0);
+      //--- Simpler way to reorder, this is equivalent to above
+      int8_t sbit = (raw_buffer[pix] < 0);
+      uint16_t us = 2*raw_buffer[pix]*(1-2*sbit)+sbit;
+     
 
-      s *= (1-2*sbit); //make positive
+      //---- This is the basic algorithm, without lookup tables:
+      /*
+      for(int b=0; b < 16; ++b)
+      {
+         reordered_buffer[sbyte + b*stride] += (((us >> b) & 1) << bit);
+      }
+      */
       
-      unsigned short us = ( (s) << 1) | sbit; //shift by 1, putting sign bit in highest entropy spot
-      
+      //---- A full lookup table version
       //Attempt with lookup table is slower, leaving this in to document this, possibly for future defines:
       //unsigned short us = left_shift_one[*((unsigned short *) &raw_buffer[pix])];
 
+      //---- A faster lookup table version:
+      size_t sbyte8 = sbyte + 8*stride;
       size_t st0 = ((unsigned char *) &us)[0]*16*8 + bit*8;
       size_t st1 = ((unsigned char *) &us)[1]*16*8 + bit*8;
       
@@ -1181,11 +1193,9 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
          reordered_buffer[sbyte8 +  bits2[b]*stride] +=  bit_to_position[st1 + bits2[b]];
       }
       
-      printf("%ld/%d ", sbit, reordered_buffer[pix]);
+      
+      
    }
-   
-   printf("\n");
-   
    #ifndef XRIF_NO_OMP
    }
    #endif
@@ -1313,14 +1323,13 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
 
 xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
 {
-
    for(size_t pix=0; pix<handle->width*handle->height* handle->depth *handle->data_size; ++pix)
    {
       handle->raw_buffer[pix] = handle->reordered_buffer[pix];
    }
    
-   short * raw_buffer = (short *) (handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
-   unsigned short * reordered_buffer = (unsigned short *) (handle->reordered_buffer + handle->width*handle->height* handle->depth *handle->data_size);
+   int16_t * raw_buffer = (int16_t *) (handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
+   uint16_t * reordered_buffer = (uint16_t *) (handle->reordered_buffer + handle->width*handle->height* handle->depth *handle->data_size);
    
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
 
@@ -1341,27 +1350,21 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
 
       char sbit = (reordered_buffer[sbyte] >> bit) & 1;
       
-      printf("%d/%d ", sbit, reordered_buffer[pix]);
-      
       for(int_fast8_t b=1; b<16;++b)
       {
          raw_buffer[pix] |= ((reordered_buffer[sbyte +  b*stride] >> bit) & 1) << (b-1);
       }
-      //if(sbit) raw_buffer[pix]*=-1;
-      //raw_buffer[pix] *= (1-2*sbit);
       
-      //printf("%d/%x ", sbit, raw_buffer[pix]);
-      
+      //Check if sign change needed
       if(sbit == 1)
       {
+         //Check for -0, which is actually -32768
          if(raw_buffer[pix] == 0) raw_buffer[pix] = -32768;
-         else raw_buffer[pix]*=-1;
+         else raw_buffer[pix] *= -1;
       }
       
       
    }
-   
-   printf("\n\n");
    
    #ifndef XRIF_NO_OMP
    }

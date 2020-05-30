@@ -627,6 +627,9 @@ Suite * headerformat_suite(void)
     return s;
 }
 
+/* todo:
+ * [] test all possible ways of configuring, e.g. with COMPRESS_NONE which is a -1.
+ */ 
 int main()
 {
    int number_failed;

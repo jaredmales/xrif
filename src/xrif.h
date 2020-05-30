@@ -126,10 +126,8 @@ extern "C"
 #define XRIF_REORDER_DEFAULT (100)
 #define XRIF_REORDER_BYTEPACK (100)
 #define XRIF_REORDER_BYTEPACK_RENIBBLE (200)
-#ifdef XRIF_EXPERIMENTAL
-   //bitpack does not currently work.
-   #define XRIF_REORDER_BITPACK (300)
-#endif
+#define XRIF_REORDER_BITPACK (300)
+
    
 #define XRIF_COMPRESS_NONE (-1)
 #define XRIF_COMPRESS_DEFAULT (100)
@@ -158,6 +156,7 @@ typedef int xrif_error_t;
 #define XRIF_ERROR_INSUFFICIENT_SIZE (-25)
 #define XRIF_ERROR_MALLOC (-30)
 #define XRIF_ERROR_NOTIMPL (-100)
+#define XRIF_ERROR_BADARG (-110)
 #define XRIF_ERROR_BADHEADER (-1000);
 #define XRIF_ERROR_WRONGVERSION (-1010);
 
@@ -204,6 +203,8 @@ typedef uint8_t xrif_typecode_t;
   * to xrif_handle. Values of this structure should generally be changed by one of the xrif_set_*() functions,
   * to allow for error checking and consistency.  Unless you know what you're doing, of course.
   * 
+  * \todo need xrif_set_XXXX function unit tests
+  * 
   */ 
 typedef struct
 {
@@ -214,10 +215,10 @@ typedef struct
    
    xrif_typecode_t type_code;  ///< The code specifying the data type of the pixels
    
-   size_t data_size;     ///< The size of the pixels, bytes.
+   size_t data_size;     ///< The size of the pixels, bytes.  This corresponds to `sizeof(type)`.
 
-   size_t raw_size;         ///< Size of the stream before compression
-   size_t compressed_size;  ///< Size of the stream after compression
+   size_t raw_size;         ///< Size of the stream before compression.  Set dynamically by xrif_set_size or from header.
+   size_t compressed_size;  ///< Size of the stream after compression.  Set dynamically by compression functions or from header.
    
    int difference_method; ///< The difference method to use.
    
@@ -252,6 +253,9 @@ typedef struct
                                     *  If this library is used to allocate it, it will be the larger of the two.*/
                                     
                   
+   /** \name Performance Measurements
+     * @{ 
+     */
    unsigned char calc_performance; ///< Flag (true/false) controlling whether performance metrics are calculated.  Default is true.
    
    double compression_ratio;
@@ -273,6 +277,8 @@ typedef struct
    struct timespec ts_unreorder_start;
    struct timespec ts_undifference_start;
    struct timespec ts_undifference_done;
+   
+   ///@}
    
 } xrif_handle;
 
@@ -304,7 +310,7 @@ xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been i
 
 /// Initialize an xrif handle object.
 /** Sets all values to defaults, and ensures that 
-  * calls to allocate functions or xrif_destroy_handle
+  * calls to allocate functions or xrif_reset_handle
   * will safely succeed.
   *
   * In general this should not be called independently, rather you should use
@@ -333,11 +339,44 @@ xrif_error_t xrif_set_size( xrif_t handle,      ///< [in/out] the xrif handle to
                             xrif_typecode_t c   ///< [in] the code specifying the data type
                           );
 
+/// Set the difference method.
+/** Sets the difference_method member of handle.
+  * 
+  * \returns XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns XRIF_ERROR_BADARG if `difference_method` is not a valid difference method. Will set method to XRIF_DIFFERENCE_DEFAULT.
+  * \returns XRIF_NOERROR on success.
+  */ 
+xrif_error_t xrif_set_difference_method( xrif_t handle,        ///< [in/out] the xrif handle to be configured
+                                         int difference_method ///< [in] the new reorder method
+                                       );
+
+/// Set the reorder method.
+/** Sets the reorder_method member of handle.
+  * 
+  * \returns XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns XRIF_ERROR_BADARG if `reorder_method` is not a valid reorder method.  Will set method to XRIF_REORDER_DEFAULT.
+  * \returns XRIF_NOERROR on success.
+  */ 
+xrif_error_t xrif_set_reorder_method( xrif_t handle,     ///< [in/out] the xrif handle to be configured
+                                      int reorder_method ///< [in] the new reorder method
+                                    );
+
+/// Set the compress method.
+/** Sets the compress_method member of handle.
+  * 
+  * \returns XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns XRIF_ERROR_BADARG if `compress_method` is not a valid compress method.  Will set method to XRIF_COMPRESS_DEFAULT.
+  * \returns XRIF_NOERROR on success.
+  */ 
+xrif_error_t xrif_set_compress_method( xrif_t handle,      ///< [in/out] the xrif handle to be configured
+                                       int compress_method ///< [in] the new compress method
+                                     );
+
 /// Set the raw data buffer to a pre-allocated pointer
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
   * This will return an error if size is too small for the currently set values.
   * 
-  * This pointer will not be free()-ed on a call to xrif_destroy_handle.
+  * This pointer will not be free()-ed on a call to xrif_reset_handle.
   *
   * \returns XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   * \returns XRIF_NOERROR on success
@@ -364,7 +403,7 @@ xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to m
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
   * 
   * 
-  * This pointer will not be free()-ed on a call to xrif_destroy_handle.
+  * This pointer will not be free()-ed on a call to xrif_reset_handle.
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
@@ -386,7 +425,7 @@ xrif_error_t xrif_allocate_reordered( xrif_t handle /**< [in/out] the xrif objec
 /** You are responsible for allocating the buffer to be > width*height*frames*size().
   * 
   * 
-  * This pointer will not be free()-ed on a call to xrif_destroy_handle.
+  * This pointer will not be free()-ed on a call to xrif_reset_handle.
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
@@ -415,14 +454,14 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif hand
 xrif_error_t xrif_allocate( xrif_t handle   /**< [in/out] the xrif object to be allocated */);
 
 
-/// Destroy a handle, de-allocating owned pointers and re-initializing
+/// Reset a handle, restoring it to the initialized state. De-allocates owned pointers and re-initializes.
 /** Free()s the raw and reordered buffers (if owned by this handle) and 
   * calls xrif_initialize().
   *
   * \returns 0 on success
   * \returns <0 on error, with the appropriate code
   */
-xrif_error_t xrif_destroy_handle( xrif_t handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_reset_handle( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// @}
 
@@ -599,7 +638,7 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle /**< [in/out] the xrif handle
 
 ///@}
 
-/** \defgroup xrif_compress Compression 
+/** \defgroup xrif_compress Compression & De-compression
   * \ingroup xrif_encode
   * 
   * @{

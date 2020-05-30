@@ -489,7 +489,7 @@ xrif_error_t xrif_difference( xrif_t handle );
 
 xrif_error_t xrif_undifference( xrif_t handle );
 
-/// Difference all images with respect to previous image, for short integer data type.
+/// Difference all images with respect to previous image, for signed 16-bit integer data type.
 /**
   *
   * \returns 0 on success.
@@ -505,7 +505,7 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xr
   */ 
 xrif_error_t xrif_difference_previous_uint64( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Difference all images with respect to the first image, for short integer data type.
+/// Difference all images with respect to the first image, for signed 16-bit integer data type.
 /**
   *
   * \returns 0 on success.
@@ -523,7 +523,7 @@ xrif_error_t xrif_difference_first_uint64( xrif_t handle/**< [in/out] the xrif h
 
 xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Difference each image with respect to its first pixel, for short integer data type.
+/// Difference each image with respect to its first pixel, for signed 16-bit integer data type.
 /**
   *
   * \returns 0 on success.
@@ -531,7 +531,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif ha
   */ 
 xrif_error_t xrif_difference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Reverse the differencing operation, w.r.t. the previous image, for short integer data type.
+/// Reverse the differencing operation, w.r.t. the previous image, for signed 16-bit integer data type.
 /**
   *
   * \returns 0 on success.
@@ -541,7 +541,7 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle /**< [in/out] the 
 
 ///@}
 
-/// Reverse the differencing operation on each image with respect to its first pixel, for short integer data type.
+/// Reverse the differencing operation on each image with respect to its first pixel, for signed 16-bit integer data type.
 /**
   *
   * \returns 0 on success.
@@ -583,7 +583,7 @@ xrif_error_t xrif_reorder_bytepack_sxrif_error_t16( xrif_t handle /**< [in/out] 
 
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */ );
 
-xrif_error_t xrif_reorder_bytepack_renibble_short( xrif_t handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
 xrif_error_t xrif_reorder_bitpack( xrif_t handle /**< [in/out] the xrif handle */ );
       

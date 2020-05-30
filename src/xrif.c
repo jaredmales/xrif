@@ -128,6 +128,7 @@ xrif_error_t xrif_delete(xrif_t handle )
    return rv;
 }
 
+// Initialize an xrif handle object.
 xrif_error_t xrif_initialize_handle( xrif_t handle )
 {
    if( handle == NULL) return XRIF_ERROR_NULLPTR;
@@ -662,10 +663,10 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
             
-               //int F = ((short *)handle->raw_buffer)[idx];
-               //int L = ((short*)handle->raw_buffer)[idx0];
-               //unsigned short D = abs(F-L);
-               ((short *) handle->raw_buffer)[idx] = (((short *)handle->raw_buffer)[idx] - ((short*)handle->raw_buffer)[idx0]);
+               //int F = ((int16_t *)handle->raw_buffer)[idx];
+               //int L = ((int16_t*)handle->raw_buffer)[idx0];
+               //unsigned int16_t D = abs(F-L);
+               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
             }
          }
          
@@ -727,7 +728,7 @@ xrif_error_t xrif_difference_first_sint16( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
             
-               ((short *) handle->raw_buffer)[idx] = ((short *)handle->raw_buffer)[idx] - ((short*)handle->raw_buffer)[idx0];
+               ((int16_t *) handle->raw_buffer)[idx] = ((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0];
             }
          }
       }
@@ -770,7 +771,7 @@ xrif_error_t xrif_difference_pixel_sint16( xrif_t handle )
       for(int kk=0; kk< handle->depth; ++kk)
       {
          size_t idx0 = kk*handle->height*handle->width;
-         short pix0 = ((short*)handle->raw_buffer)[idx0];  //To avoid an extra if, we are going to overwrite this
+         int16_t pix0 = ((int16_t*)handle->raw_buffer)[idx0];  //To avoid an extra if, we are going to overwrite this
          
          for(int ii=0; ii< handle->width; ++ii)
          {
@@ -779,10 +780,10 @@ xrif_error_t xrif_difference_pixel_sint16( xrif_t handle )
             {
                size_t idx = idx0 + ii_stride  + jj;
             
-               ((short *) handle->raw_buffer)[idx] = ((short *) handle->raw_buffer)[idx] - pix0;
+               ((int16_t *) handle->raw_buffer)[idx] = ((int16_t *) handle->raw_buffer)[idx] - pix0;
             }
          }
-         ((short*)handle->raw_buffer)[idx0] = pix0; //Now restore the first pixel.
+         ((int16_t*)handle->raw_buffer)[idx0] = pix0; //Now restore the first pixel.
       }
    }   
    return XRIF_NOERROR;
@@ -806,7 +807,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
                size_t idx0 =  n_stride0  + ii_stride  + jj;
                size_t idx = n_stride + ii_stride  + jj;
             
-               ((short *) handle->raw_buffer)[idx] = (((short *)handle->raw_buffer)[idx] - ((short*)handle->raw_buffer)[idx0]);
+               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
             }
          }
       }
@@ -825,7 +826,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
                size_t idx0 =  n_stride0  + ii_stride  + jj;
                size_t idx = n_stride + ii_stride  + jj;
             
-               ((short *) handle->raw_buffer)[idx] = (((short *)handle->raw_buffer)[idx] - ((short*)handle->raw_buffer)[idx0]);
+               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
             }
          }
       }
@@ -849,7 +850,7 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
                size_t idx0 =  n_stride0  + ii_stride  + jj;
                size_t idx = n_stride + ii_stride  + jj;
             
-               ((short *) handle->raw_buffer)[idx] = (((short *)handle->raw_buffer)[idx] - ((short*)handle->raw_buffer)[idx0]);
+               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
             }
          }
       }
@@ -877,7 +878,7 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
                
-               ((short *) handle->raw_buffer)[idx] = ((short *)handle->raw_buffer)[idx] + ((short*)handle->raw_buffer)[idx0];
+               ((int16_t *) handle->raw_buffer)[idx] = ((int16_t *)handle->raw_buffer)[idx] + ((int16_t*)handle->raw_buffer)[idx0];
             }
          }
       }
@@ -922,7 +923,7 @@ xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
       for(int kk=0; kk< handle->depth; ++kk)
       {
          size_t idx0 = kk*handle->height*handle->width;
-         short pix0 = ((short*)handle->raw_buffer)[idx0]; //To avoid an extra if, we are going to overwrite this
+         int16_t pix0 = ((int16_t*)handle->raw_buffer)[idx0]; //To avoid an extra if, we are going to overwrite this
          
          for(int ii=0; ii< handle->width; ++ii)
          {
@@ -931,10 +932,10 @@ xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
             {
                size_t idx = idx0 + ii_stride  + jj;
             
-               ((short *) handle->raw_buffer)[idx] = ((short *) handle->raw_buffer)[idx] + pix0;
+               ((int16_t *) handle->raw_buffer)[idx] = ((int16_t *) handle->raw_buffer)[idx] + pix0;
             }
          }
-         ((short*)handle->raw_buffer)[idx0] = pix0; //Now restore the first pixel.
+         ((int16_t*)handle->raw_buffer)[idx0] = pix0; //Now restore the first pixel.
       }
    }   
    return XRIF_NOERROR;
@@ -1046,7 +1047,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
    
-   short * raw_buffer = (short*)(handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
+   int16_t * raw_buffer = (int16_t*)(handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
    
    //Get pointer that starts one image into the handle->reordered_buffer.  This area is 2*npix bytes long
    unsigned char * reordered_buffer = (unsigned char *) handle->reordered_buffer + handle->width*handle->height* handle->depth *handle->data_size;
@@ -1082,12 +1083,12 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
 
       s *= (1-2*sbit); //make it positive
       
-      unsigned short us = ( (s) << 1) | sbit; //This moves the sign bit
+      uint16_t us = ( (s) << 1) | sbit; //This moves the sign bit
        
       reordered_buffer[pix] = ((char *)(&us))[0]; //store first byte, which includes the sign bit?
 
       // Note: A pre-calculated table look-up for just nibble values produced slightly slower code.
-      unsigned short nib1, nib2;
+      uint16_t nib1, nib2;
       
       if(pix % 2 == 0)
       {
@@ -1106,7 +1107,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
       /**/
       //Here we use a lookup table calculated according to the above algorithm:
 
-      const unsigned char * bsn = &bitshift_and_nibbles[ ((unsigned short) raw_buffer[pix]) * 6 + (pix&1)*3];
+      const unsigned char * bsn = &bitshift_and_nibbles[ ((uint16_t) raw_buffer[pix]) * 6 + (pix&1)*3];
       reordered_buffer[pix] = (char) bsn[0];
       reordered_buffer2[pix/2] += bsn[1];
       reordered_buffer2[pix/2 + oneoff + halfoff] += bsn[2];
@@ -1172,7 +1173,7 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
       
       //---- A full lookup table version
       //Attempt with lookup table is slower, leaving this in to document this, possibly for future defines:
-      //unsigned short us = left_shift_one[*((unsigned short *) &raw_buffer[pix])];
+      //uint16_t us = left_shift_one[*((uint16_t *) &raw_buffer[pix])];
 
       //---- A faster lookup table version:
       size_t sbyte8 = sbyte + 8*stride;
@@ -1259,7 +1260,7 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
 {
    size_t npix = handle->width * handle->height * handle->depth * (handle->frames-1); 
    
-   short * raw_buffer = (short*)(handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
+   int16_t * raw_buffer = (int16_t*)(handle->raw_buffer + handle->width*handle->height* handle->depth *handle->data_size);
    unsigned char * reordered_buffer = (unsigned char *) handle->reordered_buffer + handle->width*handle->height* handle->depth *handle->data_size;
    unsigned char * reordered_buffer2 = (unsigned char*) reordered_buffer + npix;
    
@@ -1279,11 +1280,11 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
    #endif
    for(size_t pix = 0; pix < npix; ++pix)
    {
-      unsigned short byte1 = 0;
+      uint16_t byte1 = 0;
       byte1 = reordered_buffer[pix];
       
-      unsigned short nib1 =0;
-      unsigned short nib2 = 0;
+      uint16_t nib1 =0;
+      uint16_t nib2 = 0;
       if(pix % 2 == 0)
       {
          nib1 |= ((reordered_buffer2[pix/2+oneoff])) >> 4;  

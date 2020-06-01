@@ -106,11 +106,19 @@ matter of this Agreement.
 // Allocate an xrif_handle object, which is pointed to by an xrif_t
 xrif_error_t xrif_new(xrif_t * handle_ptr)
 {
-   if( handle_ptr == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle_ptr == NULL) 
+   {
+      fprintf(stderr, "xrif_new: can not allocate null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    *handle_ptr = (xrif_t) malloc( sizeof(xrif_handle) );
    
-   if( *handle_ptr == NULL) return XRIF_ERROR_MALLOC;
+   if( *handle_ptr == NULL) 
+   {
+      fprintf(stderr, "xrif_new: error in malloc.\n");
+      XRIF_ERROR_MALLOC;
+   }
    
    return xrif_initialize_handle(*handle_ptr);
    
@@ -119,7 +127,12 @@ xrif_error_t xrif_new(xrif_t * handle_ptr)
 // De-allocate an xrif_handle object, which is pointed to by an xrif_t
 xrif_error_t xrif_delete(xrif_t handle )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_delete: can not delete null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    
    xrif_error_t rv = xrif_reset_handle( handle );
    
@@ -131,7 +144,11 @@ xrif_error_t xrif_delete(xrif_t handle )
 // Initialize an xrif handle object.
 xrif_error_t xrif_initialize_handle( xrif_t handle )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_initialize_handle: can not initialize null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    handle->width = 0;
    handle->height = 0;
@@ -185,6 +202,7 @@ xrif_error_t xrif_initialize_handle( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+// Set the basic parameters of an xrif handle
 xrif_error_t xrif_set_size( xrif_t handle,
                             xrif_dimension_t w,
                             xrif_dimension_t h,
@@ -193,13 +211,23 @@ xrif_error_t xrif_set_size( xrif_t handle,
                             xrif_typecode_t c
                           )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_set_size: can not size null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    
    if(w == 0 || h == 0 || d == 0 || f == 0) return XRIF_ERROR_INVALID_SIZE;
    
    size_t sz = xrif_typesize(c);
    
-   if(sz == 0) return XRIF_ERROR_INVALID_TYPE;
+   if(sz == 0)
+   {
+      fprintf(stderr, "xrif_set_size: invalid type.\n");
+      return XRIF_ERROR_INVALID_TYPE;
+   }
+   
    
    handle->width = w;
    handle->height = h;
@@ -214,11 +242,17 @@ xrif_error_t xrif_set_size( xrif_t handle,
    return XRIF_NOERROR;
 }
 
+// Set the difference method.
 xrif_error_t xrif_set_difference_method( xrif_t handle,
                                          int difference_method
                                        )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_set_difference_method: can not configure null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    
    if( difference_method == XRIF_DIFFERENCE_NONE ) handle->difference_method = XRIF_DIFFERENCE_NONE;
    else if( difference_method == XRIF_DIFFERENCE_DEFAULT ) handle->difference_method = XRIF_DIFFERENCE_DEFAULT;
@@ -228,18 +262,23 @@ xrif_error_t xrif_set_difference_method( xrif_t handle,
    else
    {
       difference_method == XRIF_DIFFERENCE_DEFAULT;
+      fprintf(stderr, "xrif_set_difference_method: unrecognized difference method.  Setting default.\n");
       return XRIF_ERROR_BADARG;
    }
    
    return XRIF_NOERROR;
 }
 
-
+// Set the reorder method.
 xrif_error_t xrif_set_reorder_method( xrif_t handle,
                                       int reorder_method
                                     )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_set_reorder_method: can not configure null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    if( reorder_method == XRIF_REORDER_NONE ) handle->reorder_method = XRIF_REORDER_NONE;
    else if( reorder_method == XRIF_REORDER_DEFAULT ) handle->reorder_method = XRIF_REORDER_DEFAULT;
@@ -249,6 +288,7 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,
    else
    {
       reorder_method == XRIF_REORDER_DEFAULT;
+      fprintf(stderr, "xrif_set_reorder_method: unrecognized reorder method.  Setting default.\n");
       return XRIF_ERROR_BADARG;
    }
    
@@ -260,7 +300,11 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,
                                        int compress_method
                                      )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_set_compress_method: can not configure null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    if( compress_method == XRIF_COMPRESS_NONE ) handle->compress_method = XRIF_COMPRESS_NONE;
    else if( compress_method == XRIF_COMPRESS_DEFAULT ) handle->compress_method = XRIF_COMPRESS_DEFAULT;
@@ -268,18 +312,24 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,
    else
    {
       compress_method == XRIF_COMPRESS_DEFAULT;
+      fprintf(stderr, "xrif_set_compress_method: unrecognized compress method.  Setting default.\n");
       return XRIF_ERROR_BADARG;
    }
    
    return XRIF_NOERROR;
 }
 
+// Set the raw data buffer to a pre-allocated pointer
 xrif_error_t xrif_set_raw( xrif_t handle,
                            void * raw,          
                            size_t size          
                          )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_set_raw: can not configure null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    if(handle->raw_buffer && handle->own_raw )
    {
@@ -294,6 +344,7 @@ xrif_error_t xrif_set_raw( xrif_t handle,
    
    if((handle->raw_buffer != NULL && handle->raw_buffer_size == 0) || (handle->raw_buffer == 0 && handle->raw_buffer_size != 0)) 
    {
+      fprintf(stderr, "xrif_set_raw: the size is not valid.\n");
       return XRIF_ERROR_INVALID_SIZE;
    }
    
@@ -317,19 +368,29 @@ xrif_error_t xrif_set_raw( xrif_t handle,
       minSz = handle->width * handle->height * handle->depth * handle->frames * handle->data_size;
    }
       
-   if(handle->raw_buffer_size < minSz) return XRIF_ERROR_INSUFFICIENT_SIZE;
+   if(handle->raw_buffer_size < minSz) 
+   {
+      fprintf(stderr, "xrif_set_raw: the raw buffer size is too small for configured parameters.\n");
+      return XRIF_ERROR_INSUFFICIENT_SIZE;
+   }
    
    return XRIF_NOERROR;
 }
 
+// Allocate the raw buffer based on the already set stream dimensions.
 xrif_error_t xrif_allocate_raw( xrif_t handle )
 {
    if(handle->raw_buffer && handle->own_raw )
    {
+      fprintf(stderr, "xrif_allocate_raw: can not configure null pointer.\n");
       free(handle->raw_buffer);
    }
    
-   if(handle->width * handle->height * handle->depth * handle->frames * handle->data_size == 0) return XRIF_ERROR_NOT_SETUP;
+   if(handle->width * handle->height * handle->depth * handle->frames * handle->data_size == 0)
+   {
+      fprintf(stderr, "xrif_allocate_raw: the handle is not setup for allocation.\n");
+      XRIF_ERROR_NOT_SETUP;
+   }
    
    if(handle->compress_on_raw)
    {
@@ -353,6 +414,8 @@ xrif_error_t xrif_allocate_raw( xrif_t handle )
    if(handle->raw_buffer == NULL) 
    {
       handle->own_raw = 0;
+      fprintf(stderr, "xrif_allocate_raw: error from malloc.\n");
+      
       return XRIF_ERROR_MALLOC;
    }
    
@@ -361,12 +424,17 @@ xrif_error_t xrif_allocate_raw( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+// Set the rordered (working) data buffer to a pre-allocated pointer
 xrif_error_t xrif_set_reordered( xrif_t handle,
                                  void * reordered,
                                  size_t size
                                )
 {
-   if( handle == NULL) return XRIF_ERROR_NULLPTR;
+   if( handle == NULL)
+   {
+      fprintf(stderr, "xrif_set_reordered: can not configure null pointer.\n");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    if(handle->reordered_buffer && handle->own_reordered )
    {
@@ -379,13 +447,22 @@ xrif_error_t xrif_set_reordered( xrif_t handle,
    
    handle->own_reordered = 0;
    
-   
    if((handle->reordered_buffer != NULL && handle->reordered_buffer_size == 0) || (handle->reordered_buffer == 0 && handle->reordered_buffer_size != 0))
    {
+      fprintf(stderr, "xrif_set_reordered: the size is not valid.\n");
       return XRIF_ERROR_INVALID_SIZE;
    }
    
-   if(handle->reordered_buffer_size < handle->width * handle->height * handle->depth * handle->frames * handle->data_size) return XRIF_ERROR_INSUFFICIENT_SIZE;
+   //Check minimum size for reordering algorithms to work.
+   size_t one_frame = handle->width*handle->height*handle->depth*handle->data_size;
+
+   if(one_frame < 16) one_frame = 16; //Handle cases where too little data is available for bitpacking.
+   
+   if(handle->reordered_buffer_size < one_frame * (handle->frames+1))
+   {
+      fprintf(stderr, "xrif_set_reordered: the reordered buffer size is too small for configured parameters.\n");
+      return XRIF_ERROR_INSUFFICIENT_SIZE;
+   }
    
    return XRIF_NOERROR;
 }

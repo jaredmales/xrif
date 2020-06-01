@@ -245,6 +245,8 @@ typedef struct
    unsigned char own_reordered;   ///< Flag (true/false) indicating whether the reordered_buffer pointer is managed by this handle.
    char * reordered_buffer;       ///< The reordered buffer pointer, contains the reordered data.
    size_t reordered_buffer_size;  ///< The size of the reordered_buffer pointer.  It must be at least width*height*depth*frames*data_size.
+   ///\todo need reordered_buffer_minsize; ///< The minimum size of the reordered buffer for the image parameters.
+   
    
    unsigned char own_compressed;  ///< Flag (true/false) indicating whether the compressed_buffer pointer is managed by this handle.
    char * compressed_buffer;      ///< The compressed buffer pointer, contains the compressed data.
@@ -373,11 +375,12 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,      ///< [in/out] the xri
                                      );
 
 /// Set the raw data buffer to a pre-allocated pointer
-/** You are responsible for allocating the buffer to be > width*height*frames*size().
+/** You are responsible for allocating the buffer to be larger thanwidth*height*frames*size().
   * This will return an error if size is too small for the currently set values.
   * 
   * This pointer will not be free()-ed on a call to xrif_reset_handle.
   *
+  * \returns XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   * \returns XRIF_NOERROR on success
   */  
@@ -407,6 +410,10 @@ xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to m
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
+  * 
+  * \todo need to have a min size calculation function exposed
+  * \todo need to have runctions use the min size, not the possibly much larger size, for compression.
+  * 
   */  
 xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object to modify
                                  void * reordered, ///< [in] pointer to a pre-allocated block

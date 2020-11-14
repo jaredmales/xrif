@@ -903,36 +903,54 @@ xrif_error_t xrif_encode( xrif_t handle )
    
    clock_gettime(CLOCK_REALTIME, &handle->ts_difference_start);
    
-   rv = xrif_difference( handle);
-   
-   if( rv != XRIF_NOERROR ) 
+   if( handle->difference_method == XRIF_DIFFERENCE_NONE && handle->reorder_method == XRIF_REORDER_NONE && handle->compress_method == XRIF_COMPRESS_NONE)
    {
-      XRIF_ERROR_PRINT("xrif_encode", "error in xrif_difference");
-      return rv;
-   }
-   
-   clock_gettime(CLOCK_REALTIME, &handle->ts_reorder_start);
-   
-   rv = xrif_reorder(handle);
-   
-   if( rv != XRIF_NOERROR ) 
-   {
-      XRIF_ERROR_PRINT("xrif_encode", "error in xrif_reorder");
-      return rv;
-   }
-   
-   clock_gettime(CLOCK_REALTIME, &handle->ts_compress_start);
+      //Set compressed size.
+      handle->compressed_size = handle->width * handle->height * handle->depth * handle->frames * handle->data_size;
 
-   rv = xrif_compress(handle);
-   
-   if( rv != XRIF_NOERROR ) 
-   {
-      XRIF_ERROR_PRINT("xrif_encode", "error in xrif_compress");
-      return rv;
+            
+      if(handle->calc_performance)
+      {
+         //So that we have some non-inifinities in the performance metrics.
+         clock_gettime(CLOCK_REALTIME, &handle->ts_reorder_start);
+         clock_gettime(CLOCK_REALTIME, &handle->ts_compress_start);
+         clock_gettime(CLOCK_REALTIME, &handle->ts_compress_done);
+      }
+      
+      //but otherwise do nothing.
    }
+   else
+   {
+      rv = xrif_difference( handle);
    
-   clock_gettime(CLOCK_REALTIME, &handle->ts_compress_done);
-
+      if( rv != XRIF_NOERROR ) 
+      {
+         XRIF_ERROR_PRINT("xrif_encode", "error in xrif_difference");
+         return rv;
+      }
+      
+      clock_gettime(CLOCK_REALTIME, &handle->ts_reorder_start);
+      
+      rv = xrif_reorder(handle);
+      
+      if( rv != XRIF_NOERROR ) 
+      {
+         XRIF_ERROR_PRINT("xrif_encode", "error in xrif_reorder");
+         return rv;
+      }
+      
+      clock_gettime(CLOCK_REALTIME, &handle->ts_compress_start);
+      
+      rv = xrif_compress(handle);
+      
+      if( rv != XRIF_NOERROR ) 
+      {
+         XRIF_ERROR_PRINT("xrif_encode", "error in xrif_compress");
+         return rv;
+      }
+      
+      clock_gettime(CLOCK_REALTIME, &handle->ts_compress_done);
+   }
    
    if(handle->calc_performance)
    {
@@ -952,40 +970,59 @@ xrif_error_t xrif_encode( xrif_t handle )
 
 xrif_error_t xrif_decode( xrif_t handle )
 {
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_encode", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    xrif_error_t rv;
    
    clock_gettime(CLOCK_REALTIME, &handle->ts_decompress_start);
    
-   rv = xrif_decompress(handle);
-   
-   if( rv != XRIF_NOERROR ) 
+   if( handle->difference_method == XRIF_DIFFERENCE_NONE && handle->reorder_method == XRIF_REORDER_NONE && handle->compress_method == XRIF_COMPRESS_NONE)
    {
-      fprintf(stderr, "xrif_decode: error returned by xrif_decompress\n");
-      return rv;
-   }
-   clock_gettime(CLOCK_REALTIME, &handle->ts_unreorder_start);
-   
-   rv = xrif_unreorder(handle);
-   
-   if( rv != XRIF_NOERROR )
-   {
-      fprintf(stderr, "xrif_decode: error returned by xrif_unreorder\n");
-      return rv;
-   }
-
-    
-   clock_gettime(CLOCK_REALTIME, &handle->ts_undifference_start);
+      if(handle->calc_performance)
+      {
+         //So that we have some non-inifinities in the performance metrics.
+         clock_gettime(CLOCK_REALTIME, &handle->ts_unreorder_start);
+         clock_gettime(CLOCK_REALTIME, &handle->ts_undifference_start);
+         clock_gettime(CLOCK_REALTIME, &handle->ts_undifference_done);
+      }
       
-   rv = xrif_undifference(handle);
-
-   if( rv != XRIF_NOERROR )
-   {
-      fprintf(stderr, "xrif_decode: error returned by xrif_undifference\n");
-      return rv;
+      //but otherwise do nothing.
    }
+   else
+   {
+      rv = xrif_decompress(handle);
+      
+      if( rv != XRIF_NOERROR ) 
+      {
+         fprintf(stderr, "xrif_decode: error returned by xrif_decompress\n");
+         return rv;
+      }
+      clock_gettime(CLOCK_REALTIME, &handle->ts_unreorder_start);
+      
+      rv = xrif_unreorder(handle);
+      
+      if( rv != XRIF_NOERROR )
+      {
+         fprintf(stderr, "xrif_decode: error returned by xrif_unreorder\n");
+         return rv;
+      }
 
-    
-   clock_gettime(CLOCK_REALTIME, &handle->ts_undifference_done);
+      clock_gettime(CLOCK_REALTIME, &handle->ts_undifference_start);
+         
+      rv = xrif_undifference(handle);
+      
+      if( rv != XRIF_NOERROR )
+      {
+         fprintf(stderr, "xrif_decode: error returned by xrif_undifference\n");
+         return rv;
+      }
+
+      clock_gettime(CLOCK_REALTIME, &handle->ts_undifference_done);
+   }
    
    return XRIF_NOERROR;
 }
@@ -1364,10 +1401,15 @@ xrif_error_t xrif_unreorder( xrif_t handle )
    }
 }
 
-
+/// Perform no re-ordering, simply copy raw to reordered.
 xrif_error_t xrif_reorder_none( xrif_t handle )
 {
    size_t npix = handle->width * handle->height * handle->depth * handle->frames; 
+   
+   if( handle == NULL)
+   {
+      return XRIF_ERROR_NULLPTR;
+   }
    
    if( handle->raw_buffer_size < npix*handle->data_size )
    {
@@ -1379,10 +1421,13 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   //Zero the reordered buffer.
-   memset(handle->reordered_buffer, 0, handle->reordered_buffer_size); ///\todo this can be just the extra pixels
-   
    memcpy(handle->reordered_buffer, handle->raw_buffer, npix*handle->data_size);
+   
+   //Zero the rest of the reordered buffer.
+   if(handle->reordered_buffer_size > npix*handle->data_size)
+   {
+      memset(handle->reordered_buffer + npix*handle->data_size, 0, handle->reordered_buffer_size-npix*handle->data_size); 
+   }
    
    return XRIF_NOERROR;
 }
@@ -1660,12 +1705,33 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 }
       
 
-         
+/// Perform no un-re-ordering, simply copy reordered to raw.
 xrif_error_t xrif_unreorder_none( xrif_t handle )
 {
    size_t npix = handle->width * handle->height * handle->depth * handle->frames; 
    
+   if( handle == NULL)
+   {
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if( handle->raw_buffer_size < npix*handle->data_size )
+   {
+      return XRIF_ERROR_INSUFFICIENT_SIZE;
+   }
+   
+   if( handle->reordered_buffer_size < npix*handle->data_size )
+   {
+      return XRIF_ERROR_INSUFFICIENT_SIZE;
+   }
+   
    memcpy(handle->raw_buffer, handle->reordered_buffer, npix*handle->data_size);
+   
+   //Zero the rest of the raw buffer.
+   if(handle->raw_buffer_size > npix*handle->data_size)
+   {
+      memset(handle->raw_buffer + npix*handle->data_size, 0, handle->raw_buffer_size-npix*handle->data_size); 
+   }
    
    return XRIF_NOERROR;
 }

@@ -919,6 +919,85 @@ END_TEST
  * 
  *=====================================================================================*/
 
+//Verify that the full xrif encode-decode cycle works for signed 16 bit integers for all methods NONE
+//for int16_t
+START_TEST (encode_none_none_none_int16_white)
+{
+   xrif_t hand = NULL;
+   
+   xrif_error_t rv = xrif_new(&hand);
+   
+   ck_assert( hand != NULL);
+   ck_assert( rv == XRIF_NOERROR );
+ 
+   // Intialize the random number sequence
+   srand((unsigned) time(NULL));
+   
+   int fail = 0;
+   
+   for(int q=0; q<XRIF_TEST_TRIALS; ++q)
+   {
+      for(int w =0; w < sizeof(ws)/sizeof(ws[0]); ++w)
+      {
+         for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
+         {
+            for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
+            {
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               ck_assert( rv == XRIF_NOERROR );
+      
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_NONE, XRIF_REORDER_NONE, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
+               
+               rv = xrif_allocate(hand);
+               ck_assert( rv == XRIF_NOERROR );
+               
+               int16_t * buffer = (int16_t *) hand->raw_buffer;
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames);
+               ck_assert( rv == 0 );
+               
+               int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
+               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
+      
+               rv = xrif_encode(hand);
+               ck_assert( rv == 0 );
+               
+               rv = xrif_decode(hand);
+               ck_assert( rv == 0 );
+               
+               int neq = 0;
+               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               {
+                  if(buffer[i] != compbuff[i]) 
+                  {
+                     ++neq;
+                  }
+               }
+               
+               if(neq > 0)
+               {
+                  ++fail;
+                  fprintf(stderr, "failure encode_none_none_none_int16_white: %d %d %d\n", ws[w], hs[h], ps[p]);
+               }
+                              
+               free(compbuff);
+               xrif_reset(hand);
+            }//p
+         }//h
+      }//w
+   }//q
+   
+   
+   ck_assert( fail == 0 );
+   
+   rv = xrif_delete(hand);
+   ck_assert( rv == XRIF_NOERROR );
+   
+}
+END_TEST
+
+
+//------------- Actual compression:
 //Verify that the full xrif encode-decode cycle works for signed 16 bit integers in the bytepack method
 //for int16_t
 START_TEST (encode_previous_bytepack_lz4_int16_white)
@@ -1885,6 +1964,9 @@ Suite * whitenoise_suite(void)
     tcase_add_test(tc_core, reorder_bitpack_int16_white);
     tcase_add_test(tc_core, reorder_bitpack_uint16_white);
     /**/
+    
+    //Full encoding with all NONE
+    tcase_add_test(tc_core, encode_none_none_none_int16_white);
     
     //Full encoding with LZ4 
     tcase_add_test(tc_core, encode_previous_bytepack_lz4_int16_white);

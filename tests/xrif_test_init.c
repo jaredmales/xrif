@@ -220,7 +220,7 @@ START_TEST (setup_nullptr)
 {
    //Verfiy that the setup function returns an error on a null ptr
    
-   xrif_error_t rv = xrif_initialize_handle(NULL);
+   xrif_error_t rv = xrif_set_size(NULL, 1024,64,32,1000, XRIF_TYPECODE_INT16);
    
    ck_assert( rv == XRIF_ERROR_NULLPTR );
    

@@ -14,6 +14,11 @@ $ sudo yum install check-devel
 $ sudo yum install subunit-devel
 ```
 
+On Ubuntu:
+```
+$ sudo apt-get install check
+```
+
 ## Configure, Make, and Install
 
 For a standard posix system, you should only need to do these steps:
@@ -37,7 +42,7 @@ xrif_t xrif;
 xrif_error_t rv;
 rv = xrif_new(&xrif);
 
-rv = xrif_set_size(xrif, rows, cols, 1, planes, XRIF_TYPECODE_INT16); // For a cube with `planes` images of size `rows X cols` `int int16_t`
+rv = xrif_set_size(xrif, rows, cols, 1, planes, XRIF_TYPECODE_INT16); // For a cube with `planes` images of size `rows X cols` of type `int16_t`
 
 rv = xrif_allocate(xrif);
 

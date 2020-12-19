@@ -234,7 +234,7 @@ typedef uint8_t xrif_typecode_t;
   * \code
   * xrif_error_t rv;
   * xrif_t handle; //note: this is a pointer type
-  * rv = xrif_new(&handle); //note: the argumeng is a pointer to pointer
+  * rv = xrif_new(&handle); //note: the argument is a pointer to pointer
   * //check rv for errors here . . .
   * \endcode
   * You now have an initialized xrif handle.  The `xrif_t` type can not be used until `xrif_new` has been called on it.
@@ -714,69 +714,173 @@ xrif_error_t xrif_decode( xrif_t handle /**< [in/out] the xrif handle */);
   * @{
   */
 
-/// Difference!
-xrif_error_t xrif_difference( xrif_t handle );
+/// Difference the image(s)
+/** This function calls the method specific difference function for the method specified by
+  * handle->difference_method.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if xrif_handle::difference_method as set in the handle is not valid
+  * \returns other error codes from the differencing functions
+  * \returns \ref XRIF_NOERROR on success
+  */
+xrif_error_t xrif_difference( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Undifference!
-xrif_error_t xrif_undifference( xrif_t handle );
+/// Undifference the image(s)
+/** This function calls the method specific undifference function for the method specified by
+  * handle->difference_method.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if xrif_handle::difference_method as set in the handle is not valid
+  * \returns other error codes from the differencing functions
+  * \returns \ref XRIF_NOERROR on success
+  */
+xrif_error_t xrif_undifference( xrif_t handle /**< [in/out] the xrif handle */ );
+
+///@}
+
+/** \defgroup xrif_diff_previous Previous Differencing
+  * \ingroup xrif_diff
+  * 
+  * The previous differencing method uses the previous frame as the reference.
+  * 
+  * @{
+  */
+
+/// Difference the images using the previous image as a reference.
+/** This function calls the type specific difference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns other error codes from the differencing functions
+  * \returns \ref XRIF_NOERROR on success
+  */
+xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Difference all images with respect to previous image, for signed 16-bit integer data type.
-/**
+/** Note that this is currently used for unsigned 16-bits as well.  This is likely suboptimal.
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXX on error, with the appropriate error code.
   */ 
 xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Difference all images with respect to previous image, for uint64_t data type
-/**
+/// Difference all images with respect to previous image, for signed 32-bit integer data type.
+/** Note that this is currently used for unsigned 32-bits as well.  This is likely suboptimal.
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
   */ 
-xrif_error_t xrif_difference_previous_uint64( xrif_t handle /**< [in/out] the xrif handle */);
+xrif_error_t xrif_difference_previous_sint32( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Difference all images with respect to previous image, for signed 64-bit data type
+/** Note that this is currently used for unsigned 64-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  */ 
+xrif_error_t xrif_difference_previous_sint64( xrif_t handle /**< [in/out] the xrif handle */);
+
+///@}
+
+/** \defgroup xrif_diff_first First Differencing
+  * \ingroup xrif_diff
+  * 
+  * The first differencing method uses the first frame as the reference for all subsequent frames.
+  * 
+  * @{
+  */
 
 /// Difference all images with respect to the first image, for signed 16-bit integer data type.
 /**
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
   */ 
 xrif_error_t xrif_difference_first_sint16( xrif_t handle/**< [in/out] the xrif handle */ );
 
 /// Difference all images with respect to the first image, for uint64_t data type.
 /**
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
   */ 
 xrif_error_t xrif_difference_first_uint64( xrif_t handle/**< [in/out] the xrif handle */ );
 
+///@}
+
 xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif handle */);
+
+/** \defgroup xrif_diff_pixel Pixel Differencing
+  * \ingroup xrif_diff
+  * 
+  * The pixel differencing method uses the previous pixel as the reference.
+  * 
+  * @{
+  */
 
 /// Difference each image with respect to its first pixel, for signed 16-bit integer data type.
 /**
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
   */ 
 xrif_error_t xrif_difference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
+
+///@}
+
+/// Undifference the images using the previous image as a reference.
+/** This function calls the type specific undifference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if undifferencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns XRIF_ERROR codes from the undifferencing functions
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_diff_previous
+  */
+xrif_error_t xrif_undifference_previous( xrif_t handle /**< [in/out] the xrif handle */ );
+
 /// Reverse the differencing operation, w.r.t. the previous image, for signed 16-bit integer data type.
-/**
+/** Note that this is currently used for unsigned 16-bits as well.  This is likely suboptimal.
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR on error, with the appropreate error code.
+  * 
+  * \ingroup xrif_diff_previous
   */ 
 xrif_error_t xrif_undifference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
-///@}
+/// Reverse the differencing operation, w.r.t. the previous image, for signed 32-bit integer data type.
+/** Note that this is currently used for unsigned 32-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \ingroup xrif_diff_previous
+  */ 
+xrif_error_t xrif_undifference_previous_sint32( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Reverse the differencing operation, w.r.t. the previous image, for signed 64-bit integer data type.
+/** Note that this is currently used for unsigned 64-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \ingroup xrif_diff_previous
+  */ 
+xrif_error_t xrif_undifference_previous_sint64( xrif_t handle /**< [in/out] the xrif handle */);
+
 
 /// Reverse the differencing operation on each image with respect to its first pixel, for signed 16-bit integer data type.
 /**
   *
-  * \returns 0 on success.
-  * \returns <0 on error, with the appropreate error code.
+  * \returns XRIF_NOERROR on success.
+  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \ingroup xrif_diff_pixel
   */ 
 xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -800,6 +904,18 @@ xrif_error_t xrif_reorder( xrif_t handle /**< [in/out] the xrif handle */);
   */ 
 xrif_error_t xrif_unreorder( xrif_t handle /**< [in/out] the xrif handle */);
 
+//xrif_reorder:
+///@}
+
+
+/** \defgroup xrif_reorder_none No reordering
+  * \ingroup xrif_reorder
+  * 
+  * Functions to perform the "none" reordering method
+  * 
+  * @{
+  */
+
 /// Perform no re-ordering, simply copy raw to reordered.
 /** Also zeroes any excess in xrif_handle::reordered_buffer.
   *
@@ -809,7 +925,37 @@ xrif_error_t xrif_unreorder( xrif_t handle /**< [in/out] the xrif handle */);
   */ 
 xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ );
 
+//xrif_reorder_none:
+///@}
+
+/** \defgroup xrif_reorder_bytepack Bytepack reordering
+  * \ingroup xrif_reorder
+  * 
+  * Functions to perform the "bytepack" reordering method
+  * 
+  * @{
+  */
+
+/// Dispatch bytepack reodering based on type
+/** Calls the type appropriate xrif_reorder_bytepack_X function.
+  *
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  */ 
 xrif_error_t xrif_reorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */ );
+
+/// Perform bytepack reodering for signed 16 bit ints
+/** 
+  *
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  */ 
+xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
+
+//xrif_reorder_bytepack:
+///@}
 
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */ );
 
@@ -825,10 +971,33 @@ xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle /**< [in/out] the xrif h
   * \returns \ref XRIF_NOERROR on success
   * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if allocated buffers aren't big enough
+  * 
+  * \ingroup xrif_reorder_none
   */ 
 xrif_error_t xrif_unreorder_none( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Dispatch bytepack unreodering based on type
+/** Calls the type appropriate xrif_unreorder_bytepack_X function.
+  *
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * \ingroup xrif_reorder_bytepack
+  */ 
 xrif_error_t xrif_unreorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Perform bytepack unreodering for signed 16 bit ints
+/** 
+  * \todo this does not actually perform any size checks, but should.
+  * 
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * \ingroup xrif_reorder_bytepack
+  */ 
+xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
 xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */);
 

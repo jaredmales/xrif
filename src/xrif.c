@@ -1029,6 +1029,12 @@ xrif_error_t xrif_decode( xrif_t handle )
 
 xrif_error_t xrif_difference( xrif_t handle )
 {
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_difference", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    int method = handle->difference_method;
    
    if(method == 0) method = XRIF_DIFFERENCE_DEFAULT;
@@ -1038,7 +1044,7 @@ xrif_error_t xrif_difference( xrif_t handle )
       case XRIF_DIFFERENCE_NONE:
          return XRIF_NOERROR;
       case XRIF_DIFFERENCE_PREVIOUS:
-         return xrif_difference_previous_sint16(handle);
+         return xrif_difference_previous(handle);
       case XRIF_DIFFERENCE_FIRST:
          return xrif_difference_first_sint16(handle);
       case XRIF_DIFFERENCE_PIXEL:
@@ -1050,6 +1056,12 @@ xrif_error_t xrif_difference( xrif_t handle )
 
 xrif_error_t xrif_undifference( xrif_t handle )
 {
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_undifference", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    int method = handle->difference_method;
    
    if(method == 0) method = XRIF_DIFFERENCE_DEFAULT;
@@ -1059,7 +1071,7 @@ xrif_error_t xrif_undifference( xrif_t handle )
       case XRIF_DIFFERENCE_NONE:
          return XRIF_NOERROR;
       case XRIF_DIFFERENCE_PREVIOUS:
-         return xrif_undifference_previous_sint16(handle);
+         return xrif_undifference_previous(handle);
       case XRIF_DIFFERENCE_FIRST:
          return XRIF_ERROR_NOTIMPL;
       case XRIF_DIFFERENCE_PIXEL:
@@ -1067,6 +1079,35 @@ xrif_error_t xrif_undifference( xrif_t handle )
       default:
          return XRIF_ERROR_NOTIMPL;
    }
+}
+
+//Dispatch differencing w.r.t. previous according to type
+xrif_error_t xrif_difference_previous( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_difference_previous", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_difference_previous_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      return xrif_difference_previous_sint32(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      return xrif_difference_previous_sint64(handle);
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_difference_previous", "previous differencing not implemented for type");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   
 }
 
 xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
@@ -1103,7 +1144,7 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_difference_previous_uint64( xrif_t handle )
+xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
 {
    for(int n=0; n < handle->frames-1; ++n)
    {
@@ -1123,7 +1164,41 @@ xrif_error_t xrif_difference_previous_uint64( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
             
-               ((int64_t *) handle->raw_buffer)[idx] = (((uint64_t *)handle->raw_buffer)[idx] - ((uint64_t*)handle->raw_buffer)[idx0]);
+               //int F = ((int16_t *)handle->raw_buffer)[idx];
+               //int L = ((int16_t*)handle->raw_buffer)[idx0];
+               //unsigned int16_t D = abs(F-L);
+               ((int32_t *) handle->raw_buffer)[idx] = (((int32_t *)handle->raw_buffer)[idx] - ((int32_t*)handle->raw_buffer)[idx0]);
+            }
+         }
+         
+      }
+   } 
+   
+   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
+{
+   for(int n=0; n < handle->frames-1; ++n)
+   {
+      size_t n_stride0 = (handle->frames - 2 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*handle->height*handle->width;
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+         
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
+               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            
+               ((int64_t *) handle->raw_buffer)[idx] = (((int64_t *)handle->raw_buffer)[idx] - ((int64_t*)handle->raw_buffer)[idx0]);
             }
          }
          
@@ -1280,6 +1355,35 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+//Dispatch undifferencing w.r.t. previous according to type
+xrif_error_t xrif_undifference_previous( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_undifference_previous", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_undifference_previous_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      return xrif_undifference_previous_sint32(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      return xrif_undifference_previous_sint64(handle);
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_difference_previous", "previous undifferencing not implemented for type");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+}
+
 xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
 {
    for(int n=1; n < handle->frames; ++n)
@@ -1309,7 +1413,7 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_undifference_previous_uint64( xrif_t handle )
+xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
 {
    for(int n=1; n < handle->frames; ++n)
    {
@@ -1329,7 +1433,36 @@ xrif_error_t xrif_undifference_previous_uint64( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
                
-               ((uint64_t *) handle->raw_buffer)[idx] = ((int64_t *)handle->raw_buffer)[idx] + ((int64_t *)handle->raw_buffer)[idx0];
+               ((int32_t *) handle->raw_buffer)[idx] = ((int32_t *)handle->raw_buffer)[idx] + ((int32_t*)handle->raw_buffer)[idx0];
+            }
+         }
+      }
+   }
+   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
+{
+   for(int n=1; n < handle->frames; ++n)
+   {
+      size_t n_stride0 = (n-1) * handle->height*handle->width*handle->depth;
+      size_t n_stride =  n * handle->height*handle->width*handle->depth;
+      
+      for(int kk=0; kk<handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*handle->height*handle->width;
+         
+         for(int ii=0; ii< handle->width; ++ii)
+         {
+            size_t ii_stride = ii*handle->height;
+            
+            for(int jj=0; jj< handle->height; ++jj)
+            {
+               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
+               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+               
+               ((int64_t *) handle->raw_buffer)[idx] = ((int64_t *)handle->raw_buffer)[idx] + ((int64_t *)handle->raw_buffer)[idx0];
             }
          }
       }
@@ -1432,9 +1565,51 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+//--------------------------------------------------------------------
+//  bytepack reodering
+//--------------------------------------------------------------------
+
+//Dispatch bytepack reordering according to type
 xrif_error_t xrif_reorder_bytepack( xrif_t handle )
 {
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_reorder_bytepack_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "bytepack reordering not implemented for 32 bit ints");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "bytepack reordering not implemented for 64 bit ints");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "bytepack reordering not implemented for type");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   
+}
+
+//Bytepack reodering for 16 bit ints
+xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
+{
    size_t one_frame, npix;
+ 
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_reorder_bytepack_sint16", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    //If it's pixel, we reorder the first frame too.
    if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
@@ -1447,7 +1622,6 @@ xrif_error_t xrif_reorder_bytepack( xrif_t handle )
       one_frame = handle->width*handle->height* handle->depth *handle->data_size; //bytes
       npix = handle->width * handle->height * handle->depth * (handle->frames-1); //pixels not bytes
    }
-   
    
    char * raw_buffer = handle->raw_buffer + one_frame ;
    char * reordered_buffer = handle->reordered_buffer + one_frame;
@@ -1736,11 +1910,53 @@ xrif_error_t xrif_unreorder_none( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+//--------------------------------------------------------------------
+//  bytepack unreodering
+//--------------------------------------------------------------------
+
+//Dispatch bytepack unreordering according to type
 xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_unreorder_bytepack_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 32 bit ints");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 64 bit ints");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for type");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   
+}
+
+//Unreorder bytepack for signed 16 bit ints
+xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
 {
    int_fast8_t x1, x2;
 
    size_t one_frame, npix;
+   
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack_sint16", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
    
    //If it's pixel, we reorder the first frame too.
    if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)

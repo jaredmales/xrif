@@ -1,7 +1,7 @@
 
 /* This file is part of the xrif library.
 
-Copyright (c) 2019, The Arizona Board of Regents on behalf of The
+Copyright (c) 2019, 2020 The Arizona Board of Regents on behalf of The
 University of Arizona
 
 All rights reserved.
@@ -85,6 +85,8 @@ matter of this Agreement.
 
 #include "../src/xrif.h"
 
+#include "randutils.h"
+
 #ifndef XRIF_TEST_TRIALS
    #define XRIF_TEST_TRIALS (100)
 #endif
@@ -92,141 +94,6 @@ matter of this Agreement.
 int ws[] = {2,4,8,21, 33, 47, 64}; //widths of images
 int hs[] = {2,4,8,21, 33, 47, 64}; //heights of images
 int ps[] = {1,2,4,5,27,63,64}; //planes of the cube
- 
-//Fill a 16-bit buffer with 14 bit signed white noise
-int fill_int14_white( int16_t * buffer,
-                      size_t size 
-                    )
-{
-   
-   if(buffer == NULL) return -1;
-   if(size < 1) return -1;
-   
-   for( size_t i = 0; i < size; ++i ) 
-   {
-      buffer[i] = -8192 + (((double) rand())/RAND_MAX)*(8191-(-8182));
-   }
-   
-   return 0;
-}
-
-//Fill a 16-bit buffer with 14 bit unsigned white noise
-int fill_uint14_white( int16_t * buffer,
-                       size_t size 
-                     )
-{
-   
-   if(buffer == NULL) return -1;
-   if(size < 1) return -1;
-   
-   for( size_t i = 0; i < size; ++i ) 
-   {
-      buffer[i] = (((double) rand())/RAND_MAX)*(16383);
-   }
-   
-   return 0;
-}
-
-//Fill a 16-bit buffer with 16-bit signed white noise
-int fill_int16_white( int16_t * buffer,
-                      size_t size 
-                    )
-{
-   
-   if(buffer == NULL) return -1;
-   if(size < 1) return -1;
-   
-   for( size_t i = 0; i < size; ++i ) 
-   {
-      buffer[i] = -32768 + (((double) rand())/RAND_MAX)*(32767-(-32768));
-   }
-   
-   return 0;
-}
-
-//Fill a 16-bit buffer with 16-bit unsigned white noise
-int fill_uint16_white( uint16_t * buffer,
-                       size_t size 
-                     )
-{
-   if(buffer == NULL) return -1;
-   if(size < 1) return -1;
-   
-   for( size_t i = 0; i < size; ++i ) 
-   {
-      buffer[i] = (((double) rand())/RAND_MAX)*(65535);
-   }
-   
-   return 0;
-}
-
-// Verify that xrif difference/un-difference cycle using previous image works with white noise
-// For int16_t
-START_TEST (diff_previous_int16_white)
-{
-   xrif_t hand = NULL;
-   
-   xrif_error_t rv = xrif_new(&hand);
-   
-   ck_assert( hand != NULL);
-   ck_assert( rv == XRIF_NOERROR );
- 
-   /*int ws[] = {5,6,33, 47, 64};
-   int hs[] = {5,6,33, 47, 64};
-   int ps[] = {2,3,4,5,27,63,64};*/
-
-   // Intialize the random number sequence
-   srand((unsigned) time(NULL));
-   
-   for(int q=0; q < XRIF_TEST_TRIALS; ++q)
-   {
-      for(int w =0; w < sizeof(ws)/sizeof(ws[0]); ++w)
-      {
-         for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
-         {
-            for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
-            {
-               
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
-               ck_assert( rv == XRIF_NOERROR );
-      
-               rv = xrif_allocate_raw(hand);
-               ck_assert( rv == XRIF_NOERROR );
-               
-               rv = xrif_allocate_reordered(hand);
-               ck_assert( rv == XRIF_NOERROR );
-               
-               int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white( buffer, hand->width*hand->height*hand->frames);
-               ck_assert( rv == 0 );
-               
-               int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
-            
-               xrif_difference_previous_sint16(hand);
-               xrif_undifference_previous_sint16(hand);
-               
-               int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
-               {
-                  if(buffer[i] != compbuff[i]) 
-                  {
-                     ++neq;
-                  }
-               }
-               ck_assert( neq == 0 );
-               
-               free(compbuff);
-               xrif_reset(hand);
-            }//p
-         }//h
-      }//w
-   }//q
-   
-   rv = xrif_delete(hand);
-   ck_assert( rv == XRIF_NOERROR );
-}
-END_TEST
 
 // Verify that xrif difference/un-difference cycle using pixels works with white noise
 // For int16_t
@@ -297,73 +164,6 @@ START_TEST (diff_pixel_int16_white)
 }
 END_TEST
 
-// Verify that xrif difference/un-difference cycle using previous image works with white noise
-// For uint16_t
-START_TEST (diff_previous_uint16_white)
-{
-   xrif_t hand = NULL;
-   
-   xrif_error_t rv = xrif_new(&hand);
-   
-   ck_assert( hand != NULL);
-   ck_assert( rv == XRIF_NOERROR );
- 
-   /*int ws[] = {5,6,33, 47, 64};
-   int hs[] = {5,6,33, 47, 64};
-   int ps[] = {2,3,4,5,27,63,64};*/
-
-   // Intialize the random number sequence
-   srand((unsigned) time(NULL));
-   
-   for(int q=0; q < XRIF_TEST_TRIALS; ++q)
-   {
-      for(int w =0; w < sizeof(ws)/sizeof(ws[0]); ++w)
-      {
-         for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
-         {
-            for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
-            {
-               
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
-               ck_assert( rv == XRIF_NOERROR );
-      
-               rv = xrif_allocate_raw(hand);
-               ck_assert( rv == XRIF_NOERROR );
-               
-               rv = xrif_allocate_reordered(hand);
-               ck_assert( rv == XRIF_NOERROR );
-               
-               uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white( buffer, hand->width*hand->height*hand->frames);
-               ck_assert( rv == 0 );
-               
-               uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint16_t));
-            
-               xrif_difference_previous_sint16(hand);
-               xrif_undifference_previous_sint16(hand);
-               
-               int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
-               {
-                  if(buffer[i] != compbuff[i]) 
-                  {
-                     ++neq;
-                  }
-               }
-               ck_assert( neq == 0 );
-               
-               free(compbuff);
-               xrif_reset(hand);
-            }//p
-         }//h
-      }//w
-   }//q
-   
-   rv = xrif_delete(hand);
-   ck_assert( rv == XRIF_NOERROR );
-}
-END_TEST
 
 // Verify that xrif difference/un-difference cycle using pixels works with white noise
 // For uint16_t
@@ -1947,13 +1747,13 @@ Suite * whitenoise_suite(void)
     
     /*
     //Differencing:
-    tcase_add_test(tc_core, diff_previous_int16_white);
+    
     tcase_add_test(tc_core, diff_pixel_int16_white);
     
-    tcase_add_test(tc_core, diff_previous_uint16_white);
+    
     tcase_add_test(tc_core, diff_pixel_uint16_white);
     
-   
+    /*
     //Reordering
     tcase_add_test(tc_core, reorder_bytepack_int16_white);
     tcase_add_test(tc_core, reorder_bytepack_uint16_white);
@@ -1984,7 +1784,7 @@ Suite * whitenoise_suite(void)
     tcase_add_test(tc_core, encode_pixel_bytepack_lz4_uint16_white);
     tcase_add_test(tc_core, encode_pixel_bytepack_renibble_lz4_uint16_white);
     tcase_add_test(tc_core, encode_pixel_bitpack_lz4_uint16_white);
-  
+    /**/
     suite_add_tcase(s, tc_core);
 
     return s;

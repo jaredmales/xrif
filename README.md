@@ -2,6 +2,8 @@
 
 A fast, high performance, lossless compression system.
 
+Code documentation is here: https://jaredmales.github.io/xrif-docs/modules.html
+
 # Building
 
 ## Dependencies

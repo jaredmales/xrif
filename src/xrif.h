@@ -226,9 +226,11 @@ typedef uint8_t xrif_typecode_t;
 /// @}
 
 
-/** \defgroup xrif_interface The main xrif library interface 
-  *
-  * The following code illustrates how the XRIF library is used.
+/** \defgroup xrif_interface Top-level interface 
+  * The top-level interface to the XRIF library.
+  * 
+  * The following code illustrates how the XRIF library shoud used to compress data under most circumstances.  
+  * Lower level access is provided if fine-grain control is needed.
   *
   * First, create the xrif library handle:
   * \code

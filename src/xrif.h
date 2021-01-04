@@ -133,6 +133,9 @@ extern "C"
 #define XRIF_COMPRESS_DEFAULT (100)
 #define XRIF_COMPRESS_LZ4 (100)
 
+#define XRIF_LZ4_ACCEL_MIN (1)
+#define XRIF_LZ4_ACCEL_MAX (65537)
+   
 /// The type used for storing the width and height and depth dimensions of images.
 typedef uint32_t xrif_dimension_t;
 
@@ -176,10 +179,13 @@ typedef int xrif_error_t;
 #define XRIF_ERROR_BADARG (-110)
 
 /// Return code indicating that the header is bad.
-#define XRIF_ERROR_BADHEADER (-1000);
+#define XRIF_ERROR_BADHEADER (-1000)
 
 /// Return code indicating that a wrong version was specified.
-#define XRIF_ERROR_WRONGVERSION (-1010);
+#define XRIF_ERROR_WRONGVERSION (-1010)
+
+/// Return code indicating a library returned an error (e.g. LZ4).  The library error code may be added to this.
+#define XRIF_ERROR_LIBERR (-10000)
 
 /// Standard error report.
 #define XRIF_ERROR_PRINT( function, msg ) fprintf(stderr, "%s: %s\n", function, msg)
@@ -471,6 +477,9 @@ xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been i
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if handle is NULL.
   * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify handle initialization. \ref tests_initialize_handle_noerror "[test doc]"
+  * \test Verify xrif_initialize_handle returns error on NULL pointer. \ref tests_initialize_handle_nullptr "[test doc]"
   */ 
 xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to initialize */);
 
@@ -498,6 +507,7 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,     ///< [in/out] the xrif 
 
 /// Set the compress method.
 /** Sets the compress_method member of handle.
+  * Valid methods are XRIF_COMPRESS_NONE, XRIF_COMPRESS_DEFAULT, and XRIF_COMPRESS_LZ4.  XRIF_COMPRESS_DEFAULT is equivalent to XRIF_COMPRESS_LZ4.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_BADARG if `compress_method` is not a valid compress method.  Will set method to XRIF_COMPRESS_DEFAULT.
@@ -507,7 +517,18 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,      ///< [in/out] the xri
                                        int compress_method ///< [in] the new compress method
                                      );
 
-
+/// Set the LZ4 acceleration parameter
+/** The LZ4 acceleration paraameter is a number greater than or equal to 1.  Larger values speed up the compression
+  * process, but with less size reduction.  The default and minimum value is 1 (XRIF_LZ4_ACCEL_MIN).  
+  * The maximum value is 65537 (XRIF_LZ4_ACCEL_MAX).  The LZ4 docs claim a +-3% improvement in speed for each incrment.
+  *
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `lz4_acceleration` is out of range.  Will set value to correspondling min or max limit.
+  * \returns \ref XRIF_NOERROR on success.
+  */ 
+xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    ///< [in/out] the xrif handle to be configured
+                                        int32_t lz4_accel ///< [in] LZ4 acceleration parameter
+                                      );
 
 /// Calculate the minimum size of the raw buffer.
 /** Result is based on current connfiguration of the handle.
@@ -637,6 +658,40 @@ xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object 
 xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// @}
+
+/** \defgroup access Current Configuration
+  * \ingroup \xrif_interface  
+  *  
+  * Access to current configuration values.
+  * 
+  *@{
+  */
+
+   /// Get the current width of the configured handle.
+   /**
+     * \returns the width
+     */ 
+   xrif_dimension_t xrif_width( xrif_t handle /**< [in] the xrif handle*/);
+   
+   /// Get the current height of the configured handle.
+   /**
+     * \returns the height
+     */
+   xrif_dimension_t xrif_height( xrif_t handle /**< [in] the xrif handle*/);
+   
+   /// Get the current depth of the configured handle.
+   /**
+     * \returns the depth
+     */
+   xrif_dimension_t xrif_depth( xrif_t handle /**< [in] the xrif handle*/);
+   
+   /// Get the current number of frames of the configured handle.
+   /**
+     * \returns the frames
+     */
+   xrif_dimension_t xrif_frames( xrif_t handle /**< [in] the xrif handle*/);
+   
+///@}
 
 /** \defgroup header Header Processing 
   * \ingroup xrif_interface

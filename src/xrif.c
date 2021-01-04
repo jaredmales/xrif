@@ -420,10 +420,40 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,
    else if( compress_method == XRIF_COMPRESS_LZ4 ) handle->compress_method = XRIF_COMPRESS_LZ4;
    else
    {
-      compress_method == XRIF_COMPRESS_DEFAULT;
+      handle->compress_method = XRIF_COMPRESS_DEFAULT;
       XRIF_ERROR_PRINT("xrif_set_compress_method", "unrecognized compress method.  Setting default");
       return XRIF_ERROR_BADARG;
    }
+   
+   return XRIF_NOERROR;
+}
+
+// Set the LZ4 acceleration parameter
+xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    // [in/out] the xrif handle to be configured
+                                        int32_t lz4_accel // [in] LZ4 acceleration parameter, \>=1, higher is faster with less comporession.
+                                      )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_set_lz4_acceleration", "can not configure null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(lz4_accel < XRIF_LZ4_ACCEL_MIN)
+   {
+      XRIF_ERROR_PRINT("xrif_set_lz4_acceleration", "LZ4 acceleration can't be less than XRIF_LZ4_ACCEL_MIN.  Setting to XRIF_LZ4_ACCEL_MIN.");
+      handle->lz4_acceleration = XRIF_LZ4_ACCEL_MIN;
+      return XRIF_ERROR_BADARG;
+   }
+   
+   if(lz4_accel > XRIF_LZ4_ACCEL_MAX) //Max according to LZ4 docs
+   {
+      XRIF_ERROR_PRINT("xrif_set_lz4_acceleration", "LZ4 acceleration can't be greater than XRIF_LZ4_ACCEL_MAX.  Setting to XRIF_LZ4_ACCEL_MAX.");
+      handle->lz4_acceleration = XRIF_LZ4_ACCEL_MAX;
+      return XRIF_ERROR_BADARG;
+   }
+   
+   handle->lz4_acceleration = lz4_accel;
    
    return XRIF_NOERROR;
 }
@@ -768,7 +798,49 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+xrif_dimension_t xrif_width( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_width", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->width;
+}   
 
+xrif_dimension_t xrif_height( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_height", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->height;
+}
+
+xrif_dimension_t xrif_depth( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_depth", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->depth;
+}
+
+xrif_dimension_t xrif_frames( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_frames", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->frames;
+}   
 
 // Populate a header buffer with the xrif protocol details.
 xrif_error_t xrif_write_header( char * header,
@@ -1130,9 +1202,6 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
                size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
                size_t idx = n_stride + kk_stride + ii_stride  + jj;
             
-               //int F = ((int16_t *)handle->raw_buffer)[idx];
-               //int L = ((int16_t*)handle->raw_buffer)[idx0];
-               //unsigned int16_t D = abs(F-L);
                ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
             }
          }
@@ -2276,7 +2345,10 @@ xrif_error_t xrif_compress_lz4( xrif_t handle )
       compressed_size = handle->compressed_buffer_size;
    }
    
-   handle->compressed_size = LZ4_compress_fast ( handle->reordered_buffer, compressed_buffer, handle->reordered_buffer_size, compressed_size, handle->lz4_acceleration);
+   //LZ4 only takes ints for sizes
+   int srcSize = handle->width*handle->height*handle->depth*handle->frames*handle->data_size;
+   
+   handle->compressed_size = LZ4_compress_fast ( handle->reordered_buffer, compressed_buffer, srcSize, compressed_size, handle->lz4_acceleration);
    
    if(handle->compressed_size == 0 )
    {
@@ -2290,6 +2362,12 @@ xrif_error_t xrif_compress_lz4( xrif_t handle )
 
 xrif_error_t xrif_decompress_lz4( xrif_t handle )
 {
+   if(handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_decompress_lz4", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
    char *compressed_buffer;
    
    if(handle->compress_on_raw) 
@@ -2303,11 +2381,17 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle )
    
    int size_decomp = LZ4_decompress_safe (compressed_buffer, handle->reordered_buffer, handle->compressed_size, handle->reordered_buffer_size);
 
-//    if(handle->reordered_buffer_size != size_decomp) 
-//    {
-//       fprintf(stderr, "xrif_decompress_lz4: size mismatch after decompression.\n");
-//       return XRIF_ERROR_INVALID_SIZE;
-//    }
+   if(size_decomp < 0)
+   {
+      XRIF_ERROR_PRINT("xrif_decompress_lz4", "error in LZ4_decompress_safe");
+      return (XRIF_ERROR_LIBERR + size_decomp);
+   }
+   
+   if(handle->width*handle->height*handle->depth*handle->frames*handle->data_size != size_decomp) 
+   {
+      XRIF_ERROR_PRINT("xrif_decompress_lz4", "size mismatch after decompression.");
+      return XRIF_ERROR_INVALID_SIZE;
+   }
    
    return XRIF_NOERROR;
 }

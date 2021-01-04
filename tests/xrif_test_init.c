@@ -1,3 +1,10 @@
+/** \file xrif_test_init.c
+  * \brief Tests of xrif initialization.
+  *
+  * \author Jared R. Males (jaredmales@gmail.com)
+  *
+  * \ingroup xrif_files
+  */
 
 /* This file is part of the xrif library.
 
@@ -83,7 +90,12 @@ matter of this Agreement.
 
 #include "../src/xrif.h"
 
-
+/// Verify handle initialization
+/** Tests that each member is properly initialized.
+  *
+  * \anchor tests_initialize_handle_noerror
+  * 
+  */
 START_TEST (initialize_handle_noerror)
 {
    //Verify that all fields are initialized to their defaults.
@@ -120,10 +132,14 @@ START_TEST (initialize_handle_noerror)
 }
 END_TEST
 
+/// Verify xrif_initialize_handle returns error on NULL pointer
+/**
+  *
+  * \anchor tests_initialize_handle_nullptr
+  * 
+  */
 START_TEST (initialize_handle_nullptr)
 {
-   //Verify that all fields are initialized to their defaults.
-   
    xrif_handle * hand = NULL;
    
    xrif_error_t rv = xrif_initialize_handle(hand);

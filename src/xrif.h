@@ -88,7 +88,9 @@ matter of this Agreement.
 #define xrif_xrif_h
 
 //Needed for CLOCK_REALTIME:
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309L
+#endif
 
 #ifdef __cplusplus
 extern "C"

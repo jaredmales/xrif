@@ -2346,7 +2346,7 @@ xrif_error_t xrif_compress_lz4( xrif_t handle )
    }
    
    //LZ4 only takes ints for sizes
-   int srcSize = handle->width*handle->height*handle->depth*handle->frames*handle->data_size;
+   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
    
    handle->compressed_size = LZ4_compress_fast ( handle->reordered_buffer, compressed_buffer, srcSize, compressed_size, handle->lz4_acceleration);
    
@@ -2387,7 +2387,8 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle )
       return (XRIF_ERROR_LIBERR + size_decomp);
    }
    
-   if(handle->width*handle->height*handle->depth*handle->frames*handle->data_size != size_decomp) 
+   //Make sure we have the correct amount of data
+   if(xrif_min_reordered_size(handle) != size_decomp) 
    {
       XRIF_ERROR_PRINT("xrif_decompress_lz4", "size mismatch after decompression.");
       return XRIF_ERROR_INVALID_SIZE;

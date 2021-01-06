@@ -1118,9 +1118,9 @@ xrif_error_t xrif_difference( xrif_t handle )
       case XRIF_DIFFERENCE_PREVIOUS:
          return xrif_difference_previous(handle);
       case XRIF_DIFFERENCE_FIRST:
-         return xrif_difference_first_sint16(handle);
+         return xrif_difference_first(handle);
       case XRIF_DIFFERENCE_PIXEL:
-         return xrif_difference_pixel_sint16(handle);
+         return xrif_difference_pixel(handle);
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -1145,9 +1145,9 @@ xrif_error_t xrif_undifference( xrif_t handle )
       case XRIF_DIFFERENCE_PREVIOUS:
          return xrif_undifference_previous(handle);
       case XRIF_DIFFERENCE_FIRST:
-         return XRIF_ERROR_NOTIMPL;
+         return xrif_undifference_first(handle);
       case XRIF_DIFFERENCE_PIXEL:
-         return xrif_undifference_pixel_sint16(handle);
+         return xrif_undifference_pixel(handle);
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -1184,28 +1184,39 @@ xrif_error_t xrif_difference_previous( xrif_t handle )
 
 xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
+   int16_t * rb = (int16_t *) handle->raw_buffer;
+   
    for(int n=0; n < handle->frames-1; ++n)
    {
-      size_t n_stride0 = (handle->frames - 2 - n) * handle->height*handle->width*handle->depth;
-      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = (handle->frames - 2 - n) * npix*handle->depth;
+      size_t n_stride =  (handle->frames - 1 - n) * npix*handle->depth;
 
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
+
+         int16_t * rb0 = &rb[n_stride0 + kk_stride];
+         int16_t * rb1 = &rb[n_stride + kk_stride];
          
-         for(int ii=0; ii< handle->width; ++ii)
+         #ifndef XRIF_NO_OMP
+         #pragma omp parallel if (handle->omp_parallel > 0)
          {
-            size_t ii_stride = ii*handle->height;
+         #endif
+
          
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
-            
-               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
-            }
+         #ifndef XRIF_NO_OMP
+         #pragma omp for
+         #endif
+
+         for(int qq=0; qq < npix; ++qq)
+         {
+            rb1[qq] = (rb1[qq] - rb0[qq]);
          }
-         
+         #ifndef XRIF_NO_OMP
+         }
+         #endif
       }
    } 
    
@@ -1215,31 +1226,24 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
 
 xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
    for(int n=0; n < handle->frames-1; ++n)
    {
-      size_t n_stride0 = (handle->frames - 2 - n) * handle->height*handle->width*handle->depth;
-      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = (handle->frames - 2 - n) * npix*handle->depth;
+      size_t n_stride =  (handle->frames - 1 - n) * npix*handle->depth;
 
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
          
-         for(int ii=0; ii< handle->width; ++ii)
+         for(int qq=0; qq < npix; ++qq)
          {
-            size_t ii_stride = ii*handle->height;
-         
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            size_t idx0 = n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
             
-               //int F = ((int16_t *)handle->raw_buffer)[idx];
-               //int L = ((int16_t*)handle->raw_buffer)[idx0];
-               //unsigned int16_t D = abs(F-L);
-               ((int32_t *) handle->raw_buffer)[idx] = (((int32_t *)handle->raw_buffer)[idx] - ((int32_t*)handle->raw_buffer)[idx0]);
-            }
-         }
-         
+            ((int32_t *) handle->raw_buffer)[idx] = (((int32_t *)handle->raw_buffer)[idx] - ((int32_t*)handle->raw_buffer)[idx0]);
+         }         
       }
    } 
    
@@ -1249,28 +1253,24 @@ xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
 
 xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
    for(int n=0; n < handle->frames-1; ++n)
    {
-      size_t n_stride0 = (handle->frames - 2 - n) * handle->height*handle->width*handle->depth;
-      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = (handle->frames - 2 - n) * npix*handle->depth;
+      size_t n_stride =  (handle->frames - 1 - n) * npix*handle->depth;
 
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
          
-         for(int ii=0; ii< handle->width; ++ii)
+         for(int qq=0; qq< npix;++qq)
          {
-            size_t ii_stride = ii*handle->height;
-         
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            size_t idx0 = n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
             
-               ((int64_t *) handle->raw_buffer)[idx] = (((int64_t *)handle->raw_buffer)[idx] - ((int64_t*)handle->raw_buffer)[idx0]);
-            }
+            ((int64_t *) handle->raw_buffer)[idx] = (((int64_t *)handle->raw_buffer)[idx] - ((int64_t*)handle->raw_buffer)[idx0]);
          }
-         
       }
    } 
    
@@ -1278,77 +1278,230 @@ xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+//Dispatch differencing w.r.t. first according to type
+xrif_error_t xrif_difference_first( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_difference_first", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_difference_first_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      return xrif_difference_first_sint32(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      return xrif_difference_first_sint64(handle);
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_difference_first", "first differencing not implemented for type");
+      return XRIF_ERROR_NOTIMPL;
+   }   
+}
+
 xrif_error_t xrif_difference_first_sint16( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
+   int16_t * rb = (int16_t *) handle->raw_buffer;
+   
    for(int n=0; n < handle->frames-1; ++n)
    {
-      size_t n_stride0 = 0;// * handle->height*handle->width*handle->depth;
-      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = 0;
+      size_t n_stride =  (handle->frames - 1 - n) * npix*handle->depth;
 
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
+
+         int16_t * rb0 = &rb[n_stride0 + kk_stride];
+         int16_t * rb1 = &rb[n_stride + kk_stride];
          
-         for(int ii=0; ii< handle->width; ++ii)
+         #ifndef XRIF_NO_OMP
+         #pragma omp parallel if (handle->omp_parallel > 0) 
          {
-            size_t ii_stride = ii*handle->height;
+         #endif
+
          
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+         #ifndef XRIF_NO_OMP
+         #pragma omp for
+         #endif
+
+         for(int qq=0; qq < npix; ++qq)
+         {
+            //size_t idx0 = n_stride0 + kk_stride + qq;
+            //size_t idx = n_stride + kk_stride + qq;
             
-               ((int16_t *) handle->raw_buffer)[idx] = ((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0];
-            }
+            rb1[qq] = (rb1[qq] - rb0[qq]);
+         }
+         #ifndef XRIF_NO_OMP
+         }
+         #endif
+      }
+   } 
+   
+   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_difference_first_sint32( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+   
+   for(int n=0; n < handle->frames-1; ++n)
+   {
+      size_t n_stride0 = 0;
+      size_t n_stride =  (handle->frames - 1 - n) * npix*handle->depth;
+
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*npix;
+         
+         for(int qq=0; qq < npix;++qq)
+         {
+            size_t idx0 = n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
+            
+            ((int32_t *) handle->raw_buffer)[idx] = (((int32_t *)handle->raw_buffer)[idx] - ((int32_t*)handle->raw_buffer)[idx0]);
          }
       }
    }   
    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_difference_first_uint64( xrif_t handle )
+xrif_error_t xrif_difference_first_sint64( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
    for(int n=0; n < handle->frames-1; ++n)
    {
-      size_t n_stride0 = 0;// * handle->height*handle->width*handle->depth;
-      size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = 0;
+      size_t n_stride =  (handle->frames - 1 - n) * npix*handle->depth;
 
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
          
-         for(int ii=0; ii< handle->width; ++ii)
+         for(int qq=0; qq< npix ;++qq)
          {
-            size_t ii_stride = ii*handle->height;
-         
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            size_t idx0 = n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
             
-               ((int64_t *) handle->raw_buffer)[idx] = ((uint64_t *)handle->raw_buffer)[idx] - ((uint64_t*)handle->raw_buffer)[idx0];
-            }
+            ((int64_t *) handle->raw_buffer)[idx] = (((int64_t *)handle->raw_buffer)[idx] - ((int64_t*)handle->raw_buffer)[idx0]);
          }
       }
    }   
    return XRIF_NOERROR;
+}
+
+//Dispatch differencing by pixel according to type
+xrif_error_t xrif_difference_pixel( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_difference_pixel", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_difference_pixel_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      return xrif_difference_pixel_sint32(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      return xrif_difference_pixel_sint64(handle);
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_difference_first", "pixel differencing not implemented for type");
+      return XRIF_ERROR_NOTIMPL;
+   }   
 }
 
 xrif_error_t xrif_difference_pixel_sint16( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
+   #ifndef XRIF_NO_OMP
+   #pragma omp parallel if (handle->omp_parallel > 0) 
+   {
+   #endif
+   
+   
+   #ifndef XRIF_NO_OMP
+   #pragma omp for
+   #endif
+            
    for(int n=0; n < handle->frames; ++n)
    {
-      size_t foff = n * handle->width * handle->height * handle->depth;
+      size_t foff = n * npix * handle->depth;
       
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t idx0 = foff + kk*handle->height*handle->width;
+         size_t idx0 = foff + kk*npix;
          
-         size_t npix = handle->width*handle->height;
-                  
+         int16_t * rboff = ((int16_t*)handle->raw_buffer + idx0);
+         
          for(int nn = npix-1; nn > 0; --nn)
          {
-            ((int16_t*)handle->raw_buffer + idx0)[nn] -= ((int16_t*)handle->raw_buffer + idx0)[nn-1] ;
+            rboff[nn] -= rboff[nn-1];
+         }         
+      }
+   }   
+   
+   #ifndef XRIF_NO_OMP
+   }
+   #endif
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_difference_pixel_sint32( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+   
+   for(int n=0; n < handle->frames; ++n)
+   {
+      size_t foff = n * npix * handle->depth;
+      
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t idx0 = foff + kk*npix;
+
+         for(int nn = npix-1; nn > 0; --nn)
+         {
+            ((int32_t*)handle->raw_buffer + idx0)[nn] -= ((int32_t*)handle->raw_buffer + idx0)[nn-1] ;
+         }         
+      }
+   }   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_difference_pixel_sint64( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+   
+   for(int n=0; n < handle->frames; ++n)
+   {
+      size_t foff = n * npix * handle->depth;
+      
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t idx0 = foff + kk*npix;
+         
+         for(int nn = npix-1; nn > 0; --nn)
+         {
+            ((int64_t*)handle->raw_buffer + idx0)[nn] -= ((int64_t*)handle->raw_buffer + idx0)[nn-1] ;
          }         
       }
    }   
@@ -1357,12 +1510,14 @@ xrif_error_t xrif_difference_pixel_sint16( xrif_t handle )
 
 xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
    for(int n=0; n < handle->frames-1; ++n)
    {
       if( (handle->frames - 1 - n) % 3 == 0)
       {
-         size_t n_stride0 = (handle->frames - 4 - n) * handle->height*handle->width;
-         size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width;
+         size_t n_stride0 = (handle->frames - 4 - n) * npix;
+         size_t n_stride =  (handle->frames - 1 - n) * npix;
       
          for(int ii=0; ii< handle->width; ++ii)
          {
@@ -1379,8 +1534,8 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
       }
       else
       {
-         size_t n_stride0 = (handle->frames - 2 - n) * handle->height*handle->width;
-         size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width;
+         size_t n_stride0 = (handle->frames - 2 - n) * npix;
+         size_t n_stride =  (handle->frames - 1 - n) * npix;
       
          
          for(int ii=0; ii< handle->width; ++ii)
@@ -1403,8 +1558,8 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
       if( (handle->frames - 1 - n) % 3 == 0) continue;
       else
       {
-         size_t n_stride0 = (handle->frames - 4 - n) * handle->height*handle->width;
-         size_t n_stride =  (handle->frames - 1 - n) * handle->height*handle->width;
+         size_t n_stride0 = (handle->frames - 4 - n) * npix;
+         size_t n_stride =  (handle->frames - 1 - n) * npix;
       
          
          for(int ii=0; ii< handle->width; ++ii)
@@ -1455,26 +1610,23 @@ xrif_error_t xrif_undifference_previous( xrif_t handle )
 
 xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
+   int16_t * rb = (int16_t *) handle->raw_buffer;
    for(int n=1; n < handle->frames; ++n)
    {
-      size_t n_stride0 = (n-1) * handle->height*handle->width*handle->depth;
-      size_t n_stride =  n * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = (n-1) * npix*handle->depth;
+      size_t n_stride =  n * npix*handle->depth;
       
       for(int kk=0; kk<handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
          
-         for(int ii=0; ii< handle->width; ++ii)
+         int16_t * rb0 = &rb[n_stride0 + kk_stride];
+         int16_t * rb1 = &rb[n_stride + kk_stride];
+         for(int qq=0; qq< handle->width*handle->height; ++qq)
          {
-            size_t ii_stride = ii*handle->height;
-            
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
-               
-               ((int16_t *) handle->raw_buffer)[idx] = ((int16_t *)handle->raw_buffer)[idx] + ((int16_t*)handle->raw_buffer)[idx0];
-            }
+            rb1[qq] = rb1[qq] + rb0[qq];
          }
       }
    }
@@ -1484,26 +1636,22 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
 
 xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
    for(int n=1; n < handle->frames; ++n)
    {
-      size_t n_stride0 = (n-1) * handle->height*handle->width*handle->depth;
-      size_t n_stride =  n * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = (n-1) * npix*handle->depth;
+      size_t n_stride =  n * npix*handle->depth;
       
       for(int kk=0; kk<handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
-         
-         for(int ii=0; ii< handle->width; ++ii)
+         size_t kk_stride = kk*npix;
+         for(int qq=0; qq< handle->width*handle->height; ++qq)
          {
-            size_t ii_stride = ii*handle->height;
-            
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            size_t idx0 =  n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
                
-               ((int32_t *) handle->raw_buffer)[idx] = ((int32_t *)handle->raw_buffer)[idx] + ((int32_t*)handle->raw_buffer)[idx0];
-            }
+            ((int32_t *) handle->raw_buffer)[idx] = ((int32_t *)handle->raw_buffer)[idx] + ((int32_t*)handle->raw_buffer)[idx0];
          }
       }
    }
@@ -1513,26 +1661,23 @@ xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
 
 xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+   
    for(int n=1; n < handle->frames; ++n)
    {
-      size_t n_stride0 = (n-1) * handle->height*handle->width*handle->depth;
-      size_t n_stride =  n * handle->height*handle->width*handle->depth;
+      size_t n_stride0 = (n-1) * npix*handle->depth;
+      size_t n_stride =  n * npix*handle->depth;
       
       for(int kk=0; kk<handle->depth; ++kk)
       {
-         size_t kk_stride = kk*handle->height*handle->width;
+         size_t kk_stride = kk*npix;
          
-         for(int ii=0; ii< handle->width; ++ii)
+         for(int qq=0; qq< npix; ++qq)
          {
-            size_t ii_stride = ii*handle->height;
-            
-            for(int jj=0; jj< handle->height; ++jj)
-            {
-               size_t idx0 =  n_stride0 + kk_stride + ii_stride  + jj;
-               size_t idx = n_stride + kk_stride + ii_stride  + jj;
+            size_t idx0 =  n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
                
-               ((int64_t *) handle->raw_buffer)[idx] = ((int64_t *)handle->raw_buffer)[idx] + ((int64_t *)handle->raw_buffer)[idx0];
-            }
+            ((int64_t *) handle->raw_buffer)[idx] = ((int64_t *)handle->raw_buffer)[idx] + ((int64_t*)handle->raw_buffer)[idx0];
          }
       }
    }
@@ -1540,18 +1685,157 @@ xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+//Dispatch undifferencing w.r.t. first image according to type
+xrif_error_t xrif_undifference_first( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_undifference_first", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_undifference_first_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      return xrif_undifference_first_sint32(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      return xrif_undifference_first_sint64(handle);
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_difference_first", "first undifferencing not implemented for type");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+}
+
+xrif_error_t xrif_undifference_first_sint16( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+   
+   int16_t * rb = (int16_t *) handle->raw_buffer;
+   
+   for(int n=1; n < handle->frames; ++n)
+   {
+      size_t n_stride0 = 0;
+      size_t n_stride =  n * npix *handle->depth;
+      
+      for(int kk=0; kk<handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*npix;
+         
+         int16_t * rb0 = &rb[n_stride0 + kk_stride];
+         int16_t * rb1 = &rb[n_stride  + kk_stride];
+         
+         for(int qq=0; qq< npix; ++qq)
+         {
+            rb1[qq] = rb1[qq] + rb0[qq];
+         }
+      }
+   }
+   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_undifference_first_sint32( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+                  
+   for(int n=1; n < handle->frames; ++n)
+   {
+      size_t n_stride0 = 0;
+      size_t n_stride =  n * npix *handle->depth;
+      
+      for(int kk=0; kk<handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*npix;
+         
+         for(int qq=0; qq< npix; ++qq)
+         {
+            size_t idx0 =  n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
+               
+            ((int32_t *) handle->raw_buffer)[idx] = ((int32_t *)handle->raw_buffer)[idx] + ((int32_t*)handle->raw_buffer)[idx0];
+         }
+      }
+   }
+   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_undifference_first_sint64( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+                  
+   for(int n=1; n < handle->frames; ++n)
+   {
+      size_t n_stride0 = 0;
+      size_t n_stride =  n * npix *handle->depth;
+      
+      for(int kk=0; kk<handle->depth; ++kk)
+      {
+         size_t kk_stride = kk*npix;
+         
+         for(int qq=0; qq< npix; ++qq)
+         {
+            size_t idx0 =  n_stride0 + kk_stride + qq;
+            size_t idx = n_stride + kk_stride + qq;
+               
+            ((int64_t *) handle->raw_buffer)[idx] = ((int64_t *)handle->raw_buffer)[idx] + ((int64_t*)handle->raw_buffer)[idx0];
+         }
+      }
+   }
+   
+   return XRIF_NOERROR;
+}
+
+
+//Dispatch undifferencing w.r.t. first pixel of each image according to type
+xrif_error_t xrif_undifference_pixel( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_undifference_pixel", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_undifference_pixel_sint16(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT32 || handle->type_code == XRIF_TYPECODE_UINT32)
+   {
+      return xrif_undifference_pixel_sint32(handle);
+   }
+   else if(handle->type_code == XRIF_TYPECODE_INT64 || handle->type_code == XRIF_TYPECODE_UINT64)
+   {
+      return xrif_undifference_pixel_sint64(handle);
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_difference_pixel", "first undifferencing not implemented for type");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+}
+
 xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
 {
+   size_t npix = handle->width*handle->height;
+               
    for(int n=0; n < handle->frames; ++n)
    {
-      size_t foff = n * handle->width * handle->height * handle->depth;
+      size_t foff = n * npix * handle->depth;
       
       for(int kk=0; kk< handle->depth; ++kk)
       {
-         size_t idx0 = foff + kk*handle->height*handle->width;
+         size_t idx0 = foff + kk*npix;
          
-         size_t npix = handle->width*handle->height;
-                  
          for(int nn = 1; nn < npix; ++nn)
          {
             ((int16_t*)handle->raw_buffer + idx0)[nn] += ((int16_t*)handle->raw_buffer + idx0)[nn-1] ;
@@ -1561,6 +1845,47 @@ xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+xrif_error_t xrif_undifference_pixel_sint32( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+                  
+   for(int n=0; n < handle->frames; ++n)
+   {
+      size_t foff = n * npix * handle->depth;
+      
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t idx0 = foff + kk*npix;
+         
+         for(int nn = 1; nn < npix; ++nn)
+         {
+            ((int32_t*)handle->raw_buffer + idx0)[nn] += ((int32_t*)handle->raw_buffer + idx0)[nn-1] ;
+         }         
+      }
+   }   
+   return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_undifference_pixel_sint64( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+
+   for(int n=0; n < handle->frames; ++n)
+   {
+      size_t foff = n * npix * handle->depth;
+      
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         size_t idx0 = foff + kk*npix;
+                           
+         for(int nn = 1; nn < npix; ++nn)
+         {
+            ((int64_t*)handle->raw_buffer + idx0)[nn] += ((int64_t*)handle->raw_buffer + idx0)[nn-1] ;
+         }         
+      }
+   }   
+   return XRIF_NOERROR;
+}
 xrif_error_t xrif_reorder( xrif_t handle )
 {
    int method = handle->reorder_method;
@@ -1732,8 +2057,8 @@ xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
          else if(x1 == 0) x1 = -1;
       }
          
-       reordered_buffer[pix] = x2; 
-       reordered_buffer2[pix] = x1;
+      reordered_buffer[pix] = x2; 
+      reordered_buffer2[pix] = x1;
       
    }
    
@@ -2442,6 +2767,47 @@ double xrif_compress_rate( xrif_t handle )
    return ((double) handle->raw_size) /xrif_compress_time(handle);
 }
 
+//-
+
+double xrif_decode_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_undifference_done, &handle->ts_decompress_start);
+}
+
+double xrif_decode_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) /xrif_decode_time(handle);
+}
+   
+double xrif_undifference_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_undifference_done, &handle->ts_undifference_start);
+}
+
+double xrif_undifference_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) / xrif_undifference_time(handle);
+}
+
+double xrif_unreorder_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_undifference_start, &handle->ts_unreorder_start);
+}
+
+double xrif_unreorder_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) /xrif_unreorder_time(handle);
+}
+
+double xrif_decompress_time( xrif_t handle )
+{
+   return xrif_ts_difference( &handle->ts_unreorder_start, &handle->ts_decompress_start);
+}
+
+double xrif_decompress_rate( xrif_t handle )
+{
+   return ((double) handle->raw_size) /xrif_decompress_time(handle);
+}
 size_t xrif_typesize( xrif_typecode_t type_code)
 {
    switch( type_code )

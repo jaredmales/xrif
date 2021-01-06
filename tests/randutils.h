@@ -149,9 +149,11 @@ int fill_uint14_white( int16_t * buffer,
 
 //Fill a 16-bit buffer with 16-bit signed white noise
 int fill_int16_white( int16_t * buffer,
-                      size_t size 
+                      size_t size,
+                      int16_t start
                     )
 {
+   (void) start;
    
    if(buffer == NULL) return -1;
    if(size < 1) return -1;
@@ -166,9 +168,12 @@ int fill_int16_white( int16_t * buffer,
 
 //Fill a 16-bit buffer with 16-bit unsigned white noise
 int fill_uint16_white( uint16_t * buffer,
-                       size_t size 
+                       size_t size,
+                       uint16_t start
                      )
 {
+   (void) start;
+   
    if(buffer == NULL) return -1;
    if(size < 1) return -1;
    
@@ -182,9 +187,11 @@ int fill_uint16_white( uint16_t * buffer,
 
 //Fill a 32-bit buffer with 32-bit signed white noise -- need a better prng for this
 int fill_int32_white( int32_t * buffer,
-                      size_t size 
+                      size_t size,
+                      int32_t start
                     )
 {
+   (void) start;
    
    if(buffer == NULL) return -1;
    if(size < 1) return -1;
@@ -199,9 +206,11 @@ int fill_int32_white( int32_t * buffer,
 
 //Fill a 32-bit buffer with 32-bit unsigned white noise -- need a better prng for this
 int fill_uint32_white( uint32_t * buffer,
-                       size_t size 
+                       size_t size,
+                       uint32_t start
                      )
 {
+   (void) start;
    
    if(buffer == NULL) return -1;
    if(size < 1) return -1;
@@ -216,9 +225,11 @@ int fill_uint32_white( uint32_t * buffer,
 
 //Fill a 64-bit buffer with 64-bit signed white noise
 int fill_int64_white( int64_t * buffer,
-                      size_t size 
+                      size_t size,
+                      int64_t start
                     )
 {
+   (void) start;
    
    if(buffer == NULL) return -1;
    if(size < 1) return -1;
@@ -233,9 +244,11 @@ int fill_int64_white( int64_t * buffer,
 
 //Fill a 64-bit buffer with 32-bit unsigned white noise
 int fill_uint64_white( uint64_t * buffer,
-                       size_t size 
+                       size_t size,
+                       uint64_t start
                      )
 {
+   (void) start;
    
    if(buffer == NULL) return -1;
    if(size < 1) return -1;

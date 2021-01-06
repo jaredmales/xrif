@@ -816,6 +816,13 @@ xrif_error_t xrif_undifference( xrif_t handle /**< [in/out] the xrif handle */ )
   * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
   * \returns other error codes from the differencing functions
   * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify previous differencing for int16_t \ref diff_previous_int16_white "[test doc]"
+  * \test Verify previous differencing for uint16_t \ref diff_previous_uint16_white "[test doc]"
+  * \test Verify previous differencing for int32_t \ref diff_previous_int32_white "[test doc]"
+  * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
+  * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
+  * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
   */
 xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif handle */ );
 
@@ -823,7 +830,9 @@ xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif hand
 /** Note that this is currently used for unsigned 16-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXX on error, with the appropriate error code.
+  * 
+  * \test Verify previous differencing for int16_t \ref diff_previous_int16_white "[test doc]"
+  * \test Verify previous differencing for uint16_t \ref diff_previous_uint16_white "[test doc]"
   */ 
 xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -831,7 +840,9 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle /**< [in/out] the xr
 /** Note that this is currently used for unsigned 32-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify previous differencing for int32_t \ref diff_previous_int32_white "[test doc]"
+  * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
   */ 
 xrif_error_t xrif_difference_previous_sint32( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -839,7 +850,9 @@ xrif_error_t xrif_difference_previous_sint32( xrif_t handle /**< [in/out] the xr
 /** Note that this is currently used for unsigned 64-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
+  * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
   */ 
 xrif_error_t xrif_difference_previous_sint64( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -850,24 +863,57 @@ xrif_error_t xrif_difference_previous_sint64( xrif_t handle /**< [in/out] the xr
   * 
   * The first differencing method uses the first frame as the reference for all subsequent frames.
   * 
+  * \ingroup xrif_diff_first
   * @{
   */
+
+/// Difference the images using the first image as a reference.
+/** This function calls the type specific difference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns other error codes from the differencing functions
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify first differencing for int16_t \ref diff_first_int16_white "[test doc]"
+  * \test Verify first differencing for uint16_t \ref diff_first_uint16_white "[test doc]"
+  * \test Verify first differencing for int32_t \ref diff_first_int32_white "[test doc]"
+  * \test Verify first differencing for uint32_t \ref diff_first_uint32_white "[test doc]"
+  * \test Verify first differencing for int64_t \ref diff_first_int64_white "[test doc]"
+  * \test Verify first differencing for uint64_t \ref diff_first_uint64_white "[test doc]"
+  */
+xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Difference all images with respect to the first image, for signed 16-bit integer data type.
 /**
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify first differencing for int16_t \ref diff_first_int16_white "[test doc]"
+  * \test Verify first differencing for uint16_t \ref diff_first_uint16_white "[test doc]"
   */ 
 xrif_error_t xrif_difference_first_sint16( xrif_t handle/**< [in/out] the xrif handle */ );
 
-/// Difference all images with respect to the first image, for uint64_t data type.
+/// Difference all images with respect to the first image, for signed 32-bit integer data type.
 /**
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify first differencing for int32_t \ref diff_first_int32_white "[test doc]"
+  * \test Verify first differencing for uint32_t \ref diff_first_uint32_white "[test doc]"
   */ 
-xrif_error_t xrif_difference_first_uint64( xrif_t handle/**< [in/out] the xrif handle */ );
+xrif_error_t xrif_difference_first_sint32( xrif_t handle/**< [in/out] the xrif handle */ );
+
+/// Difference all images with respect to the first image, for signed 64-bit integer data type.
+/**
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify first differencing for int64_t \ref diff_first_int64_white "[test doc]"
+  * \test Verify first differencing for uint64_t \ref diff_first_uint64_white "[test doc]"
+  */ 
+xrif_error_t xrif_difference_first_sint64( xrif_t handle/**< [in/out] the xrif handle */ );
 
 ///@}
 
@@ -881,14 +927,54 @@ xrif_error_t xrif_difference_sint16_rgb( xrif_t handle /**< [in/out] the xrif ha
   * @{
   */
 
+/// Difference the images using the first pixel of each frame as a reference.
+/** This function calls the type specific difference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns other error codes from the differencing functions
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify pixel differencing for int16_t \ref diff_pixel_int16_white "[test doc]"
+  * \test Verify pixel differencing for uint16_t \ref diff_pixel_uint16_white "[test doc]"
+  * \test Verify pixel differencing for int32_t \ref diff_pixel_int32_white "[test doc]"
+  * \test Verify pixel differencing for uint32_t \ref diff_pixel_uint32_white "[test doc]"
+  * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
+  * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
+  * 
+  */
+xrif_error_t xrif_difference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
+
 /// Difference each image with respect to its first pixel, for signed 16-bit integer data type.
-/**
+/** Note: This function is currently also used for unsigned 16-bit integers.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify pixel differencing for int16_t \ref diff_pixel_int16_white "[test doc]"
+  * \test Verify pixel differencing for uint16_t \ref diff_pixel_uint16_white "[test doc]"
   */ 
 xrif_error_t xrif_difference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Difference each image with respect to its first pixel, for signed 32-bit integer data type.
+/** Note: This function is currently also used for unsigned 32-bit integers.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify pixel differencing for int32_t \ref diff_pixel_int32_white "[test doc]"
+  * \test Verify pixel differencing for uint32_t \ref diff_pixel_uint32_white "[test doc]"
+  */ 
+xrif_error_t xrif_difference_pixel_sint32( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Difference each image with respect to its first pixel, for signed 64-bit integer data type.
+/** Note: This function is currently also used for unsigned 64-bit integers.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
+  * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
+  */ 
+xrif_error_t xrif_difference_pixel_sint64( xrif_t handle /**< [in/out] the xrif handle */);
 
 ///@}
 
@@ -901,6 +987,13 @@ xrif_error_t xrif_difference_pixel_sint16( xrif_t handle /**< [in/out] the xrif 
   * \returns XRIF_ERROR codes from the undifferencing functions
   * \returns \ref XRIF_NOERROR on success
   * 
+  * \test Verify previous differencing for int16_t \ref diff_previous_int16_white "[test doc]"
+  * \test Verify previous differencing for uint16_t \ref diff_previous_uint16_white "[test doc]"
+  * \test Verify previous differencing for int32_t \ref diff_previous_int32_white "[test doc]"
+  * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
+  * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
+  * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
+  * 
   * \ingroup xrif_diff_previous
   */
 xrif_error_t xrif_undifference_previous( xrif_t handle /**< [in/out] the xrif handle */ );
@@ -909,7 +1002,9 @@ xrif_error_t xrif_undifference_previous( xrif_t handle /**< [in/out] the xrif ha
 /** Note that this is currently used for unsigned 16-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR on error, with the appropreate error code.
+  *
+  * \test Verify previous differencing for int16_t \ref diff_previous_int16_white "[test doc]"
+  * \test Verify previous differencing for uint16_t \ref diff_previous_uint16_white "[test doc]"
   * 
   * \ingroup xrif_diff_previous
   */ 
@@ -919,7 +1014,9 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle /**< [in/out] the 
 /** Note that this is currently used for unsigned 32-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify previous differencing for int32_t \ref diff_previous_int32_white "[test doc]"
+  * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
   * 
   * \ingroup xrif_diff_previous
   */ 
@@ -929,23 +1026,126 @@ xrif_error_t xrif_undifference_previous_sint32( xrif_t handle /**< [in/out] the 
 /** Note that this is currently used for unsigned 64-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  * 
+  * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
+  * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
   * 
   * \ingroup xrif_diff_previous
   */ 
 xrif_error_t xrif_undifference_previous_sint64( xrif_t handle /**< [in/out] the xrif handle */);
 
 
-/// Reverse the differencing operation on each image with respect to its first pixel, for signed 16-bit integer data type.
-/**
+/// Undifference the images using the first image as a reference.
+/** This function calls the type specific undifference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if undifferencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns XRIF_ERROR codes from the undifferencing functions
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify first differencing for int16_t \ref diff_first_int16_white "[test doc]"
+  * \test Verify first differencing for uint16_t \ref diff_first_uint16_white "[test doc]"
+  * \test Verify first differencing for int32_t \ref diff_first_int32_white "[test doc]"
+  * \test Verify first differencing for uint32_t \ref diff_first_uint32_white "[test doc]"
+  * \test Verify first differencing for int64_t \ref diff_first_int64_white "[test doc]"
+  * \test Verify first differencing for uint64_t \ref diff_first_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_first
+  */
+xrif_error_t xrif_undifference_first( xrif_t handle /**< [in/out] the xrif handle */ );
+
+/// Reverse the differencing operation, w.r.t. the first image, for signed 16-bit integer data type.
+/** Note that this is currently used for unsigned 16-bits as well.  This is likely suboptimal.
   *
   * \returns XRIF_NOERROR on success.
-  * \returns XRIF_ERROR_XXXXX on error, with the appropriate error code.
+  *
+  * \test Verify first differencing for int16_t \ref diff_first_int16_white "[test doc]"
+  * \test Verify first differencing for uint16_t \ref diff_first_uint16_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_first
+  */ 
+xrif_error_t xrif_undifference_first_sint16( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Reverse the differencing operation, w.r.t. the first image, for signed 32-bit integer data type.
+/** Note that this is currently used for unsigned 32-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify first differencing for int32_t \ref diff_first_int32_white "[test doc]"
+  * \test Verify first differencing for uint32_t \ref diff_first_uint32_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_first
+  */ 
+xrif_error_t xrif_undifference_first_sint32( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Reverse the differencing operation, w.r.t. the first image, for signed 64-bit integer data type.
+/** Note that this is currently used for unsigned 64-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify first differencing for int64_t \ref diff_first_int64_white "[test doc]"
+  * \test Verify first differencing for uint64_t \ref diff_first_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_first
+  */ 
+xrif_error_t xrif_undifference_first_sint64( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Undifference the images using the first pixel of each as a reference.
+/** This function calls the type specific undifference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOTIMPL if undifferencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns XRIF_ERROR codes from the undifferencing functions
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify pixel differencing for int16_t \ref diff_pixel_int16_white "[test doc]"
+  * \test Verify pixel differencing for uint16_t \ref diff_pixel_uint16_white "[test doc]"
+  * \test Verify pixel differencing for int32_t \ref diff_pixel_int32_white "[test doc]"
+  * \test Verify pixel differencing for uint32_t \ref diff_pixel_uint32_white "[test doc]"
+  * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
+  * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_pixel
+  */
+xrif_error_t xrif_undifference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
+
+/// Reverse the differencing operation on each image with respect to its first pixel, for signed 16-bit integer data type.
+/** Note that this is currently used for unsigned 16-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify pixel differencing for int16_t \ref diff_pixel_int16_white "[test doc]"
+  * \test Verify pixel differencing for uint16_t \ref diff_pixel_uint16_white "[test doc]"
   * 
   * \ingroup xrif_diff_pixel
   */ 
 xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Reverse the differencing operation on each image with respect to its first pixel, for signed 32-bit integer data type.
+/** Note that this is currently used for unsigned 32-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify pixel differencing for int32_t \ref diff_pixel_int32_white "[test doc]"
+  * \test Verify pixel differencing for uint32_t \ref diff_pixel_uint32_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_pixel
+  */ 
+xrif_error_t xrif_undifference_pixel_sint32( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Reverse the differencing operation on each image with respect to its first pixel, for signed 64-bit integer data type.
+/** Note that this is currently used for unsigned 64-bits as well.  This is likely suboptimal.
+  *
+  * \returns XRIF_NOERROR on success.
+  * 
+  * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
+  * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_pixel
+  */ 
+xrif_error_t xrif_undifference_pixel_sint64( xrif_t handle /**< [in/out] the xrif handle */);
 
 /** \defgroup xrif_reorder Reordering
   * \ingroup xrif_encode 
@@ -1147,6 +1347,54 @@ double xrif_compress_time( xrif_t handle /**< [in/out] the xrif handle */);
   */ 
 double xrif_compress_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
+
+/// Calculate the time in seconds taken to decode the data
+/**
+  * \returns the difference in the timespecs marking the beginning of decompression and the end of undifferencing 
+  */ 
+double xrif_decode_time ( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the decode rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_decode_time
+  */ 
+double xrif_decode_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to undifference the data
+/**
+  * \returns the difference in the timespecs marking the end of undifferencing and the end of unreodering
+  */ 
+double xrif_undifference_time( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the undifferencing rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_undifference_time
+  */ 
+double xrif_undifference_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to unreorder the data
+/**
+  * \returns the difference in the timespecs marking the beginning of differencing and the end of decompression
+  */ 
+double xrif_unreorder_time( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the unreordering rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_unreorder_time
+  */ 
+double xrif_unreorder_rate( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the time in seconds taken to decompress the differenced and reordered data
+/**
+  * \returns the difference in the timespecs marking the decompression time
+  */ 
+double xrif_decompress_time( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Calculate the decompression rate in bytes/sec
+/**
+  * \returns the ratio of raw_size to xrif_decompress_time
+  */ 
+double xrif_decompress_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 
 ///@}

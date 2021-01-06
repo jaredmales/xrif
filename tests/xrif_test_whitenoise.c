@@ -88,7 +88,7 @@ matter of this Agreement.
 #include "randutils.h"
 
 #ifndef XRIF_TEST_TRIALS
-   #define XRIF_TEST_TRIALS (100)
+   #define XRIF_TEST_TRIALS (2)
 #endif
 
 int ws[] = {2,4,8,21, 33, 47, 64}; //widths of images
@@ -133,7 +133,7 @@ START_TEST (diff_pixel_int16_white)
                
                
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white( buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white( buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0 );
                
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -203,7 +203,7 @@ START_TEST (diff_pixel_uint16_white)
                
                
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white( buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white( buffer, hand->width*hand->height*hand->frames, q); 
                ck_assert( rv == 0 );
                
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -277,7 +277,7 @@ START_TEST (reorder_bytepack_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,0);
                ck_assert( rv == 0 );
                
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -352,7 +352,7 @@ START_TEST (reorder_bytepack_renibble_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -429,7 +429,7 @@ START_TEST (reorder_bitpack_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames, q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -509,7 +509,7 @@ START_TEST (reorder_bytepack_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames, q); 
                ck_assert( rv == 0);
                
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -587,7 +587,7 @@ START_TEST (reorder_bytepack_renibble_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames, q);
                ck_assert( rv == 0);
                
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -668,7 +668,7 @@ START_TEST (reorder_bitpack_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames, q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -753,7 +753,7 @@ START_TEST (encode_none_none_none_int16_white)
                ck_assert( rv == XRIF_NOERROR );
                
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q);
                ck_assert( rv == 0 );
                
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -835,7 +835,7 @@ START_TEST (encode_previous_bytepack_lz4_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q);
                ck_assert( rv == 0 );
                
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -911,7 +911,7 @@ START_TEST (encode_previous_bytepack_renibble_lz4_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -989,7 +989,7 @@ START_TEST (encode_previous_bitpack_lz4_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -1068,7 +1068,7 @@ START_TEST (encode_pixel_bytepack_lz4_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q);
                ck_assert( rv == 0 );
                
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -1143,7 +1143,7 @@ START_TEST (encode_pixel_bytepack_renibble_lz4_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -1220,7 +1220,7 @@ START_TEST (encode_pixel_bitpack_lz4_int16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_int16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
@@ -1302,7 +1302,7 @@ START_TEST (encode_previous_bytepack_lz4_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames,q);
                ck_assert( rv == 0 );
                
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -1377,7 +1377,7 @@ START_TEST (encode_previous_bytepack_renibble_lz4_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -1454,7 +1454,7 @@ START_TEST (encode_previous_bitpack_lz4_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -1532,7 +1532,7 @@ START_TEST (encode_pixel_bytepack_lz4_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames);
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames,q);
                ck_assert( rv == 0 );
                
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -1607,7 +1607,7 @@ START_TEST (encode_pixel_bytepack_renibble_lz4_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
@@ -1684,7 +1684,7 @@ START_TEST (encode_pixel_bitpack_lz4_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
       
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames); 
+               rv = fill_uint16_white(buffer, hand->width*hand->height*hand->frames,q); 
                ck_assert( rv == 0);
       
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));

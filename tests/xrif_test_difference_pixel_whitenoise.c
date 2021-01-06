@@ -1,5 +1,5 @@
-/** \file xrif_test_difference_previous_whitenoise.c
-  * \brief Test the previous differencing method with white noise.
+/** \file xrif_test_difference_pixel_whitenoise.c
+  * \brief Test the pixel differencing method with white noise.
   *
   * \author Jared R. Males (jaredmales@gmail.com)
   *
@@ -101,7 +101,7 @@ matter of this Agreement.
 int test_trials;
 
 /************************************************************/
-/* Fuzz testing differencing with the previous method
+/* Fuzz testing differencing with the pixel method
 /************************************************************/
 
 
@@ -109,15 +109,17 @@ int ws[] = {2,4,8,21, 33, 47, 64}; //widths of images
 int hs[] = {2,4,8,21, 33, 47, 64}; //heights of images
 int ps[] = {1,2,4,5,27,63,64}; //planes of the cube
  
-/** Verify previous differencing for int16_t
-  * Verify that xrif difference/un-difference cycle using the previous image works with white noise for int16_t.
-  * \anchor diff_previous_int16_white
+
+ 
+/** Verify pixel differencing for int16_t
+  * Verify that xrif difference/un-difference cycle using the first pixel of each works with white noise For int16_t.
+  * \anchor diff_pixel_int16_white
   */
-START_TEST (diff_previous_int16_white)
+START_TEST (diff_pixel_int16_white)
 {
-   fprintf(stderr, "Testing previous differencing for signed 16-bit white noise.\n");
+   fprintf(stderr, "Testing pixel differencing for signed 16-bit white noise.\n");
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
-   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
    #define XRIF_TESTLOOP_FILL 1
@@ -129,16 +131,15 @@ START_TEST (diff_previous_int16_white)
 }
 END_TEST;
 
-/** Verify previous differencing for uint16_t
-  * Verify that xrif difference/un-difference cycle using the previous image works with white noise for uint16_t.
-  * \anchor diff_previous_uint16_white
+/** Verify pixel differencing for uint16_t
+  * Verify that xrif difference/un-difference cycle using the first pixel of each works with white noise For uint16_t.
+  * \anchor diff_pixel_uint16_white
   */
-START_TEST (diff_previous_uint16_white)
+START_TEST (diff_pixel_uint16_white)
 {
-   fprintf(stderr, "Testing previous differencing for unsigned 16-bit white noise.\n");
-   
+   fprintf(stderr, "Testing pixel differencing for unsigned 16-bit white noise.\n");
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_UINT16)
-   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
    #define XRIF_TESTLOOP_FILL 1
@@ -150,15 +151,15 @@ START_TEST (diff_previous_uint16_white)
 }
 END_TEST;
 
-/** Verify previous differencing for int32_t
-  * Verify that xrif difference/un-difference cycle using the previous image works with white noise for int32_t.
-  * \anchor diff_previous_int32_white
+/** Verify pixel differencing for int32_t
+  * Verify that xrif difference/un-difference cycle using the first pixel of each works with white noise For int32_t.
+  * \anchor diff_pixel_int32_white
   */
-START_TEST (diff_previous_int32_white)
+START_TEST (diff_pixel_int32_white)
 {
-   fprintf(stderr, "Testing previous differencing for signed 32-bit white noise.\n");
+   fprintf(stderr, "Testing pixel differencing for signed 32-bit white noise.\n");
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT32)
-   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
    #define XRIF_TESTLOOP_FILL 1
@@ -166,19 +167,19 @@ START_TEST (diff_previous_int32_white)
    #define XRIF_TESTLOOP_DECODE xrif_undifference_previous
    #define XRIF_TESTLOOP_NOPERF
    
-   #include "testloop.c"
+   #include "testloop.c" 
 }
 END_TEST;
 
-/** Verify previous differencing for uint32_t
-  * Verify that xrif difference/un-difference cycle using the previous image works with white noise for uint32_t.
-  * \anchor diff_previous_uint32_white
+/** Verify pixel differencing for uint32_t
+  * Verify that xrif difference/un-difference cycle using the first pixel of each works with white noise For uint32_t.
+  * \anchor diff_pixel_uint32_white
   */
-START_TEST (diff_previous_uint32_white)
+START_TEST (diff_pixel_uint32_white)
 {
-   fprintf(stderr, "Testing previous differencing for unsigned 32-bit white noise.\n");
+   fprintf(stderr, "Testing pixel differencing for unsigned 32-bit white noise.\n");
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_UINT32)
-   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
    #define XRIF_TESTLOOP_FILL 1
@@ -186,19 +187,19 @@ START_TEST (diff_previous_uint32_white)
    #define XRIF_TESTLOOP_DECODE xrif_undifference_previous
    #define XRIF_TESTLOOP_NOPERF
    
-   #include "testloop.c"
+   #include "testloop.c" 
 }
 END_TEST;
 
-/** Verify previous differencing for int64_t
-  * Verify that xrif difference/un-difference cycle using the previous image works with white noise for int64_t.
-  * \anchor diff_previous_int64_white
+/** Verify pixel differencing for int64_t
+  * Verify that xrif difference/un-difference cycle using the first pixel of each works with white noise For int64_t.
+  * \anchor diff_pixel_int64_white
   */
-START_TEST (diff_previous_int64_white)
+START_TEST (diff_pixel_int64_white)
 {
-   fprintf(stderr, "Testing previous differencing for signed 64-bit white noise.\n");
+   fprintf(stderr, "Testing pixel differencing for signed 64-bit white noise.\n");
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT64)
-   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
    #define XRIF_TESTLOOP_FILL 1
@@ -206,19 +207,19 @@ START_TEST (diff_previous_int64_white)
    #define XRIF_TESTLOOP_DECODE xrif_undifference_previous
    #define XRIF_TESTLOOP_NOPERF
    
-   #include "testloop.c"
+   #include "testloop.c" 
 }
 END_TEST;
 
-/** Verify previous differencing for uint64_t
-  * Verify that xrif difference/un-difference cycle using the previous image works with white noise for uint64_t.
-  * \anchor diff_previous_uint64_white
+/** Verify pixel differencing for uint64_t
+  * Verify that xrif difference/un-difference cycle using the first pixel of each works with white noise For uint64_t.
+  * \anchor diff_pixel_uint64_white
   */
-START_TEST (diff_previous_uint64_white)
+START_TEST (diff_pixel_uint64_white)
 {
-   fprintf(stderr, "Testing previous differencing for unsigned 64-bit white noise.\n");
+   fprintf(stderr, "Testing pixel differencing for unsigned 64-bit white noise.\n");
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_UINT64)
-   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
    #define XRIF_TESTLOOP_FILL 1
@@ -226,7 +227,7 @@ START_TEST (diff_previous_uint64_white)
    #define XRIF_TESTLOOP_DECODE xrif_undifference_previous
    #define XRIF_TESTLOOP_NOPERF
    
-   #include "testloop.c"
+   #include "testloop.c" 
 }
 END_TEST;
 
@@ -235,15 +236,15 @@ Suite * whitenoise_suite(void)
     Suite *s;
     TCase *tc_core16, *tc_core32, *tc_core64;
 
-    s = suite_create("White Noise - Difference Previous");
+    s = suite_create("White Noise - Difference Pixel");
 
     /* 16-bit Core test case */
     tc_core16 = tcase_create("16 bit white noise");
 
     tcase_set_timeout(tc_core16, 1e9);
     
-    tcase_add_test(tc_core16, diff_previous_int16_white);
-    tcase_add_test(tc_core16, diff_previous_uint16_white);
+    tcase_add_test(tc_core16, diff_pixel_int16_white);
+    tcase_add_test(tc_core16, diff_pixel_uint16_white);
     
     suite_add_tcase(s, tc_core16);
     
@@ -252,8 +253,8 @@ Suite * whitenoise_suite(void)
 
     tcase_set_timeout(tc_core32, 1e9);
     
-    tcase_add_test(tc_core32, diff_previous_int32_white);
-    tcase_add_test(tc_core32, diff_previous_uint32_white);
+    tcase_add_test(tc_core32, diff_pixel_int32_white);
+    tcase_add_test(tc_core32, diff_pixel_uint32_white);
     
     suite_add_tcase(s, tc_core32);
 
@@ -262,8 +263,8 @@ Suite * whitenoise_suite(void)
 
     tcase_set_timeout(tc_core64, 1e9);
     
-    tcase_add_test(tc_core64, diff_previous_int64_white);
-    tcase_add_test(tc_core64, diff_previous_uint64_white);
+    tcase_add_test(tc_core64, diff_pixel_int64_white);
+    tcase_add_test(tc_core64, diff_pixel_uint64_white);
     
     suite_add_tcase(s, tc_core64);
     
@@ -292,7 +293,9 @@ int main( int argc,
 
    // Intialize the random number sequence
    srand((unsigned) time(NULL));
+   
 
+   
    s = whitenoise_suite();
    sr = srunner_create(s);
 

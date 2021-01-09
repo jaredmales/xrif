@@ -121,6 +121,8 @@ START_TEST (diff_pixel_int16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PIXEL, XRIF_REORDER_BYTEPACK, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
                
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
                ck_assert( rv == XRIF_NOERROR );
@@ -139,8 +141,8 @@ START_TEST (diff_pixel_int16_white)
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
             
-               xrif_difference_pixel_sint16(hand);
-               xrif_undifference_pixel_sint16(hand);
+               xrif_difference_pixel(hand);
+               xrif_undifference_pixel(hand);
                
                int neq = 0;
                for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
@@ -191,6 +193,8 @@ START_TEST (diff_pixel_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PIXEL, XRIF_REORDER_BYTEPACK, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
                
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
@@ -209,8 +213,8 @@ START_TEST (diff_pixel_uint16_white)
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint16_t));
             
-               xrif_difference_pixel_sint16(hand);
-               xrif_undifference_pixel_sint16(hand);
+               xrif_difference_pixel(hand);
+               xrif_undifference_pixel(hand);
                
                int neq = 0;
                int pass= 0;
@@ -267,6 +271,9 @@ START_TEST (reorder_bytepack_int16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
+               
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
                ck_assert( rv == XRIF_NOERROR );
       
@@ -283,11 +290,11 @@ START_TEST (reorder_bytepack_int16_white)
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
       
-               xrif_difference_previous_sint16(hand);
+               xrif_difference_previous(hand);
                xrif_reorder_bytepack(hand);
       
                xrif_unreorder_bytepack(hand);
-               xrif_undifference_previous_sint16(hand);
+               xrif_undifference_previous(hand);
       
                int neq = 0;
                for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
@@ -342,6 +349,9 @@ START_TEST (reorder_bytepack_renibble_int16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK_RENIBBLE, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
+               
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
                ck_assert( rv == XRIF_NOERROR );
       
@@ -358,11 +368,11 @@ START_TEST (reorder_bytepack_renibble_int16_white)
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
       
-               xrif_difference_previous_sint16(hand);
+               xrif_difference_previous(hand);
                xrif_reorder_bytepack_renibble(hand);
                
                xrif_unreorder_bytepack_renibble(hand);
-               xrif_undifference_previous_sint16(hand);
+               xrif_undifference_previous(hand);
                
                
                int neq = 0;
@@ -419,6 +429,9 @@ START_TEST (reorder_bitpack_int16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BITPACK, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
+               
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
                ck_assert( rv == XRIF_NOERROR );
       
@@ -435,11 +448,11 @@ START_TEST (reorder_bitpack_int16_white)
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
       
-               xrif_difference_previous_sint16(hand);
+               xrif_difference_previous(hand);
                xrif_reorder_bitpack(hand);
                
                xrif_unreorder_bitpack(hand);
-               xrif_undifference_previous_sint16(hand);
+               xrif_undifference_previous(hand);
                
                
                int neq = 0;
@@ -498,6 +511,8 @@ START_TEST (reorder_bytepack_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
                
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
@@ -515,11 +530,11 @@ START_TEST (reorder_bytepack_uint16_white)
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint16_t));
       
-               xrif_difference_previous_sint16(hand);
+               xrif_difference_previous(hand);
                xrif_reorder_bytepack(hand);
       
                xrif_unreorder_bytepack(hand);
-               xrif_undifference_previous_sint16(hand);
+               xrif_undifference_previous(hand);
       
                int neq = 0;
                for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
@@ -576,6 +591,8 @@ START_TEST (reorder_bytepack_renibble_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK_RENIBBLE, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
                
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
@@ -593,11 +610,11 @@ START_TEST (reorder_bytepack_renibble_uint16_white)
                uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint16_t));
       
-               xrif_difference_previous_sint16(hand);
+               xrif_difference_previous(hand);
                xrif_reorder_bytepack_renibble(hand);
       
-               xrif_unreorder_bytepack_renibble(hand);
-               xrif_undifference_previous_sint16(hand);
+               xrif_unreorder_bytepack(hand);
+               xrif_undifference_previous(hand);
       
                int neq = 0;
                for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
@@ -658,6 +675,9 @@ START_TEST (reorder_bitpack_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
+               rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BITPACK, XRIF_COMPRESS_NONE);
+               ck_assert( rv == XRIF_NOERROR );
+               
                rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
                ck_assert( rv == XRIF_NOERROR );
       
@@ -674,11 +694,11 @@ START_TEST (reorder_bitpack_uint16_white)
                int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
                memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
       
-               xrif_difference_previous_sint16(hand);
+               xrif_difference_previous(hand);
                xrif_reorder_bitpack(hand);
                
                xrif_unreorder_bitpack(hand);
-               xrif_undifference_previous_sint16(hand);
+               xrif_undifference_previous(hand);
                
                
                int neq = 0;

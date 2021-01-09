@@ -1,7 +1,7 @@
 
 
 # list of source files
-set(libsrc xrif.c lz4/lz4.c lz4/lz4hc.c )
+set(libsrc xrif.c xrif_difference_previous.c xrif_difference_first.c xrif_difference_pixel.c lz4/lz4.c lz4/lz4hc.c )
 
 # this is the "object library" target: compiles the sources only once
 add_library(objlib OBJECT ${libsrc})

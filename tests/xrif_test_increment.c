@@ -97,9 +97,9 @@ int test_trials;
 //int hs[] = {2,4,8,21, 33, 47, 64}; //heights of images
 //int ps[] = {1,2,4,5,27,63,64}; //planes of the cube
 
-int ws[] = {10, 1000}; //widths of images
-int hs[] = {1000, 10}; //heights of images
-int ps[] = {1000}; //planes of the cube
+int ws[] = {120}; //widths of images
+int hs[] = {120}; //heights of images
+int ps[] = {10}; //planes of the cube
 
 /*=====================================================================================
  *
@@ -202,9 +202,10 @@ Suite * increment_suite(void)
     
       //Full encoding with LZ4 
       tcase_add_test(tc_core, encode_previous_bytepack_lz4_int16_inc);
+      //tcase_add_test(tc_core, encode_previous_bytepack_renibble_lz4_int16_inc);
       tcase_add_test(tc_core, encode_first_bytepack_lz4_int16_inc);
       tcase_add_test(tc_core, encode_pixel_bytepack_lz4_int16_inc);
-      tcase_add_test(tc_core, encode_previous_bitpack_lz4_int16_inc);
+      //tcase_add_test(tc_core, encode_previous_bitpack_lz4_int16_inc);
 
       suite_add_tcase(s, tc_core);
 

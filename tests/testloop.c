@@ -85,7 +85,7 @@
    {
       for(int h=0; h < sizeof(hs)/sizeof(hs[0]); ++h)
       {
-         if(ws[w] == hs[h]) continue;
+         //if(ws[w] == hs[h]) continue;
          for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
          {
             double dt_difference=0;

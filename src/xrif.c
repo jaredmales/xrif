@@ -370,7 +370,7 @@ xrif_error_t xrif_set_difference_method( xrif_t handle,
    else if( difference_method == XRIF_DIFFERENCE_PIXEL ) handle->difference_method = XRIF_DIFFERENCE_PIXEL;
    else
    {
-      difference_method == XRIF_DIFFERENCE_DEFAULT;
+      handle->difference_method = XRIF_DIFFERENCE_DEFAULT;
       XRIF_ERROR_PRINT("xrif_set_difference_method", "unrecognized difference method.  Setting default");
       return XRIF_ERROR_BADARG;
    }
@@ -396,7 +396,7 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,
    else if( reorder_method == XRIF_REORDER_BITPACK ) handle->reorder_method = XRIF_REORDER_BITPACK;
    else
    {
-      reorder_method == XRIF_REORDER_DEFAULT;
+      handle->reorder_method = XRIF_REORDER_DEFAULT;
       XRIF_ERROR_PRINT("xrif_set_reorder_method", "unrecognized reorder method.  Setting default");
       return XRIF_ERROR_BADARG;
    }
@@ -1468,6 +1468,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
       /* This block of commented code is left in to document the algorithm implemented in the lookup table.
        * And maybe we'll implement some defines to avoid lookup tables . . .
        */
+      
       /*
       int_fast16_t s = raw_buffer[pix]; //Get the first 2 bytes
       int_fast16_t sbit = (s < 0); //and the signbit
@@ -1494,15 +1495,16 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
       
       reordered_buffer2[pix/2] |= nib1;
       reordered_buffer2[pix/2 + oneoff + halfoff] |= nib2;
-         
-      /**/
-      //Here we use a lookup table calculated according to the above algorithm:
+      */
+      /*
+      Here we use a lookup table calculated according to the above algorithm:
+      */
 
       const unsigned char * bsn = &bitshift_and_nibbles[ ((uint16_t) raw_buffer[pix]) * 6 + (pix&1)*3];
       reordered_buffer[pix] = (char) bsn[0];
       reordered_buffer2[pix/2] += bsn[1];
       reordered_buffer2[pix/2 + oneoff + halfoff] += bsn[2];
-      /**/
+
    }
    #ifndef XRIF_NO_OMP
    }

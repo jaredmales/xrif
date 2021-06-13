@@ -86,7 +86,39 @@ matter of this Agreement.
 
 #include "xrif.h"
 
+xrif_error_t xrif_difference_pixel_sint8( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+   
+   for(size_t n=0; n < handle->frames; ++n)
+   {
+      for(size_t kk=0; kk< handle->depth; ++kk)
+      {
+         int8_t * rboff = (int8_t*) handle->raw_buffer + n * npix * handle->depth + kk*npix;
+         
+         #ifndef XRIF_NO_OMP
+         #pragma omp parallel if (handle->omp_parallel > 0) 
+         {
+         #endif
+   
+         #ifndef XRIF_NO_OMP
+         #pragma omp for
+         #endif
 
+         for(size_t nn = 0; nn < npix-1; ++nn)
+         {
+            rboff[npix - nn - 1] -= rboff[npix - nn - 2];
+         }   
+         
+         #ifndef XRIF_NO_OMP
+         }
+         #endif
+      }
+   }  
+   
+   return XRIF_NOERROR;
+   
+} //xrif_difference_pixel_sint8
 
 xrif_error_t xrif_difference_pixel_sint16( xrif_t handle )
 {
@@ -212,6 +244,10 @@ xrif_error_t xrif_difference_pixel( xrif_t handle )
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
+   if(handle->type_code == XRIF_TYPECODE_INT8 || handle->type_code == XRIF_TYPECODE_UINT8)
+   {
+      return xrif_difference_pixel_sint8(handle);
+   }
    if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
    {
       return xrif_difference_pixel_sint16(handle);
@@ -236,6 +272,39 @@ xrif_error_t xrif_difference_pixel( xrif_t handle )
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
+xrif_error_t xrif_undifference_pixel_sint8( xrif_t handle )
+{
+   size_t npix = handle->width*handle->height;
+               
+   for(int n=0; n < handle->frames; ++n)
+   {
+      for(int kk=0; kk< handle->depth; ++kk)
+      {
+         int8_t * rboff = (int8_t*)handle->raw_buffer + n * npix * handle->depth + kk*npix;
+         
+         #ifndef XRIF_NO_OMP
+         #pragma omp parallel if (handle->omp_parallel > 0) 
+         {
+         #endif
+   
+         #ifndef XRIF_NO_OMP
+         #pragma omp for
+         #endif
+            
+         for(int nn = 1; nn < npix; ++nn)
+         {
+            rboff[nn] += rboff[nn-1] ;
+         }    
+         
+         #ifndef XRIF_NO_OMP
+         }
+         #endif
+      }
+   }
+   
+   return XRIF_NOERROR;
+   
+}//xrif_undifference_pixel_sint8
 
 xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
 {
@@ -361,6 +430,10 @@ xrif_error_t xrif_undifference_pixel( xrif_t handle )
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
+   if(handle->type_code == XRIF_TYPECODE_INT8 || handle->type_code == XRIF_TYPECODE_UINT8)
+   {
+      return xrif_undifference_pixel_sint8(handle);
+   }
    if(handle->type_code == XRIF_TYPECODE_INT16 || handle->type_code == XRIF_TYPECODE_UINT16)
    {
       return xrif_undifference_pixel_sint16(handle);

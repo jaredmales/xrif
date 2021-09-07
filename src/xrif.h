@@ -113,7 +113,7 @@ extern "C"
 
 #include "lz4/lz4.h"
 #include "lz4/lz4hc.h"
-
+#include "fastlz/fastlz.h"
 
 
 
@@ -137,6 +137,7 @@ extern "C"
 #define XRIF_COMPRESS_NONE (-1)
 #define XRIF_COMPRESS_DEFAULT (100)
 #define XRIF_COMPRESS_LZ4 (100)
+#define XRIF_COMPRESS_FASTLZ (110)
 
 #define XRIF_LZ4_ACCEL_MIN (1)
 #define XRIF_LZ4_ACCEL_MAX (65537)
@@ -182,6 +183,9 @@ typedef int xrif_error_t;
 
 /// Return code indicating that a bad argument was passed.
 #define XRIF_ERROR_BADARG (-110)
+
+/// Return code indicating that a failure occured, likely in a library call.
+#define XRIF_ERROR_FAILURE (-120)
 
 /// Return code indicating that the header is bad.
 #define XRIF_ERROR_BADHEADER (-1000)
@@ -325,31 +329,47 @@ typedef struct
    
    int lz4_acceleration; ///< LZ4 acceleration parameter, >=1, higher is faster with less comporession.  Default is 1.
    
-   int omp_parallel;     /**< Flag controlling whether OMP parallelization is used to speed up.  This has no effect if XRIF_NO_OMP is defined at compile time, 
-                              which completely removes OMP code. Default is 0.*/
+   int fastlz_level; ///< FastLZ compression level. 
+                     /**< According to the docs, 1 = faster, lower compression,  2 = slower, better compression.  
+                       *  No other valid values.  xrif default is 2, which seems to be faster for large image cubes.
+                       */
+
+   int omp_parallel;     ///< Flag controlling whether OMP parallelization is used to speed up.  
+                         /**< This has no effect if XRIF_NO_OMP is defined at compile time, 
+                              which completely removes OMP code. Default is 0.
+                           */
    
-   int omp_numthreads;   /**< Number of threads to use if omp_parallel is 1.  For this to be meaningful, 
-                           *  XRIF_NO_OMP must NOT be defined at compile time, and XRIF_OMP_NUMTHREADS must be defined at compile time. Default is 1.*/
+   int omp_numthreads;   ///< Number of threads to use if omp_parallel is 1.  
+                         /**< For this to be meaningful, 
+                           *  XRIF_NO_OMP must NOT be defined at compile time, and XRIF_OMP_NUMTHREADS must be defined at compile time. Default is 1.
+                           */
    
    unsigned char compress_on_raw; ///< Flag (true/false) indicating whether the raw buffer is used for compression.  Default on initializeation is true.
    
    unsigned char own_raw;  ///< Flag (true/false) indicating whether the raw_buffer pointer is managed by this handle
    char * raw_buffer;      ///< The raw buffer pointer, contains the image data, and if compress_on_raw == true the compressed data.
-   size_t raw_buffer_size; /**< The size of the raw_buffer pointer.  If `compress_on_raw` is false, then this must be at least width*height*depth*frames*data_size. If
-                             *` compress_on_raw` is true, this should be at least LZ4_compressBound(width*height*depth*frames*data_size) in size, but this is not a strict 
-                             *  requirement in practice for most streams.  If this library is used to allocate it, it will be the larger of the two possibilities.*/
+   size_t raw_buffer_size; ///< The size of the raw_buffer pointer.  
+                           /**< If `compress_on_raw` is false, then this must be at least width*height*depth*frames*data_size. If
+                             * ` compress_on_raw` is true, this should be at least LZ4_compressBound(width*height*depth*frames*data_size) in size, but this is not a strict 
+                             *  requirement in practice for most streams.  If this library is used to allocate it, it will be the larger of the two possibilities.
+                             */
    
    unsigned char own_reordered;   ///< Flag (true/false) indicating whether the reordered_buffer pointer is managed by this handle.
    char * reordered_buffer;       ///< The reordered buffer pointer, contains the reordered data.
-   size_t reordered_buffer_size;  ///< The size of the reordered_buffer pointer.  It must be at least width*height*depth*frames*data_size.
-   ///\todo need reordered_buffer_minsize; ///< The minimum size of the reordered buffer for the image parameters.
-   
+   size_t reordered_buffer_size;  ///< The size of the reordered_buffer pointer.  
+                                  /**< It must be at least the value given by xrif_min_reordered_size(xrif_t).
+                                    */
    
    unsigned char own_compressed;  ///< Flag (true/false) indicating whether the compressed_buffer pointer is managed by this handle.
    char * compressed_buffer;      ///< The compressed buffer pointer, contains the compressed data.
-   size_t compressed_buffer_size; /**< The size of the compressed_buffer pointer.  In principle should be at least LZ4_compressBound(width*height*depth*frames*data_size) 
-                                    *  in size, but this is not a strict requirement in practice for most streams.  It must be at least width*height*depth*frames*data_size.  
-                                    *  If this library is used to allocate it, it will be the larger of the two.*/
+   size_t compressed_buffer_size; ///< The size of the compressed_buffer pointer.  
+                                  /**< Depends on compression method:
+                                    * - LZ4: In principle should be at least LZ4_compressBound( xrif_min_reordered_size(xrif_t) ) 
+                                    *        in size, but this is not a strict requirement in practice for most streams.  It must be at least width*height*depth*frames*data_size.  
+                                    *        If this library is used to allocate it, it will be the larger of the two.
+                                    * - FastLZ: it should be at least 5% larger than the redordered buffer (the input to the compressor)
+                                    * - none: it should be at least width*height*depth*frames*data_size.
+                                    */
                                     
                   
    /** \name Performance Measurements
@@ -512,7 +532,8 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,     ///< [in/out] the xrif 
 
 /// Set the compress method.
 /** Sets the compress_method member of handle.
-  * Valid methods are XRIF_COMPRESS_NONE, XRIF_COMPRESS_DEFAULT, and XRIF_COMPRESS_LZ4.  XRIF_COMPRESS_DEFAULT is equivalent to XRIF_COMPRESS_LZ4.
+  * Valid methods are XRIF_COMPRESS_NONE, XRIF_COMPRESS_DEFAULT, XRIF_COMPRESS_LZ4, and XRIF_COMPRESS_FASTLZ.  
+  * XRIF_COMPRESS_DEFAULT is equivalent to XRIF_COMPRESS_LZ4.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_BADARG if `compress_method` is not a valid compress method.  Will set method to XRIF_COMPRESS_DEFAULT.
@@ -528,15 +549,29 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,      ///< [in/out] the xri
   * The maximum value is 65537 (XRIF_LZ4_ACCEL_MAX).  The LZ4 docs claim a +-3% improvement in speed for each incrment.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
-  * \returns \ref XRIF_ERROR_BADARG if `lz4_acceleration` is out of range.  Will set value to correspondling min or max limit.
+  * \returns \ref XRIF_ERROR_BADARG if `lz4_accel` is out of range.  Will set value to correspondling min or max limit.
   * \returns \ref XRIF_NOERROR on success.
   */ 
 xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    ///< [in/out] the xrif handle to be configured
                                         int32_t lz4_accel ///< [in] LZ4 acceleration parameter
                                       );
 
+/// Set the FastLZ compression level
+/** The FastLZ compression level can be either 1 or 2. 1 is faster but lower compression, 2 is slower but better compression.  
+  * The FastLZ docs say that 1 will be generally useful on short data.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `fastlz_lev` is out of range.  Will set value to 1.
+  * \returns \ref XRIF_NOERROR on success.
+  */ 
+xrif_error_t xrif_set_fastlz_level( xrif_t handle,     ///< [in/out] the xrif handle to be configured
+                                    int32_t fastlz_lev ///< [in] FastLZ level
+                                  );
+
 /// Calculate the minimum size of the raw buffer.
 /** Result is based on current connfiguration of the handle.
+  * 
+  * If \ref compress_on_raw = 1, this returns xrif_min_compressed_size(xrif_t).
   * 
   * \returns the minimum size of the raw buffer for a valid configuration.
   * \returns 0 for an invalid configuration. 
@@ -551,11 +586,36 @@ size_t xrif_min_raw_size(xrif_t handle /**< [in] the xrif handle */ );
   */
 size_t xrif_min_reordered_size(xrif_t handle /**< [in] the xrif handle */ );
 
+/// Calculate the minimum size of the compressed buffer for LZ4 compression
+/**
+  * This uses LZ4_compressBound for the minimum reordered buffer size.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  */
+size_t xrif_min_compressed_size_lz4(xrif_t handle /**< [in] the xrif handle */);
+
+/// Calculate the minimum size of the compressed buffer for FastLZ compression
+/**
+  * This calculates 1.05 x the minimum reordered buffer size I.A.W. the FastLZ requirement.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  */
+size_t xrif_min_compressed_size_fastlz(xrif_t handle /**< [in] the xrif handle */);
+
 /// Calculate the minimum size of the compressed buffer.
 /** Result is based on current connfiguration of the handle.
   * 
+  * The basic minimum size is set by xrif_min_reordered_size(xrif_t), since the reordered buffer is
+  * what is compressed.
+  * 
+  * For LZ4, this calls xrif_min_compressed_size_lsz(xrif_t).
+  * 
+  * For FastLZ, this calls xrif_min_compressed_size_fastlz(xrif_t).
+  * 
   * \returns the minimum size of the compressed buffer for a valid configuration.
-  * \returns 0 for an invalid configuration. 
+  * \returns 0 for an invalid configuration or an error. 
   */
 size_t xrif_min_compressed_size(xrif_t handle /**< [in] the xrif handle */ );
 
@@ -889,6 +949,9 @@ xrif_error_t xrif_difference_pixel( xrif_t handle /**< [in/out] the xrif handle 
 
 ///@}
 
+
+xrif_error_t xrif_difference_bayer( xrif_t handle /**< [in/out] the xrif handle */ );
+
 /// Undifference the images using the previous image as a reference.
 /** This function calls the type specific undifference function for the type specified by
   * handle->type_code.
@@ -1078,17 +1141,84 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle /**< [in/out] the xrif handle
   * 
   * @{
   */ 
+
+/// Dispatch compression based on method
+/** Calls the relevant compression function based on the value of handle->compress_method.
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_NOTIMPL if an unknown compression method is configured in handle
+  * \returns error codes from the specific compression methods.
+  * \returns XRIF_NOERROR on success
+  */ 
 xrif_error_t xrif_compress( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Dispatch decompression based on method
+/** Calls the relevant decompression function based on the value of handle->compress_method.
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_NOTIMPL if an unknown compression method is configured in handle
+  * \returns error codes from the specific decompression methods.
+  * \returns XRIF_NOERROR on success
+  */
 xrif_error_t xrif_decompress(xrif_t handle /**< [in/out] the xrif handle */);
 
+///
+/**
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
+  * \returns XRIF_NOERROR on success
+  */
 xrif_error_t xrif_compress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
+///
+/**
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
+  * \returns XRIF_NOERROR on success
+  */
 xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
+///
+/**
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
+  * \returns XRIF_ERROR_FAILURE if lz4_compress_fast returns 0
+  * \returns XRIF_NOERROR on success
+  */
 xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
 
+///
+/**
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_LIBERR+LZ4CODE if LZ4_decompress_safe fails
+  * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
+  * \returns XRIF_NOERROR on success
+  */
 xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
+
+///
+/**
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
+  * \returns XRIF_ERROR_FAILURE if fastlz_compress_level returns 0
+  * \returns XRIF_NOERROR on success
+  */
+xrif_error_t xrif_compress_fastlz( xrif_t handle /**< [in/out] the xrif handle */);
+
+///
+/**
+  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_FAILURE if fastlz_decompress fails
+  * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
+  * \returns XRIF_NOERROR on success
+  */
+xrif_error_t xrif_decompress_fastlz( xrif_t handle /**< [in/out] the xrif handle */);
 
 ///@}
 

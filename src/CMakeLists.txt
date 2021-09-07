@@ -1,7 +1,7 @@
 
 
 # list of source files
-set(libsrc xrif.c xrif_difference_previous.c xrif_difference_first.c xrif_difference_pixel.c lz4/lz4.c lz4/lz4hc.c )
+set(libsrc xrif.c xrif_difference_previous.c xrif_difference_first.c xrif_difference_pixel.c xrif_difference_bayer.c lz4/lz4.c lz4/lz4hc.c fastlz/fastlz.h fastlz/fastlz.c)
 
 # this is the "object library" target: compiles the sources only once
 add_library(objlib OBJECT ${libsrc})
@@ -29,4 +29,5 @@ install (TARGETS xrif-static DESTINATION lib)
 install (FILES xrif.h DESTINATION include/xrif)
 install (FILES lz4/lz4.h DESTINATION include/xrif/lz4)
 install (FILES lz4/lz4hc.h DESTINATION include/xrif/lz4)
+install (FILES fastlz/fastlz.h DESTINATION include/xrif/fastlz)
 

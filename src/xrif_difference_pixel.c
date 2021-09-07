@@ -1,5 +1,5 @@
 /** \file xrif_difference_pixel.c
-  * \brief Implementation of xrif first frame differencing
+  * \brief Implementation of xrif pixel differencing
   *
   * \author Jared R. Males (jaredmales@gmail.com)
   *

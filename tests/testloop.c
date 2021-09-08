@@ -70,6 +70,8 @@
    #define XRIF_TESTLOOP_COMP_STR "none"
 #elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_LZ4
    #define XRIF_TESTLOOP_COMP_STR "lz4"
+#elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_FASTLZ
+   #define XRIF_TESTLOOP_COMP_STR "fastlz"
 #endif
 
    xrif_t hand = NULL;

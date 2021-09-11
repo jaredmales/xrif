@@ -137,11 +137,16 @@ extern "C"
 #define XRIF_COMPRESS_NONE (-1)
 #define XRIF_COMPRESS_DEFAULT (100)
 #define XRIF_COMPRESS_LZ4 (100)
+#define XRIF_COMPRESS_LZ4HC (102)
 #define XRIF_COMPRESS_FASTLZ (110)
 
 #define XRIF_LZ4_ACCEL_MIN (1)
 #define XRIF_LZ4_ACCEL_MAX (65537)
-   
+
+#define XRIF_LZ4HC_CLEVEL_MIN (1)
+#define XRIf_LZ4HC_CLEVEL_DEFAULT ( LZ4HC_CLEVEL_DEFAULT )
+#define XRIF_LZ4HC_CLEVEL_MAX ( LZ4HC_CLEVEL_MAX )
+
 /// The type used for storing the width and height and depth dimensions of images.
 typedef uint32_t xrif_dimension_t;
 
@@ -298,7 +303,7 @@ typedef uint8_t xrif_typecode_t;
 /** This structure provides for setup and management of memory allocation, though externally allocated
   * buffers can be used when desired.
   *
-  * Options related to compression level and speed are also provided.
+  * Options related to compression level and speed for the supported compressorsare also provided.
   * 
   * It is intended that this structure be interacted with via the xrif_t typedef, which is a pointer
   * to xrif_handle. Values of this structure should generally be changed by one of the xrif_set_*() functions,
@@ -306,15 +311,17 @@ typedef uint8_t xrif_typecode_t;
   * 
   * \todo need xrif_set_XXXX function unit tests
   * 
+  * \todo LZ4 has a max input size, need to check this
+  * 
   */ 
 typedef struct
 {
-   xrif_dimension_t width;     ///< The width of a single image, in pixels
-   xrif_dimension_t height;    ///< The height of a single image, in pixels
-   xrif_dimension_t depth;     ///< The depth of a single image, in pixels
-   xrif_dimension_t frames;    ///< The number of frames in the stream
+   xrif_dimension_t m_width;     ///< The width of a single image, in pixels
+   xrif_dimension_t m_height;    ///< The height of a single image, in pixels
+   xrif_dimension_t m_depth;     ///< The depth of a single image, in pixels
+   xrif_dimension_t m_frames;    ///< The number of frames in the stream
    
-   xrif_typecode_t type_code;  ///< The code specifying the data type of the pixels
+   xrif_typecode_t m_type_code;  ///< The code specifying the data type of the pixels
    
    size_t data_size;     ///< The size of the pixels, bytes.  This corresponds to `sizeof(type)`.
 
@@ -329,6 +336,8 @@ typedef struct
    
    int lz4_acceleration; ///< LZ4 acceleration parameter, >=1, higher is faster with less comporession.  Default is 1.
    
+   int lz4hc_clevel; ///< LZ4HC compression level.  1 <= clevel <= 12.  Default is 9.
+
    int fastlz_level; ///< FastLZ compression level. 
                      /**< According to the docs, 1 = faster, lower compression,  2 = slower, better compression.  
                        *  No other valid values.  xrif default is 2, which seems to be faster for large image cubes.
@@ -544,9 +553,9 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,      ///< [in/out] the xri
                                      );
 
 /// Set the LZ4 acceleration parameter
-/** The LZ4 acceleration paraameter is a number greater than or equal to 1.  Larger values speed up the compression
+/** The LZ4 acceleration parameter is a number greater than or equal to 1.  Larger values speed up the compression
   * process, but with less size reduction.  The default and minimum value is 1 (XRIF_LZ4_ACCEL_MIN).  
-  * The maximum value is 65537 (XRIF_LZ4_ACCEL_MAX).  The LZ4 docs claim a +-3% improvement in speed for each incrment.
+  * The maximum value is 65537 (XRIF_LZ4_ACCEL_MAX).  The LZ4 docs claim a +-3% improvement in speed for each increment.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_BADARG if `lz4_accel` is out of range.  Will set value to correspondling min or max limit.
@@ -555,6 +564,19 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,      ///< [in/out] the xri
 xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    ///< [in/out] the xrif handle to be configured
                                         int32_t lz4_accel ///< [in] LZ4 acceleration parameter
                                       );
+
+/// Set the LZ4HC compression level
+/** The LZ4HC compression level is a number greater than or equal to 1 and less than or equal to 12.  Larger values should result in
+  * better  compression, but with slower speeds.  The default value is 9 (XRIF_LZ4HC_CLEVEL_DEFAULT).  
+  * The maximum value is 12 (XRIF_LZ4HC_CLEVEL_MAX ).  
+  *
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `lz4hc_clevel` is out of range.  Will set value to correspondling min or max limit.
+  * \returns \ref XRIF_NOERROR on success.
+  */ 
+xrif_error_t xrif_set_lz4hc_clevel( xrif_t handle,       ///< [in/out] the xrif handle to be configured
+                                    int32_t lz4hc_clevel ///< [in] LZ4HC compression level
+                                  );
 
 /// Set the FastLZ compression level
 /** The FastLZ compression level can be either 1 or 2. 1 is faster but lower compression, 2 is slower but better compression.  
@@ -594,6 +616,15 @@ size_t xrif_min_reordered_size(xrif_t handle /**< [in] the xrif handle */ );
   * \returns 0 otherwise
   */
 size_t xrif_min_compressed_size_lz4(xrif_t handle /**< [in] the xrif handle */);
+
+/// Calculate the minimum size of the compressed buffer for LZ4HC compression
+/**
+  * This uses LZ4_compressBound for the minimum reordered buffer size.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  */
+size_t xrif_min_compressed_size_lz4hc(xrif_t handle /**< [in] the xrif handle */);
 
 /// Calculate the minimum size of the compressed buffer for FastLZ compression
 /**
@@ -1162,8 +1193,8 @@ xrif_error_t xrif_compress( xrif_t handle /**< [in/out] the xrif handle */);
   */
 xrif_error_t xrif_decompress(xrif_t handle /**< [in/out] the xrif handle */);
 
-///
-/**
+/// Compress using the no compression method
+/** This is simply a memory copy.
   *
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
@@ -1171,8 +1202,8 @@ xrif_error_t xrif_decompress(xrif_t handle /**< [in/out] the xrif handle */);
   */
 xrif_error_t xrif_compress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
-///
-/**
+/// Decompress using the no compression method
+/** This is simply a memory copy.
   *
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
@@ -1180,9 +1211,8 @@ xrif_error_t xrif_compress_none( xrif_t handle /**< [in/out] the xrif handle */)
   */
 xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
-///
+/// Compress using LZ4
 /**
-  *
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_ERROR_FAILURE if lz4_compress_fast returns 0
@@ -1190,9 +1220,8 @@ xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle *
   */
 xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
 
-///
+/// Decompress using LZ4
 /**
-  *
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_LIBERR+LZ4CODE if LZ4_decompress_safe fails
   * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
@@ -1200,9 +1229,26 @@ xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
   */
 xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
 
-///
+/// Compress using LZ4HC
 /**
-  *
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
+  * \returns XRIF_ERROR_FAILURE if lz4_compress_fast returns 0
+  * \returns XRIF_NOERROR on success
+  */
+xrif_error_t xrif_compress_lz4hc( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Decompress using LZ4HC
+/**
+  * \returns XRIF_ERROR_NULLPTR if handle is null
+  * \returns XRIF_ERROR_LIBERR+LZ4CODE if LZ4_decompress_safe fails
+  * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
+  * \returns XRIF_NOERROR on success
+  */
+xrif_error_t xrif_decompress_lz4hc( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Compress using FastLZ
+/**
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_ERROR_FAILURE if fastlz_compress_level returns 0
@@ -1210,9 +1256,8 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */
   */
 xrif_error_t xrif_compress_fastlz( xrif_t handle /**< [in/out] the xrif handle */);
 
-///
+/// Decompress using FastLZ
 /**
-  *
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_FAILURE if fastlz_decompress fails
   * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
@@ -1282,7 +1327,6 @@ double xrif_compress_time( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns the ratio of raw_size to xrif_compress_time
   */ 
 double xrif_compress_rate( xrif_t handle /**< [in/out] the xrif handle */);
-
 
 /// Calculate the time in seconds taken to decode the data
 /**

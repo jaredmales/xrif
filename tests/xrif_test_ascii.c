@@ -127,14 +127,14 @@ START_TEST (ascii_pixel_none_lz4_xrif_h)
    rv = fread(hand->raw_buffer, 1, sz, fp);
    ck_assert( rv == sz );
               
-   int8_t * compbuff = (int8_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int8_t));
-   memcpy(compbuff, hand->raw_buffer, hand->width*hand->height*hand->frames*sizeof(int8_t));
+   int8_t * compbuff = (int8_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(int8_t));
+   memcpy(compbuff, hand->raw_buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(int8_t));
             
    xrif_encode(hand);
    xrif_decode(hand);
                
    int neq = 0;
-   for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+   for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
    {
       if(hand->raw_buffer[i] != compbuff[i]) 
       {

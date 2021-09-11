@@ -104,11 +104,11 @@ START_TEST (initialize_handle_noerror)
    
    xrif_error_t rv = xrif_initialize_handle(&hand);
    
-   ck_assert_int_eq( hand.width, 0);
-   ck_assert_int_eq( hand.height, 0);
-   ck_assert_int_eq( hand.depth, 0);
-   ck_assert_int_eq( hand.frames, 0);
-   ck_assert_int_eq( hand.type_code, 0);
+   ck_assert_int_eq( hand.m_width, 0);
+   ck_assert_int_eq( hand.m_height, 0);
+   ck_assert_int_eq( hand.m_depth, 0);
+   ck_assert_int_eq( hand.m_frames, 0);
+   ck_assert_int_eq( hand.m_type_code, 0);
    ck_assert_int_eq( hand.data_size, 0);
    ck_assert_int_eq( hand.compressed_size, 0);
    ck_assert_int_eq( hand.difference_method, XRIF_DIFFERENCE_DEFAULT);
@@ -157,11 +157,11 @@ START_TEST (new_delete_noerror)
    xrif_error_t rv = xrif_new(&hand);
    
    ck_assert( hand != NULL);
-   ck_assert_int_eq( hand->width, 0);
-   ck_assert_int_eq( hand->height, 0);
-   ck_assert_int_eq( hand->depth, 0);
-   ck_assert_int_eq( hand->frames, 0);
-   ck_assert_int_eq( hand->type_code, 0);
+   ck_assert_int_eq( hand->m_width, 0);
+   ck_assert_int_eq( hand->m_height, 0);
+   ck_assert_int_eq( hand->m_depth, 0);
+   ck_assert_int_eq( hand->m_frames, 0);
+   ck_assert_int_eq( hand->m_type_code, 0);
    ck_assert_int_eq( hand->data_size, 0);
    ck_assert_int_eq( hand->compressed_size, 0);
    ck_assert_int_eq( hand->difference_method, XRIF_DIFFERENCE_DEFAULT);
@@ -202,11 +202,11 @@ START_TEST (setup_noerror)
    
    rv = xrif_set_size(&hand, 1024,64,32,1000, XRIF_TYPECODE_INT16);
    
-   ck_assert_int_eq( hand.width, 1024);
-   ck_assert_int_eq( hand.height, 64);
-   ck_assert_int_eq( hand.depth, 32);
-   ck_assert_int_eq( hand.frames, 1000);
-   ck_assert_int_eq( hand.type_code, XRIF_TYPECODE_INT16);
+   ck_assert_int_eq( hand.m_width, 1024);
+   ck_assert_int_eq( hand.m_height, 64);
+   ck_assert_int_eq( hand.m_depth, 32);
+   ck_assert_int_eq( hand.m_frames, 1000);
+   ck_assert_int_eq( hand.m_type_code, XRIF_TYPECODE_INT16);
    ck_assert_int_eq( hand.data_size, sizeof(int16_t));
    
    //And we check that everything else is unaltered
@@ -516,11 +516,11 @@ START_TEST (header_write)
  
    ck_assert( *((uint32_t *) &header[4]) == XRIF_VERSION);   
    ck_assert( *((uint32_t *) &header[8]) == XRIF_HEADER_SIZE); 
-   ck_assert( *((uint32_t *) &header[12]) == hand.width);
-   ck_assert( *((uint32_t *) &header[16]) == hand.height);
-   ck_assert( *((uint32_t *) &header[20]) == hand.depth);
-   ck_assert( *((uint32_t *) &header[24]) == hand.frames);
-   ck_assert( *((uint16_t *) &header[28]) == hand.type_code);
+   ck_assert( *((uint32_t *) &header[12]) == hand.m_width);
+   ck_assert( *((uint32_t *) &header[16]) == hand.m_height);
+   ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
+   ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
+   ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
    ck_assert( *((uint16_t *) &header[30]) == hand.difference_method);
    ck_assert( *((uint16_t *) &header[32]) == hand.reorder_method);
    ck_assert( *((uint16_t *) &header[34]) == hand.compress_method);
@@ -569,11 +569,11 @@ START_TEST (header_read)
    ck_assert( rv == XRIF_NOERROR );
 
    ck_assert_int_eq( header_size, XRIF_HEADER_SIZE);
-   ck_assert_int_eq( hand2.width, 120);
-   ck_assert_int_eq( hand2.height, 240);
-   ck_assert_int_eq( hand2.depth, 2);
-   ck_assert_int_eq( hand2.frames, 1000);
-   ck_assert_int_eq( hand2.type_code, XRIF_TYPECODE_INT16);
+   ck_assert_int_eq( hand2.m_width, 120);
+   ck_assert_int_eq( hand2.m_height, 240);
+   ck_assert_int_eq( hand2.m_depth, 2);
+   ck_assert_int_eq( hand2.m_frames, 1000);
+   ck_assert_int_eq( hand2.m_type_code, XRIF_TYPECODE_INT16);
    ck_assert_int_eq( hand2.data_size, sizeof(int16_t));
    ck_assert_int_eq( hand2.compressed_size, 1025);
    ck_assert_int_eq( hand2.lz4_acceleration, 10);

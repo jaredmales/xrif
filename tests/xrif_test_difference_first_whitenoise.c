@@ -144,17 +144,17 @@ START_TEST (diff_first_int16_white)
                ck_assert( rv == XRIF_NOERROR );
                
                int16_t * buffer = (int16_t *) hand->raw_buffer;
-               rv = fill_int16_white( buffer, hand->width*hand->height*hand->frames, q);
+               rv = fill_int16_white( buffer, hand->m_width*hand->m_height*hand->m_frames, q);
                ck_assert( rv == 0 );
                
-               int16_t * compbuff = (int16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int16_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int16_t));
+               int16_t * compbuff = (int16_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(int16_t));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(int16_t));
             
                xrif_difference_first(hand);
                xrif_undifference_first(hand);
                
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {
@@ -209,17 +209,17 @@ START_TEST (diff_first_uint16_white)
                ck_assert( rv == XRIF_NOERROR );
                
                uint16_t * buffer = (uint16_t *) hand->raw_buffer;
-               rv = fill_uint16_white( buffer, hand->width*hand->height*hand->frames,q);
+               rv = fill_uint16_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
-               uint16_t * compbuff = (uint16_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint16_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint16_t));
+               uint16_t * compbuff = (uint16_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(uint16_t));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(uint16_t));
             
                xrif_difference_first(hand);
                xrif_undifference_first(hand);
                
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {
@@ -274,17 +274,17 @@ START_TEST (diff_first_int32_white)
                ck_assert( rv == XRIF_NOERROR );
                
                int32_t * buffer = (int32_t *) hand->raw_buffer;
-               rv = fill_int32_white( buffer, hand->width*hand->height*hand->frames,q);
+               rv = fill_int32_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
-               int32_t * compbuff = (int32_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int32_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int32_t));
+               int32_t * compbuff = (int32_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(int32_t));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(int32_t));
             
                xrif_difference_first(hand);
                xrif_undifference_first(hand);
                
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {
@@ -339,17 +339,17 @@ START_TEST (diff_first_uint32_white)
                ck_assert( rv == XRIF_NOERROR );
                
                uint32_t * buffer = (uint32_t *) hand->raw_buffer;
-               rv = fill_uint32_white( buffer, hand->width*hand->height*hand->frames,q);
+               rv = fill_uint32_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
-               uint32_t * compbuff = (uint32_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint32_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint32_t));
+               uint32_t * compbuff = (uint32_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(uint32_t));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(uint32_t));
             
                xrif_difference_first(hand);
                xrif_undifference_first(hand);
                
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {
@@ -404,17 +404,17 @@ START_TEST (diff_first_int64_white)
                ck_assert( rv == XRIF_NOERROR );
                
                int64_t * buffer = (int64_t *) hand->raw_buffer;
-               rv = fill_int64_white( buffer, hand->width*hand->height*hand->frames,q);
+               rv = fill_int64_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
-               int64_t * compbuff = (int64_t *) malloc( hand->width*hand->height*hand->frames*sizeof(int64_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(int64_t));
+               int64_t * compbuff = (int64_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(int64_t));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(int64_t));
             
                xrif_difference_first(hand);
                xrif_undifference_first(hand);
                
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {
@@ -469,17 +469,17 @@ START_TEST (diff_first_uint64_white)
                ck_assert( rv == XRIF_NOERROR );
                
                uint64_t * buffer = (uint64_t *) hand->raw_buffer;
-               rv = fill_uint64_white( buffer, hand->width*hand->height*hand->frames,q);
+               rv = fill_uint64_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
-               uint64_t * compbuff = (uint64_t *) malloc( hand->width*hand->height*hand->frames*sizeof(uint64_t));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(uint64_t));
+               uint64_t * compbuff = (uint64_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(uint64_t));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(uint64_t));
             
                xrif_difference_first(hand);
                xrif_undifference_first(hand);
                
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {

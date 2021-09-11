@@ -70,6 +70,8 @@
    #define XRIF_TESTLOOP_COMP_STR "none"
 #elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_LZ4
    #define XRIF_TESTLOOP_COMP_STR "lz4"
+#elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_LZ4HC
+   #define XRIF_TESTLOOP_COMP_STR "lz4hc"
 #elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_FASTLZ
    #define XRIF_TESTLOOP_COMP_STR "fastlz"
 #endif
@@ -119,12 +121,12 @@
       
                XRIF_TESTLOOP_TYPE * buffer = (XRIF_TESTLOOP_TYPE *) hand->raw_buffer;
                
-               rv = XRIF_TESTLOOP_FILL_FUNC(buffer, hand->width*hand->height*hand->frames,q);
+               rv = XRIF_TESTLOOP_FILL_FUNC(buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                
                ck_assert( rv == 0 );
                
-               XRIF_TESTLOOP_TYPE * compbuff = (XRIF_TESTLOOP_TYPE *) malloc( hand->width*hand->height*hand->frames*sizeof(XRIF_TESTLOOP_TYPE));
-               memcpy(compbuff, buffer, hand->width*hand->height*hand->frames*sizeof(XRIF_TESTLOOP_TYPE));
+               XRIF_TESTLOOP_TYPE * compbuff = (XRIF_TESTLOOP_TYPE *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(XRIF_TESTLOOP_TYPE));
+               memcpy(compbuff, buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(XRIF_TESTLOOP_TYPE));
       
                rv = XRIF_TESTLOOP_ENCODE(hand);
                ck_assert( rv == 0 );
@@ -133,7 +135,7 @@
                ck_assert( rv == 0 );
       
                int neq = 0;
-               for( size_t i = 0 ; i < hand->width*hand->height*hand->frames ; ++i ) 
+               for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
                {
                   if(buffer[i] != compbuff[i]) 
                   {

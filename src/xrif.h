@@ -426,57 +426,7 @@ typedef uint32_t xrif_dimension_t;
 #define XRIF_TYPECODE_COMPLEX_DOUBLE (12) 
 
 
-/** \addtogroup xrif_overview
-  * 
-  * The following code illustrates how the XRIF library should used to compress data under most circumstances.  
-  * Lower level access is provided if fine-grain control is needed.
-  *
-  * First, create the xrif library handle:
-  * \code
-  * xrif_error_t rv;
-  * xrif_t handle; //note: this is a pointer type
-  * rv = xrif_new(&handle); //note: the argument is a pointer to pointer
-  * //check rv for errors here . . .
-  * \endcode
-  * You now have an initialized xrif handle.  The `xrif_t` type can not be used until `xrif_new` has been called on it.
-  * Never call `xrif_new` twice on the same handle, unless `xrif_delete` (see below) has been called.
-  * 
-  * Next you need to configure and allocate the handle:
-  * \code
-  * rv = xrif_set_size(handle, 64,64, 1,1024, XRIF_TYPECODE_INT16); 
-  * rv = xrif_configure(handle, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK, XRIF_COMPRESS_LZ4); //Note this is optional if defaults are ok.
-  * rv = xrif_allocate(handle);
-  * \endcode
-  * The above results in an xrif handle prepared to operate on 1024 signed 16-bit images of size 64x64.  (Note that you should check the value of rv for errors!)
-  * 
-  * Now to compress data:
-  * \code
-  * memcpy(handle->raw_buffer, my_source, xrif_raw_size(handle) ); //You are responsible for `my_source`.
-  * rv = xrif_encode(handle);
-  * printf("%f\%\n", handle->compression_ratio*100.0);
-  * \endcode
-  * After this `handle->raw_buffer` contains the compressed data.  This is because `handle->compress_on_raw == 1` by default, causing the `raw_buffer` to be re-used.
-  * This also illustrates the built in performance monitoring, which is on by default but can be turned off.
-  * 
-  * To decompress:
-  * \code
-  * rv = xrif_decode(handle);
-  * memcpy(my_dest, xrif->raw_buffer, xrif_raw_size(xrif)); //You are responsible for `my_dest`.
-  * \endcode
-  * after which `my_dest` will contain the original data.
-  * 
-  * To start over, use:
-  * \code
-  * rv = xrif_reset(handle);
-  * \endcode
-  * 
-  * And when you are done with the handle, it can be fully de-allocated with
-  * \code
-  * rv = xrif_delete(handle);
-  * \endcode
-  * after which the handle should not be used again, unless `xrif_new` is called on it.
-  * @{
-  */
+
 
 /// The xrif library configuration structure, organizing various parameters used by the functions.
 /** This structure provides for setup and management of memory allocation, though externally allocated
@@ -492,6 +442,7 @@ typedef uint32_t xrif_dimension_t;
   * 
   * \todo LZ4 has a max input size, need to check this
   * 
+  * \ingroup xrif_hacking
   */ 
 typedef struct
 {
@@ -671,15 +622,9 @@ typedef struct
 } xrif_handle;
 
 /// The xrif handle pointer type.  This provides the main interface to the xrif library.
-typedef xrif_handle* xrif_t;
-
-///@}
-
-
-/** \defgroup xrif_init Initialization, Setup, and Allocation 
-  * \ingroup xrif_interface
-  * @{
+/** \ingroup xrif_types
   */
+typedef xrif_handle* xrif_t;
 
 /// Allocate a handle and initialize it.
 /** The argument is a pointer to \ref xrif_t, making it the address of an `xrif_handle` pointer.
@@ -689,17 +634,21 @@ typedef xrif_handle* xrif_t;
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_reset, xrif_delete
+  * 
+  * \ingroup xrif_init
   */ 
 xrif_error_t xrif_new(xrif_t * handle_ptr /**< [out] a pointer to an xrif handle. */);
 
 /// Set the basic parameters of an xrif handle
 /** After setting these parameters, a call to one of the allocate or set functions
-  * will succceed.
+  * will succeed.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if any of `w`, `h`, `d`, or `f` are 0.
   * \returns \ref XRIF_ERROR_INVALID_TYPE if `c` specifies an invalid type code
   * \returns \ref XRIF_NOERROR on success
+  * 
+  *  \ingroup xrif_init
   */
 xrif_error_t xrif_set_size( xrif_t handle,      ///< [in/out] the xrif handle to be set up
                             xrif_dimension_t w, ///< [in] the width of a single frame of data, in pixels
@@ -715,6 +664,10 @@ xrif_error_t xrif_set_size( xrif_t handle,      ///< [in/out] the xrif handle to
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_BADARG if `difference_method`, `reorder_method`, or `compress_method` is not a valid method.  Will set that method its default.
   * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo add direction to \ref xrif_configure
+  * 
+  * \ingroup xrif_init
   */ 
 xrif_error_t xrif_configure( xrif_t handle,         ///< [in/out] the xrif handle to be configured
                              int difference_method, ///< [in] the new reorder method
@@ -729,6 +682,8 @@ xrif_error_t xrif_configure( xrif_t handle,         ///< [in/out] the xrif handl
   * \returns \ref XRIF_ERROR_NOT_SETUP if the handle has not been configured
   * \returns \ref XRIF_ERROR_MALLOC on an error from `malloc`
   * \returns \ref XRIF_NOERROR on success. 
+  * 
+  * \ingroup xrif_init
   */ 
 xrif_error_t xrif_allocate( xrif_t handle   /**< [in/out] the xrif object to be allocated */);
 
@@ -741,6 +696,8 @@ xrif_error_t xrif_allocate( xrif_t handle   /**< [in/out] the xrif object to be 
   * \returns \ref XRIF_NOERROR on success. 
   * 
   * \see xrif_new, xrif_delete
+  * 
+  * \ingroup xrif_init
   */
 xrif_error_t xrif_reset( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -750,15 +707,10 @@ xrif_error_t xrif_reset( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_new, xrif_reset
+  * 
+  * \ingroup xrif_init
   */ 
 xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been initialized with xrif_new */);
-
-/// @}
-
-/** \defgroup xrif_init_fine Fine-grained Initialization, Setup, and Allocation 
-  * \ingroup xrif_init
-  * @{
-  */
 
 /// Initialize an xrif handle object.
 /** Sets all values to defaults, and ensures that 
@@ -774,6 +726,8 @@ xrif_error_t xrif_delete(xrif_t handle /**< [in] an xrif handle which has been i
   * 
   * \test Verify handle initialization. \ref tests_initialize_handle_noerror "[test doc]"
   * \test Verify xrif_initialize_handle returns error on NULL pointer. \ref tests_initialize_handle_nullptr "[test doc]"
+  * 
+  * \ingroup xrif_init_fine
   */ 
 xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to initialize */);
 
@@ -783,6 +737,8 @@ xrif_error_t xrif_initialize_handle( xrif_t handle /**< [out] the xrif handle to
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_BADARG if `difference_method` is not a valid difference method. Will set method to XRIF_DIFFERENCE_DEFAULT.
   * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \ingroup xrif_init_fine
   */ 
 xrif_error_t xrif_set_difference_method( xrif_t handle,        ///< [in/out] the xrif handle to be configured
                                          int difference_method ///< [in] the new reorder method
@@ -794,6 +750,8 @@ xrif_error_t xrif_set_difference_method( xrif_t handle,        ///< [in/out] the
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_BADARG if `reorder_method` is not a valid reorder method.  Will set method to XRIF_REORDER_DEFAULT.
   * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \ingroup xrif_init_fine
   */ 
 xrif_error_t xrif_set_reorder_method( xrif_t handle,     ///< [in/out] the xrif handle to be configured
                                       int reorder_method ///< [in] the new reorder method
@@ -819,6 +777,8 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,     ///< [in/out] the xrif 
   * \returns \ref XRIF_ERROR_BADARG if `compress_method` is not a valid compress method.  Will set method to XRIF_COMPRESS_DEFAULT.
   * \returns \ref XRIF_ERROR_BADARG if `compress_direction` is not a valid compress method.  Will set method to XRIF_DIRECTION_COMPRESS.
   * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \ingroup xrif_init_fine
   */  
 xrif_error_t xrif_set_compress_method_direction( xrif_t handle,                ///< [in/out] the xrif handle to be configured
                                                  xrif_int_t compress_method,   ///< [in] the new compress method
@@ -829,6 +789,8 @@ xrif_error_t xrif_set_compress_method_direction( xrif_t handle,                /
 /** Sets the compression method and sets up the relevant library interface, and for compression methods with 
   * directionality sets it to compress. Calls \ref xrif_set_compress_method_direction with compress_direction=XRIF_DIRECTION_COMPRESS.
   * For details see \ref xrif_set_compress_method_direction.
+  * 
+  * \ingroup xrif_init_fine
   */
 xrif_error_t xrif_set_compress_method( xrif_t handle,             ///< [in/out] the xrif handle to be configured
                                        xrif_int_t compress_method ///< [in] the new compress method
@@ -838,112 +800,14 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,             ///< [in/out] 
 /** Sets the compression method and sets up the relevant library interface, and for compression methods with 
   * directionality sets it to decompress. Calls \ref xrif_set_compress_method_direction with compress_direction=XRIF_DIRECTION_DECOMPRESS.
   * For details see \ref xrif_set_compress_method_direction.
+  * 
+  * \ingroup xrif_init_fine
   */   
 xrif_error_t xrif_set_decompress_method( xrif_t handle,             ///< [in/out] the xrif handle to be configured
                                          xrif_int_t compress_method ///< [in] the new compress method
                                        );
 
 
-/// Set the LZ4 acceleration parameter
-/** The LZ4 acceleration parameter is a number greater than or equal to 1.  Larger values speed up the compression
-  * process, but with less size reduction.  The default and minimum value is 1 (XRIF_LZ4_ACCEL_MIN).  
-  * The maximum value is 65537 (XRIF_LZ4_ACCEL_MAX).  The LZ4 docs claim a +-3% improvement in speed for each increment.
-  *
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
-  * \returns \ref XRIF_ERROR_BADARG if `lz4_accel` is out of range.  Will set value to correspondling min or max limit.
-  * \returns \ref XRIF_NOERROR on success.
-  * 
-  * \todo this should not return badarg on out of range, just clamp
-  */ 
-xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    ///< [in/out] the xrif handle to be configured
-                                        int32_t lz4_accel ///< [in] LZ4 acceleration parameter
-                                      );
-
-/// Set the LZ4HC compression level
-/** The LZ4HC compression level is a number greater than or equal to 1 and less than or equal to 12.  Larger values should result in
-  * better  compression, but with slower speeds.  The default value is 9 (XRIF_LZ4HC_CLEVEL_DEFAULT).  
-  * The maximum value is 12 (XRIF_LZ4HC_CLEVEL_MAX ).  
-  *
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
-  * \returns \ref XRIF_ERROR_BADARG if `lz4hc_clevel` is out of range.  Will set value to correspondling min or max limit.
-  * \returns \ref XRIF_NOERROR on success.
-  * 
-  * \todo this should not return badarg on out of range, just clamp
-  */ 
-xrif_error_t xrif_set_lz4hc_level( xrif_t handle,       ///< [in/out] the xrif handle to be configured
-                                   int32_t lz4hc_clevel ///< [in] LZ4HC compression level
-                                 );
-
-/// Set the FastLZ compression level
-/** The FastLZ compression level can be either 1 or 2. 1 is faster but lower compression, 2 is slower but better compression.  
-  * The FastLZ docs say that 1 will be generally useful on short data.
-  * 
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
-  * \returns \ref XRIF_ERROR_BADARG if `fastlz_lev` is out of range.  Will set value to 1.
-  * \returns \ref XRIF_NOERROR on success.
-  * 
-  * \todo this should not return badarg on out of range, just clamp
-  */ 
-xrif_error_t xrif_set_fastlz_level( xrif_t handle,     ///< [in/out] the xrif handle to be configured
-                                    int32_t fastlz_lev ///< [in] FastLZ level
-                                  );
-
-/// Allocate and configure the `zlib` stream structure
-/** The `zlib` stream structure is configured for either compression (deflate) or decompression (inflate)
-  * according to the current compression direction.
-  * 
-  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
-  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zlib`, where code is the `zlib` error code.
-  * \returns \ref XRIF_ERROR_MALLOC if an allocation error occurs.  Check errno in this case.
-  * \returns \ref XRIF_NOERROR on success.
-  */
-xrif_error_t xrif_setup_zlib(xrif_t handle );
-
-/// De-allocate the `zlib` stream structure
-/** The `zlib` end function is called and the `z_stream` structure owned by handle is free()-ed.
-  * 
-  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
-  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zlib`, where code is the `zlib` error code.
-  * \returns \ref XRIF_NOERROR on success.
-  */
-xrif_error_t xrif_shutdown_zlib(xrif_t handle );
-
-/// Allocate and configure the `zstd` context
-/** The `zstd` context structure for the configured direction is allocated and configured.
-  * If direction is compression, the compression level is set in the context structure.
-  * 
-  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
-  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zstd`, where code is the `zstd` error code.
-  * \returns \ref XRIF_ERROR_MALLOC if an allocation error occurs.  Check errno in this case.
-  * \returns \ref XRIF_NOERROR on success.
-  */
-xrif_error_t xrif_setup_zstd(xrif_t handle );
-
-/// De-allocate the `zstd` context
-/** The `zstd` context structures owned by handle are free()-ed using the `zstd` library calls.
-  * 
-  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
-  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zstd`, where code is the `zstd` error code.
-  * \returns \ref XRIF_NOERROR on success.
-  */
-xrif_error_t xrif_shutdown_zstd(xrif_t handle );
-
-/// Set the zstd compression level
-/** The zstd compression level can be any value from ZSTD_minCLevel() (currently -131072) to ZSTD_maxCLevel() (currently 22). 
-  * The lower the number the faster but with lower compression.  Setting 0 is equivalent to ZSTD_CLEVEL_DEFAULT (currently 3).
-  * Note that the xrif default, XRIF_ZSTD_LEVEL_DEFAULT, is 1. 
-  * 
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
-  * \returns \ref XRIF_ERROR_BADARG if `zstd_lev` is out of range.  Will set value to 1.
-  * \returns \ref XRIF_NOERROR on success.
-  */ 
-xrif_error_t xrif_set_zstd_level( xrif_t handle,   ///< [in/out] the xrif handle to be configured
-                                  int32_t zstd_lev ///< [in] new zstd level
-                                );
 
 /// Calculate the minimum size of the raw buffer.
 /** Result is based on current connfiguration of the handle.
@@ -962,15 +826,6 @@ size_t xrif_min_raw_size(xrif_t handle /**< [in] the xrif handle */ );
   * \returns 0 for an invalid configuration. 
   */
 size_t xrif_min_reordered_size(xrif_t handle /**< [in] the xrif handle */ );
-
-/// Calculate the minimum size of the compressed buffer for LZ4 compression
-/**
-  * This uses lz4::LZ4_compressBound for the minimum reordered buffer size.
-  * 
-  * \returns the minimum size on success
-  * \returns 0 otherwise
-  */
-size_t xrif_min_compressed_size_lz4(xrif_t handle /**< [in] the xrif handle */);
 
 /// Calculate the minimum size of the compressed buffer for LZ4HC compression
 /**
@@ -1036,6 +891,8 @@ size_t xrif_min_compressed_size(xrif_t handle /**< [in] the xrif handle */ );
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_allocate_raw
+  * 
+  * \ingroup xrif_init_fine
   */  
 xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
                            void * raw,     ///< [in] the pointer to a pre-allocated block
@@ -1057,6 +914,8 @@ xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_set_raw
+  * 
+  * \ingroup xrif_init_fine
   */
 xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to modify */);
 
@@ -1076,6 +935,7 @@ xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to m
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
   * \returns \ref XRIF_NOERROR on success\todo need to have a min size calculation function exposed
   * 
+  * \ingroup xrif_init_fine
   */  
 xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object to modify
                                  void * reordered, ///< [in] pointer to a pre-allocated block
@@ -1092,6 +952,7 @@ xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object t
   * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
   * \returns \ref XRIF_NOERROR on success
   * 
+  * \ingroup xrif_init_fine
   */
 xrif_error_t xrif_allocate_reordered( xrif_t handle /**< [in/out] the xrif object to modify */);
 
@@ -1108,6 +969,7 @@ xrif_error_t xrif_allocate_reordered( xrif_t handle /**< [in/out] the xrif objec
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
   * \returns \ref XRIF_NOERROR on success\todo need to have a min size calculation function exposed
   *
+  * \ingroup xrif_init_fine
   */  
 xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object to modify
                                   void * reordered, ///< [in] pointer to a pre-allocated block
@@ -1123,18 +985,11 @@ xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object 
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
   * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
   * \returns \ref XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_init_fine
   */
 xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// @}
-
-/** \defgroup access Current Configuration
-  * \ingroup \xrif_interface  
-  *  
-  * Access to current configuration values.
-  * 
-  *@{
-  */
 
 /// Get the current width of the configured handle.
 /** This simply returns the current value of handle->m_width.
@@ -1142,7 +997,9 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif hand
   * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  This result could also indicate
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
-  * \returns thexrf width unless an error occurs, in which case 0 (which could be a valid value)
+  * \returns the width unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */ 
 xrif_dimension_t xrif_width( xrif_t handle /**< [in] the xrif handle */);
 
@@ -1153,8 +1010,11 @@ xrif_dimension_t xrif_width( xrif_t handle /**< [in] the xrif handle */);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the height unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 xrif_dimension_t xrif_height( xrif_t handle /**< [in] the xrif handle*/);
+
 
 /// Get the current depth of the configured handle.
 /** This simply returns the current value of handle->m_depth.
@@ -1163,6 +1023,8 @@ xrif_dimension_t xrif_height( xrif_t handle /**< [in] the xrif handle*/);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the depth unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 xrif_dimension_t xrif_depth( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1173,6 +1035,8 @@ xrif_dimension_t xrif_depth( xrif_t handle /**< [in] the xrif handle*/);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the number of frames unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 xrif_dimension_t xrif_frames( xrif_t handle /**< [in] the xrif handle*/);
    
@@ -1183,6 +1047,8 @@ xrif_dimension_t xrif_frames( xrif_t handle /**< [in] the xrif handle*/);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the type code unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 xrif_int_t xrif_type_code( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1193,6 +1059,8 @@ xrif_int_t xrif_type_code( xrif_t handle /**< [in] the xrif handle*/);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the data size unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 size_t xrif_data_size( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1203,6 +1071,8 @@ size_t xrif_data_size( xrif_t handle /**< [in] the xrif handle*/);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the raw size unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 size_t xrif_raw_size( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1213,6 +1083,8 @@ size_t xrif_raw_size( xrif_t handle /**< [in] the xrif handle*/);
   * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
   * 
   * \returns the compressed size unless an error occurs, in which case 0 (which could be a valid value)
+  * 
+  * \ingroup access
   */
 size_t xrif_compressed_size( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1222,6 +1094,8 @@ size_t xrif_compressed_size( xrif_t handle /**< [in] the xrif handle*/);
   * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned. 
   * 
   * \returns the difference method unless an error occurs, in which case XRIF_ERROR_NULLPTR (which could be a valid value)
+  * 
+  * \ingroup access
   */
 xrif_int_t xrif_difference_method( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1231,6 +1105,8 @@ xrif_int_t xrif_difference_method( xrif_t handle /**< [in] the xrif handle*/);
   * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
   * 
   * \returns the reorder method unless an error occurs, in which case XRIF_ERROR_NULLPTR.
+  * 
+  * \ingroup access
   */
 xrif_int_t xrif_reorder_method( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1240,98 +1116,10 @@ xrif_int_t xrif_reorder_method( xrif_t handle /**< [in] the xrif handle*/);
   * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
   * 
   * \returns the compress method unless an error occurs, in which case XRIF_ERROR_NULLPTR.
+  * 
+  * \ingroup access
   */
 xrif_int_t  xrif_compress_method( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the LZ4 acceleration of the configured handle.
-/** This returns the current value of the LZ4 acceleration.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
-  * 
-  * \returns the LZ4 acceleration unless an error occurs, in which case XRIF_ERROR_NULLPTR.
-  */
-xrif_int_t xrif_lz4_acceleration( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the LZ4 HC compression level of the configured handle.
-/** This returns the current value of the LZ4 HC compression level.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
-  * 
-  * \returns the LZ4 HC compression level unless an error occurs, in which case XRIF_ERROR_NULLPTR.
-  */
-xrif_int_t xrif_lz4hc_level( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the FastLZ compression level of the configured handle.
-/** This returns the current value of the FastLZ compression level.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
-  * 
-  * \returns the FastLZ compression level unless an error occurs, in which case XRIF_ERROR_NULLPTR.
-  */
-xrif_int_t xrif_fastlz_level( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the zlib stream structure of the configured handle.
-/** This returns the current pointer to the zlib stream structure.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  This result could also indicate
-  * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
-  * 
-  * \returns the zlib stream structure pointer
-  * \returns NULL if handle is NULL or uninitialized
-  */
-z_stream * xrif_zlib_stream( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the zlib compression level of the configured handle.
-/** This returns the current zlib compression level.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned. 
-  * 
-  * \returns the zlib compression level unless an error occurs.
-  * \returns XRIF_ERROR_NULLPTR if handle is NULL. 
-  */
-xrif_int_t xrif_zlib_level( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the zlib compression strategy of the configured handle.
-/** This returns the current zlib compression strategy.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
-  * 
-  * \returns the zlib compression level unless an error occurs.
-  * \returns XRIF_ERROR_NULLPTR if handle is NULL.
-  */
-xrif_int_t xrif_zlib_strategy( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the zstd compression context structure of the configured handle.
-/** This returns the current pointer to the zstd compression context structure.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  This result could also indicate
-  * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
-  * 
-  * \returns the zstd context structure pointer;
-  * \returns NULL if handle is NULL or uninitialized
-  */
-ZSTD_CCtx * xrif_zstd_cctx( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the zstd decompression context structure of the configured handle.
-/** This returns the current pointer to the zstd decompression context structure.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  This result could also indicate
-  * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
-  * 
-  * \returns the zstd context structure pointer;
-  * \returns NULL if handle is NULL or uninitialized
-  */
-ZSTD_DCtx * xrif_zstd_dctx( xrif_t handle /**< [in] the xrif handle*/);
-
-/// Get the zstd compression level of the configured handle.
-/** This returns the current zstd compression level.
-  *
-  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned. 
-  * 
-  * \returns the zstd compression level unless an error occurs.
-  * \returns XRIF_ERROR_NULLPTR if handle is NULL. 
-  */
-xrif_int_t xrif_zstd_level( xrif_t handle /**< [in] the xrif handle*/);
 
 /// Get the value of the OpenMP parallel flag
 /** This returns the current OpenMP parallel flag.  OpenMP multithreading is not used if < 1, used if > 0.
@@ -1340,6 +1128,8 @@ xrif_int_t xrif_zstd_level( xrif_t handle /**< [in] the xrif handle*/);
   * 
   * \returns the value of the OpenMP parallel flag.
   * \returns XRIF_ERROR_NULLPTR if handle is NULL.
+  * 
+  * \ingroup access
   */
 int xrif_omp_parallel( xrif_t handle /**< [in] the xrif handle*/);
 
@@ -1350,24 +1140,19 @@ int xrif_omp_parallel( xrif_t handle /**< [in] the xrif handle*/);
   * 
   * \returns the number of OpenMP threads.
   * \returns XRIF_ERROR_NULLPTR if handle is NULL.
+  * 
+  * \ingroup access
   */
 int xrif_omp_numthreads( xrif_t handle /**< [in] the xrif handle*/);
-
-
-///@}
-
-/** \defgroup header Header Processing 
-  * \ingroup xrif_interface
-  * 
-  * These functions populate or read the xrif header.
-  *
-  * @{
-  */
 
 /// Populate a header buffer with the xrif protocol details.
 /**
   * \returns \ref XRIF_ERROR_NULLPTR if either header or handle is NULL
   * \returns \ref XRIF_NOERROR on success 
+  * 
+  * \todo add zstd and zlib to header write
+  * 
+  * \ingroup header
   */
 xrif_error_t xrif_write_header( char * header, ///< [out] the buffer to hold the protocol header. Must be at least 48 bytes long.
                                 xrif_t handle  ///< [in] the xrif handle from which to populate the header.  This must have been created with xrif_new.
@@ -1379,20 +1164,17 @@ xrif_error_t xrif_write_header( char * header, ///< [out] the buffer to hold the
   * \returns \ref XRIF_ERROR_BADHEADER if the xrif magic number is not the first 4 bytes
   * \returns \ref XRIF_ERROR_WRONGVERSION if the XRIF version in the header is too high for the compiled library
   * \returns \ref XRIF_NOERROR on success
+  * 
+  * \todo add zstd and zlib to header read
+  * 
+  * \ingroup header
   */
 xrif_error_t xrif_read_header( xrif_t handle,          ///< [out] the xrif header to configure.  This must have been created with xrif_new.
                                uint32_t * header_size, ///< [out] the total size of the header, read from the buffer.
                                char * header           ///< [in] the buffer containing the header
                              );
-///@}
 
-/** \defgroup xrif_encode Encoding & Decoding
-  * \ingroup xrif_interface
-  * 
-  * These functions perform a complete cycle of encode and decode.
-  *
-  * @{
-  */
+
 
 /// Encode data using the xrif format 
 /** Calls \ref xrif_difference(), \ref xrif_reorder(), and \ref xrif_compress().
@@ -1407,6 +1189,8 @@ xrif_error_t xrif_read_header( xrif_t handle,          ///< [out] the xrif heade
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_decode
+  * 
+  * \ingroup xrif_encode_decode
   */
 xrif_error_t xrif_encode( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1422,17 +1206,10 @@ xrif_error_t xrif_encode( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns \ref XRIF_NOERROR on success
   *
   * \see xrif_encode 
+  * 
+  * \ingroup xrif_encode_decode
   */
 xrif_error_t xrif_decode( xrif_t handle /**< [in/out] the xrif handle */);
-
-
-/// @}
-
-/** \defgroup xrif_diff Differencing
-  * \ingroup xrif_encode
-  * 
-  * @{
-  */
 
 /// Difference the image(s)
 /** This function calls the method specific difference function for the method specified by
@@ -1442,6 +1219,8 @@ xrif_error_t xrif_decode( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns \ref XRIF_ERROR_NOTIMPL if xrif_handle::difference_method as set in the handle is not valid
   * \returns other error codes from the differencing functions
   * \returns \ref XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_diff
   */
 xrif_error_t xrif_difference( xrif_t handle /**< [in/out] the xrif handle */ );
 
@@ -1453,18 +1232,10 @@ xrif_error_t xrif_difference( xrif_t handle /**< [in/out] the xrif handle */ );
   * \returns \ref XRIF_ERROR_NOTIMPL if xrif_handle::difference_method as set in the handle is not valid
   * \returns other error codes from the differencing functions
   * \returns \ref XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_diff
   */
 xrif_error_t xrif_undifference( xrif_t handle /**< [in/out] the xrif handle */ );
-
-///@}
-
-/** \defgroup xrif_diff_previous Previous Differencing
-  * \ingroup xrif_diff
-  * 
-  * The previous differencing method uses the previous frame as the reference.
-  * 
-  * @{
-  */
 
 /// Difference the images using the previous image as a reference.
 /** This function calls the type specific difference function for the type specified by
@@ -1482,18 +1253,10 @@ xrif_error_t xrif_undifference( xrif_t handle /**< [in/out] the xrif handle */ )
   * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
   * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
   * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_previous
   */
 xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif handle */ );
-
-///@}
-
-/** \defgroup xrif_diff_first First Differencing
-  * \ingroup xrif_diff
-  * 
-  * The first differencing method uses the first frame as the reference for all subsequent frames.
-  * 
-  * @{
-  */
 
 /// Difference the images using the first image as a reference.
 /** This function calls the type specific difference function for the type specified by
@@ -1511,18 +1274,10 @@ xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif hand
   * \test Verify first differencing for uint32_t \ref diff_first_uint32_white "[test doc]"
   * \test Verify first differencing for int64_t \ref diff_first_int64_white "[test doc]"
   * \test Verify first differencing for uint64_t \ref diff_first_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_first
   */
 xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle */ );
-
-///@}
-
-/** \defgroup xrif_diff_pixel Pixel Differencing
-  * \ingroup xrif_diff
-  * 
-  * The pixel differencing method uses the previous pixel as the reference.
-  * 
-  * @{
-  */
 
 /// Difference the images using the previous pixel as a reference.
 /** This function calls the type specific difference function for the type specified by
@@ -1541,13 +1296,22 @@ xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle 
   * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
   * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
   * 
+  * \ingroup xrif_diff_pixel
   */
 xrif_error_t xrif_difference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
 
-
-///@}
-
-
+/// Difference the images using the previous pixel as a reference.
+/** This function calls the type specific difference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOT_SETUP if the handle is not configured
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if raw_buffer_size is not big enough given the configuration
+  * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_diff_bayer
+  */ 
 xrif_error_t xrif_difference_bayer( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Undifference the images using the previous image as a reference.
@@ -1614,15 +1378,13 @@ xrif_error_t xrif_undifference_first( xrif_t handle /**< [in/out] the xrif handl
 xrif_error_t xrif_undifference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
 
 
-/** \defgroup xrif_reorder Reordering
-  * \ingroup xrif_encode 
-  * @{
-  */
 
 /// Reorder the data using the method specified by `reorder_method`
 /**
   * \returns \ref XRIF_ERROR_NONE on success
   * \returns an error code on an error.
+  * 
+  * \ingroup xrif_reorder
   */ 
 xrif_error_t xrif_reorder( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1630,20 +1392,12 @@ xrif_error_t xrif_reorder( xrif_t handle /**< [in/out] the xrif handle */);
 /**
   * \returns \ref XRIF_ERROR_NONE on success
   * \returns an error code on an error.
+  * 
+  * \ingroup xrif_reorder
   */ 
 xrif_error_t xrif_unreorder( xrif_t handle /**< [in/out] the xrif handle */);
 
-//xrif_reorder:
-///@}
 
-
-/** \defgroup xrif_reorder_none No reordering
-  * \ingroup xrif_reorder
-  * 
-  * Functions to perform the "none" reordering method
-  * 
-  * @{
-  */
 
 /// Perform no re-ordering, simply copy raw to reordered.
 /** Also zeroes any excess in xrif_handle::reordered_buffer.
@@ -1651,19 +1405,13 @@ xrif_error_t xrif_unreorder( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns \ref XRIF_NOERROR on success
   * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if allocated buffers aren't big enough
+  * 
+  * \ingroup xrif_reorder_none
   */ 
 xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ );
 
-//xrif_reorder_none:
-///@}
 
-/** \defgroup xrif_reorder_bytepack Bytepack reordering
-  * \ingroup xrif_reorder
-  * 
-  * Functions to perform the "bytepack" reordering method
-  * 
-  * @{
-  */
+
 
 /// Dispatch bytepack reodering based on type
 /** Calls the type appropriate xrif_reorder_bytepack_X function.
@@ -1671,6 +1419,8 @@ xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ )
   * \returns \ref XRIF_NOERROR on success
   * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * \ingroup xrif_reorder_bytepack
   */ 
 xrif_error_t xrif_reorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */ );
 
@@ -1680,18 +1430,35 @@ xrif_error_t xrif_reorder_bytepack( xrif_t handle /**< [in/out] the xrif handle 
   * \returns \ref XRIF_NOERROR on success
   * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * 
+  * \ingroup xrif_reorder_bytepack
   */ 
 xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
-//xrif_reorder_bytepack:
-///@}
-
+/// Perform bytepack-renibble reordering
+/** \ingroup xrif_reorder_bytepack_renibble
+  *
+  * \todo document
+  */
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */ );
 
+/// Perform bytepack-renibble reordering for signed int16
+/** \ingroup xrif_reorder_bytepack_renibble
+  * \todo document
+  */
 xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
+/// Perform bitpack reordering
+/** \ingroup xrif_reorder_bitpack
+  * \todo document
+  */
 xrif_error_t xrif_reorder_bitpack( xrif_t handle /**< [in/out] the xrif handle */ );
-      
+
+/// Perform bitpack reordering for signed int16
+/** \ingroup xrif_reorder_bitpack
+  * \todo document
+  */      
 xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Perform no un-re-ordering, simply copy reordered to raw.
@@ -1728,17 +1495,23 @@ xrif_error_t xrif_unreorder_bytepack( xrif_t handle /**< [in/out] the xrif handl
   */ 
 xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Perform bytepack-renibble unreordering
+/** \todo document
+  *
+  * \ingroup xrif_reorder_bytepack_renibble
+  */ 
 xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Perform bitpack unreordering
+/** \todo document
+  *
+  * \ingroup xrif_reorder_bitpack
+  */
 xrif_error_t xrif_unreorder_bitpack( xrif_t handle /**< [in/out] the xrif handle */);
 
-///@}
-
-/** \defgroup xrif_compress Compression & De-compression
-  * \ingroup xrif_encode
-  * 
-  * @{
-  */ 
+//==========================================================
+//             Compression
+//==========================================================
 
 /// Dispatch compression based on method
 /** Calls the relevant compression function based on the value of handle->compress_method.
@@ -1747,6 +1520,8 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle /**< [in/out] the xrif handle
   * \returns XRIF_ERROR_NOTIMPL if an unknown compression method is configured in handle
   * \returns error codes from the specific compression methods.
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_compress
   */ 
 xrif_error_t xrif_compress( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1757,8 +1532,14 @@ xrif_error_t xrif_compress( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns XRIF_ERROR_NOTIMPL if an unknown compression method is configured in handle
   * \returns error codes from the specific decompression methods.
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup xrif_compress
   */
 xrif_error_t xrif_decompress(xrif_t handle /**< [in/out] the xrif handle */);
+
+//----------------------------------------------------------
+//     No Compression
+//----------------------------------------------------------
 
 /// Compress using the no compression method
 /** This is simply a memory copy.
@@ -1766,6 +1547,8 @@ xrif_error_t xrif_decompress(xrif_t handle /**< [in/out] the xrif handle */);
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_none
   */
 xrif_error_t xrif_compress_none( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1775,8 +1558,53 @@ xrif_error_t xrif_compress_none( xrif_t handle /**< [in/out] the xrif handle */)
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_none
   */
 xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle */);
+
+//----------------------------------------------------------
+//     LZ4 Compression
+//----------------------------------------------------------
+
+/// Set the LZ4 acceleration parameter
+/** The LZ4 acceleration parameter is a number greater than or equal to 1.  Larger values speed up the compression
+  * process, but with less size reduction.  The default and minimum value is 1 (XRIF_LZ4_ACCEL_MIN).  
+  * The maximum value is 65537 (XRIF_LZ4_ACCEL_MAX).  The LZ4 docs claim a +-3% improvement in speed for each increment.
+  *
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `lz4_accel` is out of range.  Will set value to correspondling min or max limit.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo this should not return badarg on out of range, just clamp
+  * 
+  * \ingroup compress_lz4
+  */ 
+xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    ///< [in/out] the xrif handle to be configured
+                                        int32_t lz4_accel ///< [in] LZ4 acceleration parameter
+                                      );
+
+/// Get the LZ4 acceleration of the configured handle.
+/** This returns the current value of the LZ4 acceleration.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
+  * 
+  * \returns the LZ4 acceleration unless an error occurs, in which case XRIF_ERROR_NULLPTR.
+  * 
+  * \ingroup compress_lz4
+  */
+xrif_int_t xrif_lz4_acceleration( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Calculate the minimum size of the compressed buffer for LZ4 compression
+/**
+  * This uses lz4::LZ4_compressBound for the minimum reordered buffer size.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  * 
+  * \ingroup compress_lz4
+  */
+size_t xrif_min_compressed_size_lz4(xrif_t handle /**< [in] the xrif handle */);
 
 /// Compress using LZ4
 /**
@@ -1784,6 +1612,8 @@ xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle *
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_ERROR_FAILURE if lz4_compress_fast returns 0
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_lz4
   */
 xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1793,8 +1623,43 @@ xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
   * \returns XRIF_ERROR_LIBERR+LZ4CODE if LZ4_decompress_safe fails
   * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_lz4
   */
 xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */);
+
+//----------------------------------------------------------
+//     LZ4HC Compression
+//----------------------------------------------------------
+
+/// Set the LZ4HC compression level
+/** The LZ4HC compression level is a number greater than or equal to 1 and less than or equal to 12.  Larger values should result in
+  * better  compression, but with slower speeds.  The default value is 9 (XRIF_LZ4HC_CLEVEL_DEFAULT).  
+  * The maximum value is 12 (XRIF_LZ4HC_CLEVEL_MAX ).  
+  *
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `lz4hc_clevel` is out of range.  Will set value to correspondling min or max limit.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo this should not return badarg on out of range, just clamp
+  * 
+  * \ingroup compress_lz4hc
+  */ 
+xrif_error_t xrif_set_lz4hc_level( xrif_t handle,       ///< [in/out] the xrif handle to be configured
+                                   int32_t lz4hc_clevel ///< [in] LZ4HC compression level
+                                 );
+
+/// Get the LZ4 HC compression level of the configured handle.
+/** This returns the current value of the LZ4 HC compression level.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
+  * 
+  * \returns the LZ4 HC compression level unless an error occurs, in which case XRIF_ERROR_NULLPTR.
+  * 
+  * \ingroup compress_lz4hc
+  */
+xrif_int_t xrif_lz4hc_level( xrif_t handle /**< [in] the xrif handle*/);
+
 
 /// Compress using LZ4HC
 /**
@@ -1802,6 +1667,8 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_ERROR_FAILURE if lz4_compress_fast returns 0
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_lz4hc
   */
 xrif_error_t xrif_compress_lz4hc( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1811,15 +1678,50 @@ xrif_error_t xrif_compress_lz4hc( xrif_t handle /**< [in/out] the xrif handle */
   * \returns XRIF_ERROR_LIBERR+LZ4CODE if LZ4_decompress_safe fails
   * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_lz4hc
   */
 xrif_error_t xrif_decompress_lz4hc( xrif_t handle /**< [in/out] the xrif handle */);
+
+//----------------------------------------------------------
+//     FastLZ Compression
+//----------------------------------------------------------
+
+/// Set the FastLZ compression level
+/** The FastLZ compression level can be either 1 or 2. 1 is faster but lower compression, 2 is slower but better compression.  
+  * The FastLZ docs say that 1 will be generally useful on short data.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `fastlz_lev` is out of range.  Will set value to 1.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo this should not return badarg on out of range, just clamp
+  * 
+  * \ingroup compress_fastlz
+  */ 
+xrif_error_t xrif_set_fastlz_level( xrif_t handle,     ///< [in/out] the xrif handle to be configured
+                                    int32_t fastlz_lev ///< [in] FastLZ level
+                                  );
+
+/// Get the FastLZ compression level of the configured handle.
+/** This returns the current value of the FastLZ compression level.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
+  * 
+  * \returns the FastLZ compression level unless an error occurs, in which case XRIF_ERROR_NULLPTR.
+  * 
+  * \ingroup compress_fastlz
+  */
+xrif_int_t xrif_fastlz_level( xrif_t handle /**< [in] the xrif handle*/);
 
 /// Compress using FastLZ
 /**
   * \returns XRIF_ERROR_NULLPTR if handle is null
   * \returns XRIF_ERROR_INSUFFICIENT_SIZE if the destination buffer is not large enough
   * \returns XRIF_ERROR_FAILURE if fastlz_compress_level returns 0
-  * \returns XRIF_NOERROR on success
+  * \returns XRIF_NOERROR on 
+  * 
+  * \ingroup compress_fastlz
   */
 xrif_error_t xrif_compress_fastlz( xrif_t handle /**< [in/out] the xrif handle */);
 
@@ -1829,148 +1731,356 @@ xrif_error_t xrif_compress_fastlz( xrif_t handle /**< [in/out] the xrif handle *
   * \returns XRIF_ERROR_FAILURE if fastlz_decompress fails
   * \returns XRIF_ERROR_INVALID_SIZE if the decompressed data does not match the expected size
   * \returns XRIF_NOERROR on success
+  * 
+  * \ingroup compress_fastlz
   */
 xrif_error_t xrif_decompress_fastlz( xrif_t handle /**< [in/out] the xrif handle */);
 
-xrif_error_t xrif_compress_zlib( xrif_t handle /**< [in/out] the xrif handle */);
+//----------------------------------------------------------
+//     zstd Compression
+//----------------------------------------------------------
 
-xrif_error_t xrif_decompress_zlib( xrif_t handle /**< [in/out] the xrif handle */);
+/// Allocate and configure the `zstd` context
+/** The `zstd` context structure for the configured direction is allocated and configured.
+  * If direction is compression, the compression level is set in the context structure.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
+  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zstd`, where code is the `zstd` error code.
+  * \returns \ref XRIF_ERROR_MALLOC if an allocation error occurs.  Check errno in this case.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo move to private
+  * 
+  * \ingroup compress_zstd
+  */
+xrif_error_t xrif_setup_zstd(xrif_t handle );
 
+/// De-allocate the `zstd` context
+/** The `zstd` context structures owned by handle are free()-ed using the `zstd` library calls.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
+  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zstd`, where code is the `zstd` error code.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo move to private
+  * 
+  * \ingroup compress_zstd
+  */
+xrif_error_t xrif_shutdown_zstd(xrif_t handle );
+
+/// Set the zstd compression level
+/** The zstd compression level can be any value from ZSTD_minCLevel() (currently -131072) to ZSTD_maxCLevel() (currently 22). 
+  * The lower the number the faster but with lower compression.  Setting 0 is equivalent to ZSTD_CLEVEL_DEFAULT (currently 3).
+  * Note that the xrif default, XRIF_ZSTD_LEVEL_DEFAULT, is 1. 
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `zstd_lev` is out of range.  Will set value to 1.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \ingroup compress_zstd
+  */ 
+xrif_error_t xrif_set_zstd_level( xrif_t handle,   ///< [in/out] the xrif handle to be configured
+                                  int32_t zstd_lev ///< [in] new zstd level
+                                );
+
+/// Get the zstd compression context structure of the configured handle.
+/** This returns the current pointer to the zstd compression context structure.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  This result could also indicate
+  * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the zstd context structure pointer;
+  * \returns NULL if handle is NULL or uninitialized
+  * 
+  * \ingroup compress_zstd
+  */
+ZSTD_CCtx * xrif_zstd_cctx( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Get the zstd decompression context structure of the configured handle.
+/** This returns the current pointer to the zstd decompression context structure.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  This result could also indicate
+  * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the zstd context structure pointer;
+  * \returns NULL if handle is NULL or uninitialized
+  * 
+  * \ingroup compress_zstd
+  */
+ZSTD_DCtx * xrif_zstd_dctx( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Get the zstd compression level of the configured handle.
+/** This returns the current zstd compression level.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned. 
+  * 
+  * \returns the zstd compression level unless an error occurs.
+  * \returns XRIF_ERROR_NULLPTR if handle is NULL. 
+  * 
+  * \ingroup compress_zstd
+  */
+xrif_int_t xrif_zstd_level( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Compress using zstd deflate
+/** \todo document
+  *
+  * \ingroup compress_zstd
+  */
 xrif_error_t xrif_compress_zstd( xrif_t handle /**< [in/out] the xrif handle */);
 
+/// Decompress using zstd deflate
+/** \todo document
+  *
+  * \ingroup compress_zstd
+  */
 xrif_error_t xrif_decompress_zstd( xrif_t handle /**< [in/out] the xrif handle */);
 
-///@}
+//----------------------------------------------------------
+//     zlib Compression
+//----------------------------------------------------------
 
-
-/** \defgroup xrif_performance Performance Measurements
-  * \ingroup xrif_interface
+/// Allocate and configure the `zlib` stream structure
+/** The `zlib` stream structure is configured for either compression (deflate) or decompression (inflate)
+  * according to the current compression direction.
   * 
-  * @{
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
+  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zlib`, where code is the `zlib` error code.
+  * \returns \ref XRIF_ERROR_MALLOC if an allocation error occurs.  Check errno in this case.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo move to private
+  * 
+  * \ingroup compress_zlib
+  */
+xrif_error_t xrif_setup_zlib(xrif_t handle );
+
+/// De-allocate the `zlib` stream structure
+/** The `zlib` end function is called and the `z_stream` structure owned by handle is free()-ed.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
+  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zlib`, where code is the `zlib` error code.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \todo move to private
+  * 
+  * \ingroup compress_zlib
+  */
+xrif_error_t xrif_shutdown_zlib(xrif_t handle );
+
+/// Get the zlib stream structure of the configured handle.
+/** This returns the current pointer to the zlib stream structure.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  This result could also indicate
+  * an uninitialized handle.  If further discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the zlib stream structure pointer
+  * \returns NULL if handle is NULL or uninitialized
+  * 
+  * \ingroup compress_zlib
+  */
+z_stream * xrif_zlib_stream( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Get the zlib compression level of the configured handle.
+/** This returns the current zlib compression level.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned. 
+  * 
+  * \returns the zlib compression level unless an error occurs.
+  * \returns XRIF_ERROR_NULLPTR if handle is NULL. 
+  * 
+  * \ingroup compress_zlib
+  */
+xrif_int_t xrif_zlib_level( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Get the zlib compression strategy of the configured handle.
+/** This returns the current zlib compression strategy.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, XRIF_ERROR_NULLPTR is returned.
+  * 
+  * \returns the zlib compression level unless an error occurs.
+  * \returns XRIF_ERROR_NULLPTR if handle is NULL.
+  * 
+  * \ingroup compress_zlib
+  */
+xrif_int_t xrif_zlib_strategy( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Compress using zlib deflate
+/** \todo document
+  *
+  * \ingroup compress_zlib
   */ 
+xrif_error_t xrif_compress_zlib( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Decompress using zlib deflate
+/** \todo document
+  *
+  * \ingroup compress_zlib
+  */
+xrif_error_t xrif_decompress_zlib( xrif_t handle /**< [in/out] the xrif handle */);
+
+//==========================================================
+//             Performance
+//==========================================================
 
 /// Calculate the compression ratio 
 /** 
   * \returns the ratio of compressed_size to raw_size.
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_compression_ratio( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to encode the data
 /**
   * \returns the difference in the timespecs marking the beginning of differencing the end of compression 
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_encode_time ( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the encode rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_encode_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_encode_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to difference the data
 /**
   * \returns the difference in the timespecs marking the beginning of reordering and the beginning of differencing 
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_difference_time( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the differencing rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_difference_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_difference_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to reorder the data
 /**
   * \returns the difference in the timespecs marking the beginning of compression and the beginning of reordering
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_reorder_time( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the reordering rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_reorder_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_reorder_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to compress the differenced and reordered data
 /**
   * \returns the difference in the timespecs marking the beginning of reordering and the end of compression
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_compress_time( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the compression rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_compress_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_compress_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to decode the data
 /**
   * \returns the difference in the timespecs marking the beginning of decompression and the end of undifferencing 
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_decode_time ( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the decode rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_decode_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_decode_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to undifference the data
 /**
   * \returns the difference in the timespecs marking the end of undifferencing and the end of unreodering
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_undifference_time( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the undifferencing rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_undifference_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_undifference_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to unreorder the data
 /**
   * \returns the difference in the timespecs marking the beginning of differencing and the end of decompression
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_unreorder_time( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the unreordering rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_unreorder_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_unreorder_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the time in seconds taken to decompress the differenced and reordered data
 /**
   * \returns the difference in the timespecs marking the decompression time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_decompress_time( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Calculate the decompression rate in bytes/sec
 /**
   * \returns the ratio of raw_size to xrif_decompress_time
+  * 
+  * \ingroup xrif_performance
   */ 
 double xrif_decompress_rate( xrif_t handle /**< [in/out] the xrif handle */);
 
-
-///@}
-
-
-/** \defgroup xrif_utils Utilities
-  *
-  * @{
-  */ 
+//==========================================================
+//             Utilities
+//==========================================================
 
 /// Return the size of the type specified by the code.
 /**
   * \returns the equivalent to `sizeof(type)` for the specified type code.
   * \returns 0 if the `type_code` is invalid
+  * 
+  * \ingroup xrif_utils
   */  
 size_t xrif_typesize( xrif_int_t type_code /**< [in] the type code*/);
 
 /// Calculate the difference between two timespecs.
 /** Calculates `ts1-ts0` in `double` precision.
   * 
-  * \returns the difference in seconds between the two timespecs 
+  * \returns the difference in seconds between the two timespecs
+  * 
+  * \ingroup xrif_utils 
   */
 double xrif_ts_difference( struct timespec * ts1, ///< [in] the end time
                            struct timespec * ts0  ///< [in] the start time
@@ -1981,6 +2091,8 @@ double xrif_ts_difference( struct timespec * ts1, ///< [in] the end time
   *
   * \returns a pointer to the string if `diff_method` is valid
   * \returns NULL if `diff_method` is not valid
+  * 
+  * \ingroup xrif_utils
   */  
 const char * xrif_difference_method_string( int diff_method /**< [in] the difference method */);
 
@@ -1989,6 +2101,8 @@ const char * xrif_difference_method_string( int diff_method /**< [in] the differ
   *
   * \returns a pointer to the string if `reorder_method` is valid
   * \returns NULL if `reorder_method` is not valid
+  * 
+  * \ingroup xrif_utils
   */  
 const char * xrif_reorder_method_string( int reorder_method /**< [in] the reorder method*/);
 
@@ -1997,10 +2111,10 @@ const char * xrif_reorder_method_string( int reorder_method /**< [in] the reorde
   *
   * \returns a pointer to the string if `compress_method` is valid
   * \returns NULL if `compress_method` is not valid
+  * 
+  * \ingroup xrif_utils
   */  
 const char * xrif_compress_method_string( int compress_method /**< [in] the compression method*/);
-
-///@}
 
 #ifdef __cplusplus
 //extern "C"

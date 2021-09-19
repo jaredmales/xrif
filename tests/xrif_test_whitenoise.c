@@ -141,6 +141,22 @@ START_TEST (encode_previous_bytepack_fastlz_int16_white)
 }
 END_TEST
 
+/** Verify full encode/decode for white-noise int16_t values for previous / bytepack / zstd
+  * \anchor encode_previous_bytepack_zstd_int16_white
+  */
+START_TEST (encode_previous_bytepack_zstd_int16_white)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PREVIOUS)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZSTD)
+   #define XRIF_TESTLOOP_FILL 1
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST
 
 /** Verify full encode/decode for white-noise int16_t values for first / bytepack / LZ4
   * \anchor encode_first_bytepack_lz4_int16_white

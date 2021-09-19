@@ -109,14 +109,14 @@ START_TEST (initialize_handle_noerror)
    ck_assert_int_eq( hand.m_depth, 0);
    ck_assert_int_eq( hand.m_frames, 0);
    ck_assert_int_eq( hand.m_type_code, 0);
-   ck_assert_int_eq( hand.data_size, 0);
-   ck_assert_int_eq( hand.compressed_size, 0);
-   ck_assert_int_eq( hand.difference_method, XRIF_DIFFERENCE_DEFAULT);
-   ck_assert_int_eq( hand.reorder_method, XRIF_REORDER_DEFAULT);
-   ck_assert_int_eq( hand.compress_method, XRIF_COMPRESS_DEFAULT);
-   ck_assert_int_eq( hand.lz4_acceleration, 1);
-   ck_assert_int_eq( hand.omp_parallel, 0);
-   ck_assert_int_eq( hand.omp_numthreads, 1);
+   ck_assert_int_eq( hand.m_data_size, 0);
+   ck_assert_int_eq( hand.m_compressed_size, 0);
+   ck_assert_int_eq( hand.m_difference_method, XRIF_DIFFERENCE_DEFAULT);
+   ck_assert_int_eq( hand.m_reorder_method, XRIF_REORDER_DEFAULT);
+   ck_assert_int_eq( hand.m_compress_method, XRIF_COMPRESS_DEFAULT);
+   ck_assert_int_eq( hand.m_lz4_acceleration, 1);
+   ck_assert_int_eq( hand.m_omp_parallel, 0);
+   ck_assert_int_eq( hand.m_omp_numthreads, 1);
    ck_assert_int_eq( hand.compress_on_raw, 1);
    ck_assert_int_eq( hand.own_raw, 0);
    ck_assert( hand.raw_buffer == NULL );
@@ -162,14 +162,14 @@ START_TEST (new_delete_noerror)
    ck_assert_int_eq( hand->m_depth, 0);
    ck_assert_int_eq( hand->m_frames, 0);
    ck_assert_int_eq( hand->m_type_code, 0);
-   ck_assert_int_eq( hand->data_size, 0);
-   ck_assert_int_eq( hand->compressed_size, 0);
-   ck_assert_int_eq( hand->difference_method, XRIF_DIFFERENCE_DEFAULT);
-   ck_assert_int_eq( hand->reorder_method, XRIF_REORDER_DEFAULT);
-   ck_assert_int_eq( hand->compress_method, XRIF_COMPRESS_DEFAULT);
-   ck_assert_int_eq( hand->lz4_acceleration, 1);
-   ck_assert_int_eq( hand->omp_parallel, 0);
-   ck_assert_int_eq( hand->omp_numthreads, 1);
+   ck_assert_int_eq( hand->m_data_size, 0);
+   ck_assert_int_eq( hand->m_compressed_size, 0);
+   ck_assert_int_eq( hand->m_difference_method, XRIF_DIFFERENCE_DEFAULT);
+   ck_assert_int_eq( hand->m_reorder_method, XRIF_REORDER_DEFAULT);
+   ck_assert_int_eq( hand->m_compress_method, XRIF_COMPRESS_DEFAULT);
+   ck_assert_int_eq( hand->m_lz4_acceleration, 1);
+   ck_assert_int_eq( hand->m_omp_parallel, 0);
+   ck_assert_int_eq( hand->m_omp_numthreads, 1);
    ck_assert_int_eq( hand->compress_on_raw, 1);
    ck_assert_int_eq( hand->own_raw, 0);
    ck_assert( hand->raw_buffer == NULL );
@@ -207,16 +207,16 @@ START_TEST (setup_noerror)
    ck_assert_int_eq( hand.m_depth, 32);
    ck_assert_int_eq( hand.m_frames, 1000);
    ck_assert_int_eq( hand.m_type_code, XRIF_TYPECODE_INT16);
-   ck_assert_int_eq( hand.data_size, sizeof(int16_t));
+   ck_assert_int_eq( hand.m_data_size, sizeof(int16_t));
    
    //And we check that everything else is unaltered
-   ck_assert_int_eq( hand.compressed_size, 0);
-   ck_assert_int_eq( hand.difference_method, XRIF_DIFFERENCE_DEFAULT);
-   ck_assert_int_eq( hand.reorder_method, XRIF_REORDER_DEFAULT);
-   ck_assert_int_eq( hand.compress_method, XRIF_COMPRESS_DEFAULT);
-   ck_assert_int_eq( hand.lz4_acceleration, 1);
-   ck_assert_int_eq( hand.omp_parallel, 0);
-   ck_assert_int_eq( hand.omp_numthreads, 1);
+   ck_assert_int_eq( hand.m_compressed_size, 0);
+   ck_assert_int_eq( hand.m_difference_method, XRIF_DIFFERENCE_DEFAULT);
+   ck_assert_int_eq( hand.m_reorder_method, XRIF_REORDER_DEFAULT);
+   ck_assert_int_eq( hand.m_compress_method, XRIF_COMPRESS_DEFAULT);
+   ck_assert_int_eq( hand.m_lz4_acceleration, 1);
+   ck_assert_int_eq( hand.m_omp_parallel, 0);
+   ck_assert_int_eq( hand.m_omp_numthreads, 1);
    ck_assert_int_eq( hand.compress_on_raw, 1);
    ck_assert_int_eq( hand.own_raw, 0);
    ck_assert( hand.raw_buffer == NULL );
@@ -501,7 +501,7 @@ START_TEST (header_write)
       
    ck_assert( rv == XRIF_NOERROR );
    
-   hand.compressed_size = 256; 
+   hand.m_compressed_size = 256; 
    
    char header[XRIF_HEADER_SIZE];
    
@@ -521,11 +521,11 @@ START_TEST (header_write)
    ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
    ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
    ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
-   ck_assert( *((uint16_t *) &header[30]) == hand.difference_method);
-   ck_assert( *((uint16_t *) &header[32]) == hand.reorder_method);
-   ck_assert( *((uint16_t *) &header[34]) == hand.compress_method);
-   ck_assert( *((uint32_t *) &header[36]) == hand.compressed_size);
-   ck_assert( *((uint16_t *) &header[40]) == hand.lz4_acceleration);
+   ck_assert( *((uint16_t *) &header[30]) == hand.m_difference_method);
+   ck_assert( *((uint16_t *) &header[32]) == hand.m_reorder_method);
+   ck_assert( *((uint16_t *) &header[34]) == hand.m_compress_method);
+   ck_assert( *((uint32_t *) &header[36]) == hand.m_compressed_size);
+   ck_assert( *((uint16_t *) &header[40]) == hand.m_lz4_acceleration);
    ck_assert( *((uint16_t *) &header[42]) == 0);
    ck_assert( *((uint16_t *) &header[44]) == 0);
    ck_assert( *((uint16_t *) &header[46]) == 0);
@@ -547,8 +547,8 @@ START_TEST (header_read)
       
    ck_assert( rv == XRIF_NOERROR );
    
-   hand.compressed_size = 1025;
-   hand.lz4_acceleration = 10; //Change this from init value
+   hand.m_compressed_size = 1025;
+   hand.m_lz4_acceleration = 10; //Change this from init value
    
    char header[XRIF_HEADER_SIZE];
    
@@ -574,16 +574,16 @@ START_TEST (header_read)
    ck_assert_int_eq( hand2.m_depth, 2);
    ck_assert_int_eq( hand2.m_frames, 1000);
    ck_assert_int_eq( hand2.m_type_code, XRIF_TYPECODE_INT16);
-   ck_assert_int_eq( hand2.data_size, sizeof(int16_t));
-   ck_assert_int_eq( hand2.compressed_size, 1025);
-   ck_assert_int_eq( hand2.lz4_acceleration, 10);
+   ck_assert_int_eq( hand2.m_data_size, sizeof(int16_t));
+   ck_assert_int_eq( hand2.m_compressed_size, 1025);
+   ck_assert_int_eq( hand2.m_lz4_acceleration, 10);
    
    //And we check that everything else is unaltered
-   ck_assert_int_eq( hand2.difference_method, XRIF_DIFFERENCE_DEFAULT);
-   ck_assert_int_eq( hand2.reorder_method, XRIF_REORDER_DEFAULT);
-   ck_assert_int_eq( hand2.compress_method, XRIF_COMPRESS_DEFAULT);
-   ck_assert_int_eq( hand2.omp_parallel, 0);
-   ck_assert_int_eq( hand2.omp_numthreads, 1);
+   ck_assert_int_eq( hand2.m_difference_method, XRIF_DIFFERENCE_DEFAULT);
+   ck_assert_int_eq( hand2.m_reorder_method, XRIF_REORDER_DEFAULT);
+   ck_assert_int_eq( hand2.m_compress_method, XRIF_COMPRESS_DEFAULT);
+   ck_assert_int_eq( hand2.m_omp_parallel, 0);
+   ck_assert_int_eq( hand2.m_omp_numthreads, 1);
    ck_assert_int_eq( hand2.compress_on_raw, 1);
    ck_assert_int_eq( hand2.own_raw, 0);
    ck_assert( hand2.raw_buffer == NULL );

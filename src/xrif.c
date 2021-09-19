@@ -130,7 +130,7 @@ xrif_error_t xrif_set_size( xrif_t handle,
                             xrif_dimension_t h,
                             xrif_dimension_t d,
                             xrif_dimension_t f,
-                            xrif_typecode_t c
+                            xrif_int_t c
                           )
 {
    if( handle == NULL)
@@ -161,9 +161,9 @@ xrif_error_t xrif_set_size( xrif_t handle,
    handle->m_frames = f;
    handle->m_type_code = c;
    
-   handle->data_size = sz;
+   handle->m_data_size = sz;
    
-   handle->raw_size = w*h*d*f*handle->data_size;
+   handle->m_raw_size = w*h*d*f*sz;
    
    return XRIF_NOERROR;
 }
@@ -204,7 +204,7 @@ xrif_error_t xrif_allocate( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size == 0) 
+   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0) 
    {
       XRIF_ERROR_PRINT("xrif_allocate", "the handle is not setup for allocation");
       return XRIF_ERROR_NOT_SETUP;
@@ -242,6 +242,8 @@ xrif_error_t xrif_allocate( xrif_t handle )
 // Reset a handle, restoring it to the initialized state. De-allocates owned pointers and re-initializes.
 xrif_error_t xrif_reset( xrif_t handle )
 {
+   int rv;
+
    if( handle == NULL)
    {
       XRIF_ERROR_PRINT("xrif_allocate", "can not reset null pointer");
@@ -263,7 +265,11 @@ xrif_error_t xrif_reset( xrif_t handle )
       free(handle->compressed_buffer);
    }
    
-   int rv = xrif_initialize_handle(handle);
+   xrif_shutdown_zlib(handle);
+   
+   xrif_shutdown_zstd(handle);
+
+   rv = xrif_initialize_handle(handle);
    
    if(rv != XRIF_NOERROR)
    {
@@ -281,7 +287,6 @@ xrif_error_t xrif_delete(xrif_t handle )
       XRIF_ERROR_PRINT("xrif_delete", "can not delete null pointer.");
       return XRIF_ERROR_NULLPTR;
    }
-   
    
    xrif_error_t rv = xrif_reset( handle );
    
@@ -306,25 +311,41 @@ xrif_error_t xrif_initialize_handle( xrif_t handle )
    
    handle->m_type_code = 0;
    
-   handle->data_size = 0;
+   handle->m_data_size = 0;
 
-   handle->raw_size = 0;
-   handle->compressed_size = 0;
+   handle->m_raw_size = 0;
+   handle->m_compressed_size = 0;
    
-   handle->difference_method = XRIF_DIFFERENCE_DEFAULT;
+   handle->m_difference_method = XRIF_DIFFERENCE_DEFAULT;
    
-   handle->reorder_method = XRIF_REORDER_DEFAULT;
+   handle->m_reorder_method = XRIF_REORDER_DEFAULT;
    
-   handle->compress_method = XRIF_COMPRESS_DEFAULT;
+   handle->m_compress_method = XRIF_COMPRESS_DEFAULT;
    
-   handle->lz4_acceleration = 1;
+   handle->m_compress_direction = XRIF_COMPRESS_DIRECTION_DEFAULT;
 
-   handle->lz4hc_clevel = XRIf_LZ4HC_CLEVEL_DEFAULT;
+   //LZ4
+   handle->m_lz4_acceleration = XRIF_LZ4_ACCELERATION_DEFAULT;
 
-   handle->fastlz_level = 2;
+   //LZ4HC
+   handle->m_lz4hc_level = XRIF_LZ4HC_LEVEL_DEFAULT;
 
-   handle->omp_parallel = 0;
-   handle->omp_numthreads = 1;
+   //FastLZ
+   handle->m_fastlz_level = XRIF_FASTLZ_LEVEL_DEFAULT;
+
+   //zlib
+   handle->m_zlib_stream = NULL;
+   handle->m_zlib_level = XRIF_ZLIB_LEVEL_DEFAULT;
+   handle->m_zlib_strategy = XRIF_ZLIB_STRATEGY_DEFAULT;
+
+   //zstd
+   handle->m_zstd_cctx = NULL;
+   handle->m_zstd_dctx = NULL;
+   handle->m_zstd_level = XRIF_ZSTD_LEVEL_DEFAULT;
+
+   //OpenMP
+   handle->m_omp_parallel = 0;
+   handle->m_omp_numthreads = 1;
    
    handle->compress_on_raw = 1;
    
@@ -367,14 +388,14 @@ xrif_error_t xrif_set_difference_method( xrif_t handle,
    }
    
    
-   if( difference_method == XRIF_DIFFERENCE_NONE ) handle->difference_method = XRIF_DIFFERENCE_NONE;
-   else if( difference_method == XRIF_DIFFERENCE_DEFAULT ) handle->difference_method = XRIF_DIFFERENCE_DEFAULT;
-   else if( difference_method == XRIF_DIFFERENCE_PREVIOUS ) handle->difference_method = XRIF_DIFFERENCE_PREVIOUS;
-   else if( difference_method == XRIF_DIFFERENCE_FIRST ) handle->difference_method = XRIF_DIFFERENCE_FIRST;
-   else if( difference_method == XRIF_DIFFERENCE_PIXEL ) handle->difference_method = XRIF_DIFFERENCE_PIXEL;
+   if( difference_method == XRIF_DIFFERENCE_NONE ) handle->m_difference_method = XRIF_DIFFERENCE_NONE;
+   else if( difference_method == XRIF_DIFFERENCE_DEFAULT ) handle->m_difference_method = XRIF_DIFFERENCE_DEFAULT;
+   else if( difference_method == XRIF_DIFFERENCE_PREVIOUS ) handle->m_difference_method = XRIF_DIFFERENCE_PREVIOUS;
+   else if( difference_method == XRIF_DIFFERENCE_FIRST ) handle->m_difference_method = XRIF_DIFFERENCE_FIRST;
+   else if( difference_method == XRIF_DIFFERENCE_PIXEL ) handle->m_difference_method = XRIF_DIFFERENCE_PIXEL;
    else
    {
-      handle->difference_method = XRIF_DIFFERENCE_DEFAULT;
+      handle->m_difference_method = XRIF_DIFFERENCE_DEFAULT;
       XRIF_ERROR_PRINT("xrif_set_difference_method", "unrecognized difference method.  Setting default");
       return XRIF_ERROR_BADARG;
    }
@@ -393,14 +414,14 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( reorder_method == XRIF_REORDER_NONE ) handle->reorder_method = XRIF_REORDER_NONE;
-   else if( reorder_method == XRIF_REORDER_DEFAULT ) handle->reorder_method = XRIF_REORDER_DEFAULT;
-   else if( reorder_method == XRIF_REORDER_BYTEPACK ) handle->reorder_method = XRIF_REORDER_BYTEPACK;
-   else if( reorder_method == XRIF_REORDER_BYTEPACK_RENIBBLE ) handle->reorder_method = XRIF_REORDER_BYTEPACK_RENIBBLE;
-   else if( reorder_method == XRIF_REORDER_BITPACK ) handle->reorder_method = XRIF_REORDER_BITPACK;
+   if( reorder_method == XRIF_REORDER_NONE ) handle->m_reorder_method = XRIF_REORDER_NONE;
+   else if( reorder_method == XRIF_REORDER_DEFAULT ) handle->m_reorder_method = XRIF_REORDER_DEFAULT;
+   else if( reorder_method == XRIF_REORDER_BYTEPACK ) handle->m_reorder_method = XRIF_REORDER_BYTEPACK;
+   else if( reorder_method == XRIF_REORDER_BYTEPACK_RENIBBLE ) handle->m_reorder_method = XRIF_REORDER_BYTEPACK_RENIBBLE;
+   else if( reorder_method == XRIF_REORDER_BITPACK ) handle->m_reorder_method = XRIF_REORDER_BITPACK;
    else
    {
-      handle->reorder_method = XRIF_REORDER_DEFAULT;
+      handle->m_reorder_method = XRIF_REORDER_DEFAULT;
       XRIF_ERROR_PRINT("xrif_set_reorder_method", "unrecognized reorder method.  Setting default");
       return XRIF_ERROR_BADARG;
    }
@@ -408,137 +429,130 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,
    return XRIF_NOERROR;
 }
 
+// Set the compress method with direction if needed.
+xrif_error_t xrif_set_compress_method_direction( xrif_t handle,
+                                                 int compress_method,
+                                                 int compress_direction
+                                               )
+{
+   int rv;
+
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_set_method", "can not configure null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   //If anything is setup, we reset and de-allocate.
+
+   if( (rv = xrif_shutdown_zlib(handle)) < 0)
+   {
+      XRIF_ERROR_PRINT("xrif_set_compress_method_direction", "error from xrif_shutdown_zlib");
+      return rv;
+   }
+
+   if( (rv = xrif_shutdown_zstd(handle)) < 0)
+   {
+      XRIF_ERROR_PRINT("xrif_set_compress_method_direction", "error from xrif_shutdown_zstd");
+      return rv;
+   }
+
+   if(compress_direction != XRIF_DIRECTION_COMPRESS && compress_direction != XRIF_DIRECTION_DECOMPRESS)
+   {
+      handle->m_compress_method = XRIF_COMPRESS_DIRECTION_DEFAULT;
+      XRIF_ERROR_PRINT("xrif_set_compress_method", "unrecognized compress direction.  Setting default");
+   }
+
+   handle->m_compress_direction = compress_direction;
+
+   if( compress_method == XRIF_COMPRESS_NONE ) handle->m_compress_method = XRIF_COMPRESS_NONE;
+   else if( compress_method == XRIF_COMPRESS_DEFAULT ) handle->m_compress_method = XRIF_COMPRESS_DEFAULT;
+   else if( compress_method == XRIF_COMPRESS_LZ4 ) handle->m_compress_method = XRIF_COMPRESS_LZ4;
+   else if( compress_method == XRIF_COMPRESS_LZ4HC ) handle->m_compress_method = XRIF_COMPRESS_LZ4HC;
+   else if( compress_method == XRIF_COMPRESS_FASTLZ) handle->m_compress_method = XRIF_COMPRESS_FASTLZ;
+   else if( compress_method == XRIF_COMPRESS_ZSTD) handle->m_compress_method = XRIF_COMPRESS_ZSTD;
+   else if( compress_method == XRIF_COMPRESS_ZLIB) handle->m_compress_method = XRIF_COMPRESS_ZLIB;
+   else
+   {
+      handle->m_compress_method = XRIF_COMPRESS_DEFAULT;
+      XRIF_ERROR_PRINT("xrif_set_compress_method", "unrecognized compress method.  Setting default");
+   }
+   
+   //Now do any necessary setups
+   if( handle->m_compress_method == XRIF_COMPRESS_ZLIB) 
+   {
+      return xrif_setup_zlib(handle);
+   }
+   else if( handle->m_compress_method == XRIF_COMPRESS_ZSTD) 
+   {
+      return xrif_setup_zstd(handle);
+   }
+   else
+   {
+      return XRIF_NOERROR;
+   }
+
+}
+
 // Set the compress method.
 xrif_error_t xrif_set_compress_method( xrif_t handle,
                                        int compress_method
                                      )
 {
-   if( handle == NULL)
+   int rv;
+
+   rv = xrif_set_compress_method_direction(handle, compress_method, XRIF_DIRECTION_COMPRESS);
+
+   if(rv != XRIF_NOERROR)
    {
-      XRIF_ERROR_PRINT("xrif_set_compress_method", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
+      XRIF_ERROR_PRINT("xrif_set_compress_method", "error in xrif_set_compress_method_direction");
    }
-   
-   if( compress_method == XRIF_COMPRESS_NONE ) handle->compress_method = XRIF_COMPRESS_NONE;
-   else if( compress_method == XRIF_COMPRESS_DEFAULT ) handle->compress_method = XRIF_COMPRESS_DEFAULT;
-   else if( compress_method == XRIF_COMPRESS_LZ4 ) handle->compress_method = XRIF_COMPRESS_LZ4;
-   else if( compress_method == XRIF_COMPRESS_LZ4HC ) handle->compress_method = XRIF_COMPRESS_LZ4HC;
-   else if( compress_method == XRIF_COMPRESS_FASTLZ) handle->compress_method = XRIF_COMPRESS_FASTLZ;
-   else
-   {
-      handle->compress_method = XRIF_COMPRESS_DEFAULT;
-      XRIF_ERROR_PRINT("xrif_set_compress_method", "unrecognized compress method.  Setting default");
-      return XRIF_ERROR_BADARG;
-   }
-   
-   return XRIF_NOERROR;
+
+   return rv;
 }
 
-// Set the LZ4 acceleration parameter
-xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    // [in/out] the xrif handle to be configured
-                                        int32_t lz4_accel // [in] LZ4 acceleration parameter, \>=1, higher is faster with less comporession.
-                                      )
+// Set the decompress method.
+xrif_error_t xrif_set_decompress_method( xrif_t handle,
+                                         int compress_method
+                                       )
 {
-   if( handle == NULL)
+   int rv;
+
+   rv = xrif_set_compress_method_direction(handle, compress_method, XRIF_DIRECTION_DECOMPRESS);
+
+   if(rv != XRIF_NOERROR)
    {
-      XRIF_ERROR_PRINT("xrif_set_lz4_acceleration", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
+      XRIF_ERROR_PRINT("xrif_set_decompress_method", "error in xrif_set_compress_method_direction");
    }
-   
-   if(lz4_accel < XRIF_LZ4_ACCEL_MIN)
-   {
-      XRIF_ERROR_PRINT("xrif_set_lz4_acceleration", "LZ4 acceleration can't be less than XRIF_LZ4_ACCEL_MIN.  Setting to XRIF_LZ4_ACCEL_MIN.");
-      handle->lz4_acceleration = XRIF_LZ4_ACCEL_MIN;
-      return XRIF_ERROR_BADARG;
-   }
-   
-   if(lz4_accel > XRIF_LZ4_ACCEL_MAX) //Max according to LZ4 docs
-   {
-      XRIF_ERROR_PRINT("xrif_set_lz4_acceleration", "LZ4 acceleration can't be greater than XRIF_LZ4_ACCEL_MAX.  Setting to XRIF_LZ4_ACCEL_MAX.");
-      handle->lz4_acceleration = XRIF_LZ4_ACCEL_MAX;
-      return XRIF_ERROR_BADARG;
-   }
-   
-   handle->lz4_acceleration = lz4_accel;
-   
-   return XRIF_NOERROR;
+
+   return rv;
 }
 
-// Set the LZ4HC compression level
-xrif_error_t xrif_set_lz4hc_clevel( xrif_t handle,       ///< [in/out] the xrif handle to be configured
-                                    int32_t lz4hc_clevel ///< [in] LZ4HC compression level
-                                  )
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_set_lz4hc_clevel", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(lz4hc_clevel < XRIF_LZ4HC_CLEVEL_MIN)
-   {
-      XRIF_ERROR_PRINT("xrif_set_lz4hc_clevel", "LZ4HC compression level can't be less than XRIF_LZ4HC_CLEVEL_MIN.  Setting to XRIF_LZ4HC_CLEVEL_MIN.");
-      handle->lz4hc_clevel = XRIF_LZ4HC_CLEVEL_MIN;
-      return XRIF_ERROR_BADARG;
-   }
-   
-   if(lz4hc_clevel > XRIF_LZ4HC_CLEVEL_MAX) //Max according to LZ4 docs
-   {
-      XRIF_ERROR_PRINT("xrif_set_lz4hc_clevel", "LZ4HC compression level can't be greater than XRIF_LZ4HC_CLEVEL_MAX.  Setting to XRIF_LZ4HC_CLEVEL_MAX.");
-      handle->lz4hc_clevel = XRIF_LZ4HC_CLEVEL_MAX;
-      return XRIF_ERROR_BADARG;
-   }
-   
-   handle->lz4hc_clevel = lz4hc_clevel;
-   
-   return XRIF_NOERROR;
-}
 
-// Set the FastLZ compression level
-xrif_error_t xrif_set_fastlz_level( xrif_t handle,     // [in/out] the xrif handle to be configured
-                                    int32_t fastlz_lev // [in] FastLZ level
-                                   )
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_set_fastlz_level", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(fastlz_lev < 1)
-   {
-      XRIF_ERROR_PRINT("xrif_set_fastlz_level", "FastLZ level can't be < 1.  Setting to 1.");
-      handle->fastlz_level = 1;
-      return XRIF_ERROR_BADARG;
-   }
-   
-   if(fastlz_lev > 2) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_fastlz_level", "FastLZ level can't be greater than 2.  Setting to 2.");
-      handle->fastlz_level = 2;
-      return XRIF_ERROR_BADARG;
-   }
-   
-   handle->fastlz_level = fastlz_lev;
-   
-   return XRIF_NOERROR;
-}
+
+
+
+
+
+
+
+
 
 // Calculate the minimum size of the raw buffer.
 size_t xrif_min_raw_size(xrif_t handle)
 {
    if(handle->compress_on_raw == 0) //Won't use raw to store compressed data
    {
-      return handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size;
+      return handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
    }
    else
    {
       //In this case it depends on size needed for compression.
       size_t minSz = xrif_min_compressed_size(handle);
       
-      if(minSz < handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size) 
+      if(minSz < handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size) 
       {
-         minSz = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size;
+         minSz = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
       }
    
       return minSz;
@@ -552,28 +566,28 @@ size_t xrif_min_reordered_size(xrif_t handle)
 {
    if(handle == NULL) return 0;
    
-   if(handle->reorder_method == XRIF_REORDER_NONE)
+   if(handle->m_reorder_method == XRIF_REORDER_NONE)
    {
-      return handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size;
+      return handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
    }
    
-   if(handle->reorder_method == XRIF_REORDER_BYTEPACK)
+   if(handle->m_reorder_method == XRIF_REORDER_BYTEPACK)
    {
-      size_t one_frame = handle->m_width*handle->m_height*handle->m_depth*handle->data_size;
+      size_t one_frame = handle->m_width*handle->m_height*handle->m_depth*handle->m_data_size;
    
       return one_frame * (handle->m_frames);
    }
    
-   if(handle->reorder_method == XRIF_REORDER_BYTEPACK_RENIBBLE)
+   if(handle->m_reorder_method == XRIF_REORDER_BYTEPACK_RENIBBLE)
    {
-      size_t one_frame = handle->m_width * handle->m_height * handle->m_depth * handle->data_size;
+      size_t one_frame = handle->m_width * handle->m_height * handle->m_depth * handle->m_data_size;
       
       return one_frame * (handle->m_frames+1); //Allocating an extra frame to allow for odd number of pixels in reorder step   
    }
    
-   if(handle->reorder_method == XRIF_REORDER_BITPACK)
+   if(handle->m_reorder_method == XRIF_REORDER_BITPACK)
    {
-      size_t one_frame = handle->m_width * handle->m_height * handle->m_depth * handle->data_size;
+      size_t one_frame = handle->m_width * handle->m_height * handle->m_depth * handle->m_data_size;
 
       if(one_frame < 16) one_frame = 16; //Handle cases where too little data is available for bitpacking.
    
@@ -581,66 +595,6 @@ size_t xrif_min_reordered_size(xrif_t handle)
    }
    
    return 0;
-}
-
-size_t xrif_min_compressed_size_lz4(xrif_t handle)
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_lz4", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_lz4", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   //We compress the reordered buffer, and it can be the largest buffer.
-   return LZ4_compressBound(rsz);
-}
-
-size_t xrif_min_compressed_size_lz4hc(xrif_t handle)
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_lz4hc", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_lz4hc", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   //We compress the reordered buffer, and it can be the largest buffer.
-   return LZ4_compressBound(rsz);
-}
-
-size_t xrif_min_compressed_size_fastlz(xrif_t handle)
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_fastlz", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_fastlz", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   //FastLZ wants 5% more than the input size.  We compress the reordered buffer, and it can be the largest buffer.
-   return 1.05*rsz + 1; //make sure we take the next one up.
 }
 
 /// Calculate the minimum size of the compressed buffer.
@@ -652,21 +606,29 @@ size_t xrif_min_compressed_size(xrif_t handle)
       return 0;
    }
 
-   if(handle->compress_method == XRIF_COMPRESS_NONE)
+   if(handle->m_compress_method == XRIF_COMPRESS_NONE)
    {
       return xrif_min_reordered_size(handle);
    }
-   else if(handle->compress_method == XRIF_COMPRESS_LZ4)
+   else if(handle->m_compress_method == XRIF_COMPRESS_LZ4)
    {
       return xrif_min_compressed_size_lz4(handle);   
    }
-   else if(handle->compress_method == XRIF_COMPRESS_LZ4HC)
+   else if(handle->m_compress_method == XRIF_COMPRESS_LZ4HC)
    {
       return xrif_min_compressed_size_lz4hc(handle);   
    }
-   else if(handle->compress_method == XRIF_COMPRESS_FASTLZ)
+   else if(handle->m_compress_method == XRIF_COMPRESS_FASTLZ)
    {
       return xrif_min_compressed_size_fastlz(handle);
+   }
+   else if(handle->m_compress_method == XRIF_COMPRESS_ZLIB)
+   {
+      return xrif_min_compressed_size_zlib(handle);
+   }
+   else if(handle->m_compress_method == XRIF_COMPRESS_ZSTD)
+   {
+      return xrif_min_compressed_size_zstd(handle);
    }
 
    XRIF_ERROR_PRINT("xrif_min_compressed_size", "unknown compression method");
@@ -728,7 +690,7 @@ xrif_error_t xrif_allocate_raw( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size == 0)
+   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0)
    {
       XRIF_ERROR_PRINT("xrif_allocate_raw", "the handle is not setup for allocation");
       return XRIF_ERROR_NOT_SETUP;
@@ -817,7 +779,7 @@ xrif_error_t xrif_allocate_reordered( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size == 0)
+   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0)
    {
       XRIF_ERROR_PRINT("xrif_allocate_reordered", "the handle is not setup for allocation");
       return XRIF_ERROR_NOT_SETUP;
@@ -909,7 +871,7 @@ xrif_error_t xrif_allocate_compressed( xrif_t handle )
       free(handle->compressed_buffer);
    }
    
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size == 0) 
+   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0) 
    {
       XRIF_ERROR_PRINT("xrif_allocate_compressed", "the handle is not setup for allocation");
       return XRIF_ERROR_NOT_SETUP;
@@ -942,9 +904,9 @@ xrif_dimension_t xrif_width( xrif_t handle )
    if( handle == NULL)
    {
       XRIF_ERROR_PRINT("xrif_width", "can not access a null pointer");
-      return XRIF_ERROR_NULLPTR;
+      return 0;
    }
-   
+
    return handle->m_width;
 }   
 
@@ -953,7 +915,7 @@ xrif_dimension_t xrif_height( xrif_t handle )
    if( handle == NULL)
    {
       XRIF_ERROR_PRINT("xrif_height", "can not access a null pointer");
-      return XRIF_ERROR_NULLPTR;
+      return 0;
    }
    
    return handle->m_height;
@@ -964,7 +926,7 @@ xrif_dimension_t xrif_depth( xrif_t handle )
    if( handle == NULL)
    {
       XRIF_ERROR_PRINT("xrif_depth", "can not access a null pointer");
-      return XRIF_ERROR_NULLPTR;
+      return 0;
    }
    
    return handle->m_depth;
@@ -975,11 +937,110 @@ xrif_dimension_t xrif_frames( xrif_t handle )
    if( handle == NULL)
    {
       XRIF_ERROR_PRINT("xrif_frames", "can not access a null pointer");
-      return XRIF_ERROR_NULLPTR;
+      return 0;
    }
    
    return handle->m_frames;
 }   
+
+xrif_int_t xrif_type_code( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_type_code", "can not access a null pointer");
+      return 0;
+   }
+   
+   return handle->m_type_code;
+}   
+
+size_t xrif_data_size( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_data_size", "can not access a null pointer");
+      return 0;
+   }
+   
+   return handle->m_data_size;
+}   
+
+size_t xrif_raw_size( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_raw_size", "can not access a null pointer");
+      return 0;
+   }
+   
+   return handle->m_raw_size;
+}   
+
+size_t xrif_compressed_size( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_compressed_size", "can not access a null pointer");
+      return 0;
+   }
+   
+   return handle->m_compressed_size;
+}   
+
+xrif_int_t xrif_difference_method( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_difference_method", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_difference_method;
+}   
+
+xrif_int_t xrif_reorder_method( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_reorder_method", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_reorder_method;
+}
+
+xrif_int_t xrif_compress_method( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_compress_method", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_compress_method;
+}
+
+int xrif_omp_parallel( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_omp_parallel", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_omp_parallel;
+}
+
+int xrif_omp_numthreads( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_omp_numthreads", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_omp_numthreads;
+}
 
 // Populate a header buffer with the xrif protocol details.
 xrif_error_t xrif_write_header( char * header,
@@ -1017,27 +1078,27 @@ xrif_error_t xrif_write_header( char * header,
    
    *((uint16_t *) &header[28]) = handle->m_type_code;
 
-   *((int16_t *) &header[30]) = handle->difference_method;
+   *((int16_t *) &header[30]) = handle->m_difference_method;
    
-   *((int16_t *) &header[32]) = handle->reorder_method;
+   *((int16_t *) &header[32]) = handle->m_reorder_method;
 
-   *((int16_t *) &header[34]) = handle->compress_method;
+   *((int16_t *) &header[34]) = handle->m_compress_method;
 
-   *((uint32_t *) &header[36]) = handle->compressed_size;
+   *((uint32_t *) &header[36]) = handle->m_compressed_size;
    
    memset(&header[40], 0, 8);
    
-   if(handle->compress_method == XRIF_COMPRESS_LZ4)
+   if(handle->m_compress_method == XRIF_COMPRESS_LZ4)
    {
-      *((uint16_t *) &header[40]) = handle->lz4_acceleration;
+      *((uint16_t *) &header[40]) = handle->m_lz4_acceleration;
    }
-   else if(handle->compress_method == XRIF_COMPRESS_LZ4HC)
+   else if(handle->m_compress_method == XRIF_COMPRESS_LZ4HC)
    {
-      *((uint16_t *) &header[40]) = handle->lz4hc_clevel;
+      *((uint16_t *) &header[40]) = handle->m_lz4hc_level;
    }
-   else if (handle->compress_method == XRIF_COMPRESS_FASTLZ)
+   else if (handle->m_compress_method == XRIF_COMPRESS_FASTLZ)
    {
-      *((uint16_t *) &header[40]) = handle->fastlz_level;
+      *((uint16_t *) &header[40]) = handle->m_fastlz_level;
    }
    
    return XRIF_NOERROR;
@@ -1092,27 +1153,27 @@ xrif_error_t xrif_read_header( xrif_t handle,
    
    handle->m_type_code = *((uint16_t *) &header[28]);
 
-   handle->data_size = xrif_typesize(handle->m_type_code);
+   handle->m_data_size = xrif_typesize(handle->m_type_code);
    
-   handle->difference_method = *((int16_t *) &header[30]);
+   handle->m_difference_method = *((int16_t *) &header[30]);
    
-   handle->reorder_method = *((int16_t *) &header[32]);
+   handle->m_reorder_method = *((int16_t *) &header[32]);
 
-   handle->compress_method = *((int16_t *) &header[34]);
+   handle->m_compress_method = *((int16_t *) &header[34]);
 
-   handle->compressed_size = *((uint32_t *) &header[36]);
+   handle->m_compressed_size = *((uint32_t *) &header[36]);
    
-   if(handle->compress_method == XRIF_COMPRESS_LZ4)
+   if(handle->m_compress_method == XRIF_COMPRESS_LZ4)
    {
-      handle->lz4_acceleration = *((uint16_t *) &header[40]);
+      handle->m_lz4_acceleration = *((uint16_t *) &header[40]);
    }
-   else if(handle->compress_method == XRIF_COMPRESS_LZ4HC)
+   else if(handle->m_compress_method == XRIF_COMPRESS_LZ4HC)
    {
-      handle->lz4hc_clevel = *((uint16_t *) &header[40]);
+      handle->m_lz4hc_level = *((uint16_t *) &header[40]);
    }
-   else if(handle->compress_method == XRIF_COMPRESS_FASTLZ)
+   else if(handle->m_compress_method == XRIF_COMPRESS_FASTLZ)
    {
-      handle->fastlz_level = *((uint16_t *) &header[40]);
+      handle->m_fastlz_level = *((uint16_t *) &header[40]);
    }
 
    return XRIF_NOERROR;
@@ -1130,10 +1191,10 @@ xrif_error_t xrif_encode( xrif_t handle )
    
    clock_gettime(CLOCK_REALTIME, &handle->ts_difference_start);
    
-   if( handle->difference_method == XRIF_DIFFERENCE_NONE && handle->reorder_method == XRIF_REORDER_NONE && handle->compress_method == XRIF_COMPRESS_NONE)
+   if( handle->m_difference_method == XRIF_DIFFERENCE_NONE && handle->m_reorder_method == XRIF_REORDER_NONE && handle->m_compress_method == XRIF_COMPRESS_NONE)
    {
       //Set compressed size.
-      handle->compressed_size = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->data_size;
+      handle->m_compressed_size = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
 
             
       if(handle->calc_performance)
@@ -1207,7 +1268,7 @@ xrif_error_t xrif_decode( xrif_t handle )
    
    clock_gettime(CLOCK_REALTIME, &handle->ts_decompress_start);
    
-   if( handle->difference_method == XRIF_DIFFERENCE_NONE && handle->reorder_method == XRIF_REORDER_NONE && handle->compress_method == XRIF_COMPRESS_NONE)
+   if( handle->m_difference_method == XRIF_DIFFERENCE_NONE && handle->m_reorder_method == XRIF_REORDER_NONE && handle->m_compress_method == XRIF_COMPRESS_NONE)
    {
       if(handle->calc_performance)
       {
@@ -1262,7 +1323,7 @@ xrif_error_t xrif_difference( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   int method = handle->difference_method;
+   int method = handle->m_difference_method;
    
    if(method == 0) method = XRIF_DIFFERENCE_DEFAULT;
    
@@ -1289,7 +1350,7 @@ xrif_error_t xrif_undifference( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   int method = handle->difference_method;
+   int method = handle->m_difference_method;
    
    if(method == 0) method = XRIF_DIFFERENCE_DEFAULT;
    
@@ -1308,80 +1369,9 @@ xrif_error_t xrif_undifference( xrif_t handle )
    }
 }
 
-xrif_error_t xrif_difference_sint16_rgb( xrif_t handle )
-{
-   size_t npix = handle->m_width*handle->m_height;
-   
-   for(int n=0; n < handle->m_frames-1; ++n)
-   {
-      if( (handle->m_frames - 1 - n) % 3 == 0)
-      {
-         size_t n_stride0 = (handle->m_frames - 4 - n) * npix;
-         size_t n_stride =  (handle->m_frames - 1 - n) * npix;
-      
-         for(int ii=0; ii< handle->m_width; ++ii)
-         {
-            size_t ii_stride = ii*handle->m_height;
-        
-            for(int jj=0; jj< handle->m_height; ++jj)
-            {
-               size_t idx0 =  n_stride0  + ii_stride  + jj;
-               size_t idx = n_stride + ii_stride  + jj;
-            
-               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
-            }
-         }
-      }
-      else
-      {
-         size_t n_stride0 = (handle->m_frames - 2 - n) * npix;
-         size_t n_stride =  (handle->m_frames - 1 - n) * npix;
-      
-         
-         for(int ii=0; ii< handle->m_width; ++ii)
-         {
-            size_t ii_stride = ii*handle->m_height;
-        
-            for(int jj=0; jj< handle->m_height; ++jj)
-            {
-               size_t idx0 =  n_stride0  + ii_stride  + jj;
-               size_t idx = n_stride + ii_stride  + jj;
-            
-               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
-            }
-         }
-      }
-   }
-   
-   for(int n=0; n < handle->m_frames-3; ++n)
-   {
-      if( (handle->m_frames - 1 - n) % 3 == 0) continue;
-      else
-      {
-         size_t n_stride0 = (handle->m_frames - 4 - n) * npix;
-         size_t n_stride =  (handle->m_frames - 1 - n) * npix;
-      
-         
-         for(int ii=0; ii< handle->m_width; ++ii)
-         {
-            size_t ii_stride = ii*handle->m_height;
-        
-            for(int jj=0; jj< handle->m_height; ++jj)
-            {
-               size_t idx0 =  n_stride0  + ii_stride  + jj;
-               size_t idx = n_stride + ii_stride  + jj;
-            
-               ((int16_t *) handle->raw_buffer)[idx] = (((int16_t *)handle->raw_buffer)[idx] - ((int16_t*)handle->raw_buffer)[idx0]);
-            }
-         }
-      }
-   }
-   return XRIF_NOERROR;
-}
-
 xrif_error_t xrif_reorder( xrif_t handle )
 {
-   int method = handle->reorder_method;
+   int method = handle->m_reorder_method;
    
    if(method == 0) method = XRIF_REORDER_DEFAULT;
    
@@ -1402,7 +1392,7 @@ xrif_error_t xrif_reorder( xrif_t handle )
 
 xrif_error_t xrif_unreorder( xrif_t handle )
 {
-   int method = handle->reorder_method;
+   int method = handle->m_reorder_method;
    
    if(method == 0) method = XRIF_REORDER_DEFAULT;
    
@@ -1431,29 +1421,29 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( handle->raw_buffer_size < npix*handle->data_size )
+   if( handle->raw_buffer_size < npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   if( handle->reordered_buffer_size < npix*handle->data_size )
+   if( handle->reordered_buffer_size < npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   memcpy(handle->reordered_buffer, handle->raw_buffer, npix*handle->data_size);
+   memcpy(handle->reordered_buffer, handle->raw_buffer, npix*handle->m_data_size);
    
    //Zero the rest of the reordered buffer.
-   if(handle->reordered_buffer_size > npix*handle->data_size)
+   if(handle->reordered_buffer_size > npix*handle->m_data_size)
    {
-      memset(handle->reordered_buffer + npix*handle->data_size, 0, handle->reordered_buffer_size-npix*handle->data_size); 
+      memset(handle->reordered_buffer + npix*handle->m_data_size, 0, handle->reordered_buffer_size-npix*handle->m_data_size); 
    }
    
    return XRIF_NOERROR;
 }
 
 //--------------------------------------------------------------------
-//  bytepack reodering
+//  bytepack reordering
 //--------------------------------------------------------------------
 
 //Dispatch bytepack reordering according to type
@@ -1499,23 +1489,23 @@ xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
    }
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
    else //Otherwise we don't include the first frame in the re-ordering
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->data_size; //bytes
+      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
    }
 
-   if( handle->raw_buffer_size < one_frame + npix*handle->data_size )
+   if( handle->raw_buffer_size < one_frame + npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   if( handle->reordered_buffer_size < one_frame + npix*handle->data_size )
+   if( handle->reordered_buffer_size < one_frame + npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
@@ -1532,7 +1522,7 @@ xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
    memcpy(handle->reordered_buffer,handle->raw_buffer, one_frame);
    
    #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->omp_parallel > 0) 
+   #pragma omp parallel if (handle->m_omp_parallel > 0) 
    {
    #pragma omp for
    #endif
@@ -1568,19 +1558,19 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    
    size_t one_frame, npix;
    
-   if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
    else
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->data_size; //bytes
+      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
    }
    
    
-   if( handle->raw_buffer_size < one_frame + npix*handle->data_size )
+   if( handle->raw_buffer_size < one_frame + npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
@@ -1614,7 +1604,7 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    if(halfoff > npix/2) oneoff = 0;
    
    #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->omp_parallel > 0) 
+   #pragma omp parallel if (handle->m_omp_parallel > 0) 
    {
    #pragma omp for
    #endif
@@ -1678,14 +1668,14 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
    size_t one_frame, npix;
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
    else //Otherwise we don't include the first frame in the re-ordering
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->data_size; //bytes
+      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
    }
    
@@ -1702,7 +1692,7 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
    size_t stride = (handle->reordered_buffer_size - one_frame)/16/2; //stride in 16-bit pixels, not bytes
    
    #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->omp_parallel > 0) 
+   #pragma omp parallel if (handle->m_omp_parallel > 0) 
    {
    #pragma omp for
    #endif
@@ -1777,22 +1767,22 @@ xrif_error_t xrif_unreorder_none( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( handle->raw_buffer_size < npix*handle->data_size )
+   if( handle->raw_buffer_size < npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   if( handle->reordered_buffer_size < npix*handle->data_size )
+   if( handle->reordered_buffer_size < npix*handle->m_data_size )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   memcpy(handle->raw_buffer, handle->reordered_buffer, npix*handle->data_size);
+   memcpy(handle->raw_buffer, handle->reordered_buffer, npix*handle->m_data_size);
    
    //Zero the rest of the raw buffer.
-   if(handle->raw_buffer_size > npix*handle->data_size)
+   if(handle->raw_buffer_size > npix*handle->m_data_size)
    {
-      memset(handle->raw_buffer + npix*handle->data_size, 0, handle->raw_buffer_size-npix*handle->data_size); 
+      memset(handle->raw_buffer + npix*handle->m_data_size, 0, handle->raw_buffer_size-npix*handle->m_data_size); 
    }
    
    return XRIF_NOERROR;
@@ -1847,14 +1837,14 @@ xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
    }
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
    else //Otherwise we don't include the first frame in the re-ordering
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->data_size; //bytes
+      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
    }
    
@@ -1867,7 +1857,7 @@ xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
    }
    
    #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->omp_parallel > 0) 
+   #pragma omp parallel if (handle->m_omp_parallel > 0) 
    {
    #pragma omp for
    #endif
@@ -1899,14 +1889,14 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
    size_t one_frame, npix;
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
    else //Otherwise we don't include the first frame in the re-ordering
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->data_size; //bytes
+      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
    }
    
@@ -1924,7 +1914,7 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
    if(halfoff > npix/2) oneoff = 0;
    
    #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->omp_parallel > 0) 
+   #pragma omp parallel if (handle->m_omp_parallel > 0) 
    {
    #pragma omp for
    #endif
@@ -1977,14 +1967,14 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
    size_t one_frame, npix;
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->difference_method == XRIF_DIFFERENCE_PIXEL)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
    else //Otherwise we don't include the first frame in the re-ordering
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->data_size; //bytes
+      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
    }
    
@@ -2003,7 +1993,7 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
    //printf("strides: %ld %ld\n", npix/16, stride);
    
    #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->omp_parallel > 0) 
+   #pragma omp parallel if (handle->m_omp_parallel > 0) 
    {
    #pragma omp for
    #endif
@@ -2047,7 +2037,7 @@ xrif_error_t xrif_compress( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
 
-   int method = handle->compress_method;
+   int method = handle->m_compress_method;
    
    if(method == 0) method = XRIF_COMPRESS_DEFAULT;
    
@@ -2061,6 +2051,10 @@ xrif_error_t xrif_compress( xrif_t handle )
          return xrif_compress_lz4hc(handle);
       case XRIF_COMPRESS_FASTLZ:
          return xrif_compress_fastlz(handle);
+      case XRIF_COMPRESS_ZLIB:
+         return xrif_compress_zlib(handle);
+      case XRIF_COMPRESS_ZSTD:
+         return xrif_compress_zstd(handle);
       default:
          XRIF_ERROR_PRINT("xrif_compress", "unknown compression method");
          return XRIF_ERROR_NOTIMPL;
@@ -2077,7 +2071,7 @@ xrif_error_t xrif_decompress( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
 
-   int method = handle->compress_method;
+   int method = handle->m_compress_method;
    
    if(method == 0) method = XRIF_COMPRESS_DEFAULT;
    
@@ -2091,6 +2085,10 @@ xrif_error_t xrif_decompress( xrif_t handle )
          return xrif_decompress_lz4hc(handle);
       case XRIF_COMPRESS_FASTLZ:
          return xrif_decompress_fastlz(handle);
+      case XRIF_COMPRESS_ZLIB:
+         return xrif_decompress_zlib(handle);
+      case XRIF_COMPRESS_ZSTD:
+         return xrif_decompress_zstd(handle);
       default:
          XRIF_ERROR_PRINT("xrif_decompress", "unknown compression method");
          return XRIF_ERROR_NOTIMPL;
@@ -2142,9 +2140,9 @@ xrif_error_t xrif_compress_none( xrif_t handle )
       memset(compressed_buffer, 0, compressed_size);
    }
    
-   handle->compressed_size = handle->reordered_buffer_size;
+   handle->m_compressed_size = handle->reordered_buffer_size;
    
-   memcpy( compressed_buffer, handle->reordered_buffer, handle->compressed_size);
+   memcpy( compressed_buffer, handle->reordered_buffer, handle->m_compressed_size);
    
    return XRIF_NOERROR;
 }
@@ -2169,272 +2167,28 @@ xrif_error_t xrif_decompress_none( xrif_t handle )
    }
    
    //The reordered buffer must be big enough to old the compressed data
-   if(handle->reordered_buffer_size < handle->compressed_size) 
+   if(handle->reordered_buffer_size < handle->m_compressed_size) 
    {
       XRIF_ERROR_PRINT("xrif_decompress_none", "not enough space in reordered buffer for de-compressed data");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
    //If the reordered buffer is larger than needed to hold the compressed buffer, set extras to 0
-   if(handle->reordered_buffer_size > handle->compressed_size)
+   if(handle->reordered_buffer_size > handle->m_compressed_size)
    {
       ///\todo this can be just the extra bytes
       memset(handle->reordered_buffer, 0, handle->reordered_buffer_size);
    }
 
    //Now it's just a straight copy from compressed to reordered buffer.
-   memcpy( handle->reordered_buffer, compressed_buffer, handle->compressed_size);
-   
-   return XRIF_NOERROR;
-}
-
-//Compress using LZ4
-xrif_error_t xrif_compress_lz4( xrif_t handle )
-{
-   char *compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->compress_on_raw) 
-   {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
-   }
-   else 
-   {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
-   }
-   
-   //LZ4 only takes ints for sizes
-   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-   
-   if(compressed_size < xrif_min_compressed_size_lz4(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   handle->compressed_size = LZ4_compress_fast ( handle->reordered_buffer, compressed_buffer, srcSize, compressed_size, handle->lz4_acceleration);
-   
-   if(handle->compressed_size == 0 )
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4", "compression failed");
-      return XRIF_ERROR_FAILURE;
-   }
-   
-   
-   return XRIF_NOERROR;
-}
-
-//Decompress using LZ4
-xrif_error_t xrif_decompress_lz4( xrif_t handle )
-{
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   char *compressed_buffer;
-   
-   if(handle->compress_on_raw) 
-   {
-      compressed_buffer = handle->raw_buffer;
-   }
-   else 
-   {
-      compressed_buffer = handle->compressed_buffer;
-   }
-   
-   int size_decomp = LZ4_decompress_safe (compressed_buffer, handle->reordered_buffer, handle->compressed_size, handle->reordered_buffer_size);
-
-   if(size_decomp < 0)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4", "error in LZ4_decompress_safe");
-      return (XRIF_ERROR_LIBERR + size_decomp);
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   return XRIF_NOERROR;
-}
-
-//Compress using LZ4HC
-xrif_error_t xrif_compress_lz4hc( xrif_t handle )
-{
-   char *compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4hc", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->compress_on_raw) 
-   {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
-   }
-   else 
-   {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
-   }
-   
-   //LZ4 only takes ints for sizes
-   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-   
-   if(compressed_size < xrif_min_compressed_size_lz4hc(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4hc", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   handle->compressed_size = LZ4_compress_HC(handle->reordered_buffer, compressed_buffer, srcSize, compressed_size, handle->lz4hc_clevel);
-   
-   if(handle->compressed_size == 0 )
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4hc", "compression failed");
-      return XRIF_ERROR_FAILURE;
-   }
-   
-   return XRIF_NOERROR;
-}
-
-//Decompress using LZ4
-xrif_error_t xrif_decompress_lz4hc( xrif_t handle )
-{
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4hc", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   char *compressed_buffer;
-   
-   if(handle->compress_on_raw) 
-   {
-      compressed_buffer = handle->raw_buffer;
-   }
-   else 
-   {
-      compressed_buffer = handle->compressed_buffer;
-   }
-   
-   int size_decomp = LZ4_decompress_safe (compressed_buffer, handle->reordered_buffer, handle->compressed_size, handle->reordered_buffer_size);
-
-   if(size_decomp < 0)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4hc", "error in LZ4_decompress_safe");
-      return (XRIF_ERROR_LIBERR + size_decomp);
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4hc", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   return XRIF_NOERROR;
-}
-
-xrif_error_t xrif_compress_fastlz( xrif_t handle )
-{
-   char *compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_fastlz", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->compress_on_raw) 
-   {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
-   }
-   else 
-   {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
-   }
-   
-   //FastLZ only takes ints for sizes
-   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-
-   if(compressed_size < xrif_min_compressed_size_fastlz(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_fastlz", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-
-   handle->compressed_size = fastlz_compress_level(handle->fastlz_level, handle->reordered_buffer, srcSize, compressed_buffer);
-   
-   if(handle->compressed_size == 0 )
-   {
-      XRIF_ERROR_PRINT("xrif_compress_fastlz", "compression failed.");
-      return XRIF_ERROR_FAILURE;
-   }
-   
-   
-   return XRIF_NOERROR;
-}
-
-xrif_error_t xrif_decompress_fastlz( xrif_t handle )
-{
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   char *compressed_buffer;
-   
-   if(handle->compress_on_raw) 
-   {
-      compressed_buffer = handle->raw_buffer;
-   }
-   else 
-   {
-      compressed_buffer = handle->compressed_buffer;
-   }
-   
-   int size_decomp = fastlz_decompress(compressed_buffer, handle->compressed_size, handle->reordered_buffer, handle->reordered_buffer_size);
-
-   if(size_decomp == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "decompression failed.  check reordered_buffer_size, or possible corruption.");
-      return (XRIF_ERROR_FAILURE);
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
+   memcpy( handle->reordered_buffer, compressed_buffer, handle->m_compressed_size);
    
    return XRIF_NOERROR;
 }
 
 double xrif_compression_ratio( xrif_t handle )
 {
-   return ((double)handle->compressed_size)/((double)handle->raw_size);
+   return ((double)handle->m_compressed_size)/((double)handle->m_raw_size);
 }
 
 double xrif_encode_time( xrif_t handle )
@@ -2444,27 +2198,27 @@ double xrif_encode_time( xrif_t handle )
 
 double xrif_encode_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) /xrif_encode_time(handle);
+   return ((double) handle->m_raw_size) /xrif_encode_time(handle);
 }
    
-double xrif_difference_time( xrif_t handle )
+double xrif_reorder_time( xrif_t handle )
 {
    return xrif_ts_difference( &handle->ts_reorder_start, &handle->ts_difference_start);
 }
 
 double xrif_difference_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) / xrif_difference_time(handle);
+   return ((double) handle->m_raw_size) / xrif_difference_time(handle);
 }
 
-double xrif_reorder_time( xrif_t handle )
+double xrif_difference_time( xrif_t handle )
 {
    return xrif_ts_difference( &handle->ts_compress_start, &handle->ts_reorder_start);
 }
 
 double xrif_reorder_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) /xrif_reorder_time(handle);
+   return ((double) handle->m_raw_size) /xrif_reorder_time(handle);
 }
 
 double xrif_compress_time( xrif_t handle )
@@ -2474,7 +2228,7 @@ double xrif_compress_time( xrif_t handle )
 
 double xrif_compress_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) /xrif_compress_time(handle);
+   return ((double) handle->m_raw_size) /xrif_compress_time(handle);
 }
 
 //-
@@ -2486,7 +2240,7 @@ double xrif_decode_time( xrif_t handle )
 
 double xrif_decode_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) /xrif_decode_time(handle);
+   return ((double) handle->m_raw_size) /xrif_decode_time(handle);
 }
    
 double xrif_undifference_time( xrif_t handle )
@@ -2496,7 +2250,7 @@ double xrif_undifference_time( xrif_t handle )
 
 double xrif_undifference_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) / xrif_undifference_time(handle);
+   return ((double) handle->m_raw_size) / xrif_undifference_time(handle);
 }
 
 double xrif_unreorder_time( xrif_t handle )
@@ -2506,7 +2260,7 @@ double xrif_unreorder_time( xrif_t handle )
 
 double xrif_unreorder_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) /xrif_unreorder_time(handle);
+   return ((double) handle->m_raw_size) /xrif_unreorder_time(handle);
 }
 
 double xrif_decompress_time( xrif_t handle )
@@ -2516,9 +2270,10 @@ double xrif_decompress_time( xrif_t handle )
 
 double xrif_decompress_rate( xrif_t handle )
 {
-   return ((double) handle->raw_size) /xrif_decompress_time(handle);
+   return ((double) handle->m_raw_size) /xrif_decompress_time(handle);
 }
-size_t xrif_typesize( xrif_typecode_t type_code)
+
+size_t xrif_typesize( xrif_int_t type_code)
 {
    switch( type_code )
    {

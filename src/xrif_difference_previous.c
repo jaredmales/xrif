@@ -107,7 +107,7 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
          int16_t * rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
-         #pragma omp parallel if (handle->omp_parallel > 0)
+         #pragma omp parallel if (handle->m_omp_parallel > 0)
          {
          #endif
 
@@ -148,7 +148,7 @@ xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
          int32_t * rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
-         #pragma omp parallel if (handle->omp_parallel > 0)
+         #pragma omp parallel if (handle->m_omp_parallel > 0)
          {
          #endif
 
@@ -189,7 +189,7 @@ xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
          int64_t * rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
-         #pragma omp parallel if (handle->omp_parallel > 0)
+         #pragma omp parallel if (handle->m_omp_parallel > 0)
          {
          #endif
 
@@ -275,7 +275,7 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
          int16_t * rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
-         #pragma omp parallel if (handle->omp_parallel > 0)
+         #pragma omp parallel if (handle->m_omp_parallel > 0)
          {
          #endif
 
@@ -316,7 +316,7 @@ xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
          int32_t * rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
-         #pragma omp parallel if (handle->omp_parallel > 0)
+         #pragma omp parallel if (handle->m_omp_parallel > 0)
          {
          #endif
 
@@ -357,7 +357,7 @@ xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
          int64_t * rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
-         #pragma omp parallel if (handle->omp_parallel > 0)
+         #pragma omp parallel if (handle->m_omp_parallel > 0)
          {
          #endif
 

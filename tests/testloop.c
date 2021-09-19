@@ -74,6 +74,10 @@
    #define XRIF_TESTLOOP_COMP_STR "lz4hc"
 #elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_FASTLZ
    #define XRIF_TESTLOOP_COMP_STR "fastlz"
+#elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_ZSTD
+   #define XRIF_TESTLOOP_COMP_STR "zstd"
+#elif XRIF_TESTLOOP_COMPRESS == XRIF_COMPRESS_ZLIB
+   #define XRIF_TESTLOOP_COMP_STR "zlib"
 #endif
 
    xrif_t hand = NULL;
@@ -111,7 +115,7 @@
                rv = xrif_configure(hand, XRIF_TESTLOOP_DIFFERENCE, XRIF_TESTLOOP_REORDER, XRIF_TESTLOOP_COMPRESS);
                ck_assert( rv == XRIF_NOERROR );
                
-               hand->omp_parallel = 0;
+               hand->m_omp_parallel = 0;
                
                rv = xrif_allocate_raw(hand);
                ck_assert( rv == XRIF_NOERROR );
@@ -131,6 +135,9 @@
                rv = XRIF_TESTLOOP_ENCODE(hand);
                ck_assert( rv == 0 );
                
+               rv = xrif_set_compress_method_direction( hand, XRIF_TESTLOOP_COMPRESS, XRIF_DIRECTION_DECOMPRESS);
+               ck_assert( rv == 0 );
+
                rv = XRIF_TESTLOOP_DECODE(hand);
                ck_assert( rv == 0 );
       

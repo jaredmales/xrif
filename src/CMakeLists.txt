@@ -1,7 +1,21 @@
 
 
 # list of source files
-set(libsrc xrif.c xrif_difference_previous.c xrif_difference_first.c xrif_difference_pixel.c xrif_difference_bayer.c lz4/lz4.c lz4/lz4hc.c fastlz/fastlz.h fastlz/fastlz.c)
+set(libsrc xrif.c 
+           xrif_difference_previous.c 
+           xrif_difference_first.c 
+           xrif_difference_pixel.c 
+           xrif_difference_bayer.c 
+           xrif_compress_lz4.c 
+           xrif_compress_lz4hc.c 
+           xrif_compress_fastlz.c 
+           xrif_compress_zstd.c
+           xrif_compress_zlib.c 
+           lz4/lz4.c 
+           lz4/lz4hc.c 
+           fastlz/fastlz.h 
+           fastlz/fastlz.c
+   )
 
 # this is the "object library" target: compiles the sources only once
 add_library(objlib OBJECT ${libsrc})

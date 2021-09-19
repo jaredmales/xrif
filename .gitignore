@@ -3,6 +3,8 @@
 build/*
 init/*
 
+.vscode
+
 doc/html
 
 .DS_Store

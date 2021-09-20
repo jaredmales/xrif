@@ -626,6 +626,10 @@ typedef struct
   */
 typedef xrif_handle* xrif_t;
 
+//==========================================================
+//             Initialization and Configuring
+//==========================================================
+
 /// Allocate a handle and initialize it.
 /** The argument is a pointer to \ref xrif_t, making it the address of an `xrif_handle` pointer.
   * 
@@ -678,7 +682,7 @@ xrif_error_t xrif_configure( xrif_t handle,         ///< [in/out] the xrif handl
 /// Allocate all memory buffers according to the configuration specified in the handle.
 /** You must call xrif_set_size and xrif_configure prior to calling this function.
   * 
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a null pointer
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the handle has not been configured
   * \returns \ref XRIF_ERROR_MALLOC on an error from `malloc`
   * \returns \ref XRIF_NOERROR on success. 
@@ -692,7 +696,7 @@ xrif_error_t xrif_allocate( xrif_t handle   /**< [in/out] the xrif object to be 
 /** Free()s the raw and reordered buffers (if owned by this handle) and 
   * calls xrif_initialize_handle().  All defaults will be set.
   *
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a null pointer
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_NOERROR on success. 
   * 
   * \see xrif_new, xrif_delete
@@ -807,7 +811,9 @@ xrif_error_t xrif_set_decompress_method( xrif_t handle,             ///< [in/out
                                          xrif_int_t compress_method ///< [in] the new compress method
                                        );
 
-
+//==========================================================
+//             Allocation
+//==========================================================
 
 /// Calculate the minimum size of the raw buffer.
 /** Result is based on current connfiguration of the handle.
@@ -816,6 +822,8 @@ xrif_error_t xrif_set_decompress_method( xrif_t handle,             ///< [in/out
   * 
   * \returns the minimum size of the raw buffer for a valid configuration.
   * \returns 0 for an invalid configuration. 
+  * 
+  * \ingroup xrif_alloc
   */
 size_t xrif_min_raw_size(xrif_t handle /**< [in] the xrif handle */ );
 
@@ -824,44 +832,10 @@ size_t xrif_min_raw_size(xrif_t handle /**< [in] the xrif handle */ );
   * 
   * \returns the minimum size of the reordered buffer for a valid configuration.
   * \returns 0 for an invalid configuration. 
+  * 
+  * \ingroup xrif_alloc
   */
 size_t xrif_min_reordered_size(xrif_t handle /**< [in] the xrif handle */ );
-
-/// Calculate the minimum size of the compressed buffer for LZ4HC compression
-/**
-  * This uses lz4::LZ4_compressBound for the minimum reordered buffer size.
-  * 
-  * \returns the minimum size on success
-  * \returns 0 otherwise
-  */
-size_t xrif_min_compressed_size_lz4hc(xrif_t handle /**< [in] the xrif handle */);
-
-/// Calculate the minimum size of the compressed buffer for FastLZ compression
-/**
-  * This calculates 1.05 x the minimum reordered buffer size I.A.W. the FastLZ requirement.
-  * 
-  * \returns the minimum size on success
-  * \returns 0 otherwise
-  */
-size_t xrif_min_compressed_size_fastlz(xrif_t handle /**< [in] the xrif handle */);
-
-/// Calculate the minimum size of the compressed buffer for zlib compression
-/**
-  * This uses zlib::deflateBound for the minimum reordered buffer size.
-  * 
-  * \returns the minimum size on success
-  * \returns 0 otherwise
-  */
-size_t xrif_min_compressed_size_zlib(xrif_t handle /**< [in] the xrif handle */);
-
-/// Calculate the minimum size of the compressed buffer for zstd compression
-/**
-  * This uses zstd::ZSTD_compressBound for the minimum reordered buffer size.
-  * 
-  * \returns the minimum size on success
-  * \returns 0 otherwise
-  */
-size_t xrif_min_compressed_size_zstd(xrif_t handle /**< [in] the xrif handle */);
 
 /// Calculate the minimum size of the compressed buffer.
 /** Result is based on current connfiguration of the handle.
@@ -875,24 +849,29 @@ size_t xrif_min_compressed_size_zstd(xrif_t handle /**< [in] the xrif handle */)
   * 
   * \returns the minimum size of the compressed buffer for a valid configuration.
   * \returns 0 for an invalid configuration or an error. 
+  * 
+  * \ingroup xrif_alloc
   */
 size_t xrif_min_compressed_size(xrif_t handle /**< [in] the xrif handle */ );
 
 /// Set the raw data buffer to a pre-allocated pointer
 /** Must only be called after \ref xrif_set_size and \ref xrif_configure have been called.
-  * You are responsible for allocating the buffer to be at least as large as the value returned by \ref xrif_min_raw_size.
-  * This will return an error if size is too small for the currently set values.
   * 
-  * This pointer will not be free()-ed on a call to \ref xrif_reset_handle.
+  * If handle's raw_buffer is currently allocated and owned, it is first free()-ed.
+  * 
+  * The buffer must be at least as large as the value returned by \ref xrif_min_raw_size.
+  * This will return an error if \p size is too small for the currently set values.
+  * 
+  * This pointer passed here as \p raw will not be free()-ed on a call to \ref xrif_reset_handle.
   *
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_allocate_raw
   * 
-  * \ingroup xrif_init_fine
+  * \ingroup xrif_alloc
   */  
 xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
                            void * raw,     ///< [in] the pointer to a pre-allocated block
@@ -900,22 +879,21 @@ xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
                          );
 
 /// Allocate the raw buffer based on the already set stream dimensions.
-/** Must only be called after \ref xrif_set_size and \ref xrif_configure have been called. 
+/** Must only be called after \ref xrif_set_size and \ref xrif_configure have been called. This is
+  * called by xrif_allocate(), and does not normally need to be called individually.
   * 
-  * If xrif_handle::raw_buffer is currently allocated and owned, it is first free()-ed.
+  * If handle's raw_buffer is currently allocated and owned, it is first free()-ed.
   * 
-  * The size will be set to the maximum of the pre-setup data size and (if xrif_handle::compress_on_raw == true) 
-  * the LZ4_compressBound result.  LZ4 typically (in all tested cases) requests
-  * a few hundred more bytes for compression.
+  * The size will be set to the maximum of the pre-setup data size and \ref xrif_min_raw_size.
   * 
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a null pointer
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
   * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_set_raw
   * 
-  * \ingroup xrif_init_fine
+  * \ingroup xrif_alloc
   */
 xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to modify */);
 
@@ -923,9 +901,12 @@ xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to m
 /// Set the rordered (working) data buffer to a pre-allocated pointer
 /** Must only be called after xrif_set_size and xrif_configure have been called. 
   * 
-  * You are responsible for allocating the buffer to be at least the value returned by xrif_min_reordered_size(xrif_t).
+  * If the handle's reordered_buffer is currently allocated and owned, it is first free()-ed.
   * 
-  * This pointer will not be free()-ed on a call to xrif_reset_handle.
+  * The buffer must be at least as large as the value returned by \ref xrif_min_reordered_size.
+  * This will return an error if \p size is too small for the currently set values.
+  * 
+  * The pointer passed here will not be free()-ed on a call to xrif_reset_handle.
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
@@ -935,7 +916,7 @@ xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to m
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
   * \returns \ref XRIF_NOERROR on success\todo need to have a min size calculation function exposed
   * 
-  * \ingroup xrif_init_fine
+  * \ingroup xrif_alloc
   */  
 xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object to modify
                                  void * reordered, ///< [in] pointer to a pre-allocated block
@@ -943,33 +924,36 @@ xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object t
                                );
 
 /// Allocate the reordered buffer based on the already set stream dimensions.
-/** Must only be called after xrif_set_size and xrif_configure have been called. 
+/** Must only be called after xrif_set_size and xrif_configure have been called. This is
+  * called by xrif_allocate(), and does not normally need to be called individually.
   * 
-  * If the reordered_buffer is currently allocated and owned, it is first free()-ed.
+  * If the handle's reordered_buffer is currently allocated and owned, it is first free()-ed.
   * 
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a null pointer
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
   * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
   * \returns \ref XRIF_NOERROR on success
   * 
-  * \ingroup xrif_init_fine
+  * \ingroup xrif_alloc
   */
 xrif_error_t xrif_allocate_reordered( xrif_t handle /**< [in/out] the xrif object to modify */);
 
 /// Set the compressed data buffer to a pre-allocated pointer
 /** Must only be called after xrif_set_size and xrif_configure have been called. 
   * 
-  * You are responsible for allocating the buffer to be at least as large as xrif_min_compressed_size(xrif_t).
+  * If the handle's compressed_buffer is currently allocated and owned, it is first free()-ed.
   * 
+  * The buffer must be at least as large as the value returned by \ref xrif_min_compressed_size.
+  * This will return an error if \p size is too small for the currently set values.
   * 
-  * This pointer will not be free()-ed on a call to xrif_reset_handle.
+  * The pointer passed here will not be free()-ed on a call to xrif_reset_handle.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
   * \returns \ref XRIF_NOERROR on success\todo need to have a min size calculation function exposed
   *
-  * \ingroup xrif_init_fine
+  * \ingroup xrif_alloc
   */  
 xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object to modify
                                   void * reordered, ///< [in] pointer to a pre-allocated block
@@ -977,19 +961,23 @@ xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object 
                                 );
 
 /// Allocate the compressed buffer based on the already set stream dimensions.
-/** Must only be called after xrif_set_size and xrif_configure have been called. 
+/** Must only be called after xrif_set_size and xrif_configure have been called. This is
+  * called by xrif_allocate(), and does not normally need to be called individually.
   * 
-  * If the compressed_buffer is currently allocated and owned, it is first free()-ed.
+  * If handle's compressed_buffer is currently allocated and owned, it is first free()-ed.
   * 
-  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a null pointer
+  * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
   * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
   * \returns \ref XRIF_NOERROR on success
   * 
-  * \ingroup xrif_init_fine
+  * \ingroup xrif_alloc
   */
 xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif handle */);
 
+//==========================================================
+//             Get Current Configuration
+//==========================================================
 
 /// Get the current width of the configured handle.
 /** This simply returns the current value of handle->m_width.
@@ -1014,7 +1002,6 @@ xrif_dimension_t xrif_width( xrif_t handle /**< [in] the xrif handle */);
   * \ingroup access
   */
 xrif_dimension_t xrif_height( xrif_t handle /**< [in] the xrif handle*/);
-
 
 /// Get the current depth of the configured handle.
 /** This simply returns the current value of handle->m_depth.
@@ -1121,6 +1108,10 @@ xrif_int_t xrif_reorder_method( xrif_t handle /**< [in] the xrif handle*/);
   */
 xrif_int_t  xrif_compress_method( xrif_t handle /**< [in] the xrif handle*/);
 
+//==========================================================
+//             OpenMP
+//==========================================================
+
 /// Get the value of the OpenMP parallel flag
 /** This returns the current OpenMP parallel flag.  OpenMP multithreading is not used if < 1, used if > 0.
   *
@@ -1144,6 +1135,10 @@ int xrif_omp_parallel( xrif_t handle /**< [in] the xrif handle*/);
   * \ingroup access
   */
 int xrif_omp_numthreads( xrif_t handle /**< [in] the xrif handle*/);
+
+//==========================================================
+//             Header Read/Write
+//==========================================================
 
 /// Populate a header buffer with the xrif protocol details.
 /**
@@ -1174,7 +1169,9 @@ xrif_error_t xrif_read_header( xrif_t handle,          ///< [out] the xrif heade
                                char * header           ///< [in] the buffer containing the header
                              );
 
-
+//==========================================================
+//             Encode/Decode
+//==========================================================
 
 /// Encode data using the xrif format 
 /** Calls \ref xrif_difference(), \ref xrif_reorder(), and \ref xrif_compress().
@@ -1210,6 +1207,10 @@ xrif_error_t xrif_encode( xrif_t handle /**< [in/out] the xrif handle */);
   * \ingroup xrif_encode_decode
   */
 xrif_error_t xrif_decode( xrif_t handle /**< [in/out] the xrif handle */);
+
+//==========================================================
+//             Differencing
+//==========================================================
 
 /// Difference the image(s)
 /** This function calls the method specific difference function for the method specified by
@@ -1378,6 +1379,9 @@ xrif_error_t xrif_undifference_first( xrif_t handle /**< [in/out] the xrif handl
 xrif_error_t xrif_undifference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
 
 
+//==========================================================
+//             Reordering
+//==========================================================
 
 /// Reorder the data using the method specified by `reorder_method`
 /**
@@ -1660,6 +1664,16 @@ xrif_error_t xrif_set_lz4hc_level( xrif_t handle,       ///< [in/out] the xrif h
   */
 xrif_int_t xrif_lz4hc_level( xrif_t handle /**< [in] the xrif handle*/);
 
+/// Calculate the minimum size of the compressed buffer for LZ4HC compression
+/**
+  * This uses lz4::LZ4_compressBound for the minimum reordered buffer size.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  * 
+  * \ingroup compress_lz4hc
+  */
+size_t xrif_min_compressed_size_lz4hc(xrif_t handle /**< [in] the xrif handle */);
 
 /// Compress using LZ4HC
 /**
@@ -1713,6 +1727,17 @@ xrif_error_t xrif_set_fastlz_level( xrif_t handle,     ///< [in/out] the xrif ha
   * \ingroup compress_fastlz
   */
 xrif_int_t xrif_fastlz_level( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Calculate the minimum size of the compressed buffer for FastLZ compression
+/**
+  * This calculates 1.05 x the minimum reordered buffer size I.A.W. the FastLZ requirement.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  * 
+  * \ingroup compress_fastlz
+  */
+size_t xrif_min_compressed_size_fastlz(xrif_t handle /**< [in] the xrif handle */);
 
 /// Compress using FastLZ
 /**
@@ -1823,6 +1848,17 @@ ZSTD_DCtx * xrif_zstd_dctx( xrif_t handle /**< [in] the xrif handle*/);
   */
 xrif_int_t xrif_zstd_level( xrif_t handle /**< [in] the xrif handle*/);
 
+/// Calculate the minimum size of the compressed buffer for zstd compression
+/**
+  * This uses zstd::ZSTD_compressBound for the minimum reordered buffer size.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  * 
+  * \ingroup compress_zstd
+  */
+size_t xrif_min_compressed_size_zstd(xrif_t handle /**< [in] the xrif handle */);
+
 /// Compress using zstd deflate
 /** \todo document
   *
@@ -1907,6 +1943,17 @@ xrif_int_t xrif_zlib_level( xrif_t handle /**< [in] the xrif handle*/);
   * \ingroup compress_zlib
   */
 xrif_int_t xrif_zlib_strategy( xrif_t handle /**< [in] the xrif handle*/);
+
+/// Calculate the minimum size of the compressed buffer for zlib compression
+/**
+  * This uses zlib::deflateBound for the minimum reordered buffer size.
+  * 
+  * \returns the minimum size on success
+  * \returns 0 otherwise
+  * 
+  * \ingroup compress_zlib
+  */
+size_t xrif_min_compressed_size_zlib(xrif_t handle /**< [in] the xrif handle */);
 
 /// Compress using zlib deflate
 /** \todo document

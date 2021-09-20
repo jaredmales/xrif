@@ -73,9 +73,12 @@
       /** \defgroup xrif_init Initialization, Setup, and Allocation 
         * \ingroup xrif_interface
         */
-             /** \defgroup xrif_init_fine Fine-grained Initialization, Setup, and Allocation 
+             /** \defgroup xrif_init_fine Fine-grained Initialization and Setup
                * \ingroup xrif_init
                */
+             /** \defgroup xrif_alloc Allocation
+               * \ingroup xrif_init
+               */ 
       /** \defgroup access Current Configuration
         * \brief Access to current configuration values.
         * \ingroup xrif_interface

@@ -1,7 +1,14 @@
+/** \file xrif_test_increment.c
+  * \brief Test encoding and decoding with incrementing values
+  *
+  * \author Jared R. Males (jaredmales@gmail.com)
+  *
+  * \ingroup xrif_test_files
+  */
 
 /* This file is part of the xrif library.
 
-Copyright (c) 2019, 2020 The Arizona Board of Regents on behalf of The
+Copyright (c) 2021 The Arizona Board of Regents on behalf of The
 University of Arizona
 
 All rights reserved.
@@ -107,8 +114,18 @@ int ps[] = {1,2,4,5,27,63,64}; //planes of the cube
  * 
  *=====================================================================================*/
 
-/** Verify full encode/decode for incrementing int16_t values for previous / bytepack / LZ4
+/** \test Verify full encode/decode for incrementing int16_t values for previous / bytepack / LZ4
   * \anchor encode_previous_bytepack_lz4_int16_inc
+  * 
+  * Functions tested:
+  *  - \ref xrif_encode(xrif_t)
+  *  - \ref xrif_difference(xrif_t)
+  *  - \ref xrif_difference_previous(xrif_t)
+  *  - \ref xrif_difference_previous_sint16(xrif_t)
+  *  - \ref xrif_reorder(xrif_t)
+  *  - \ref xrif_reorder_bytepack_sint16(xrif_t)
+  *  - \ref xrif_compress(xrif_t)
+  *  - \ref xrif_compress_lz4(xrif_t)
   */
 START_TEST (encode_previous_bytepack_lz4_int16_inc)
 {
@@ -122,7 +139,7 @@ START_TEST (encode_previous_bytepack_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack / LZ4HC
   * \anchor encode_previous_bytepack_lz4hc_int16_inc
@@ -139,7 +156,7 @@ START_TEST (encode_previous_bytepack_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack / FastLZ
@@ -157,7 +174,7 @@ START_TEST (encode_previous_bytepack_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack / zstd
   * \anchor encode_previous_bytepack_zstd_int16_inc
@@ -174,7 +191,7 @@ START_TEST (encode_previous_bytepack_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack / zlib
   * \anchor encode_previous_bytepack_zlib_int16_inc
@@ -191,7 +208,7 @@ START_TEST (encode_previous_bytepack_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bytepack / LZ4
   * \anchor encode_first_bytepack_lz4_int16_inc
@@ -294,7 +311,7 @@ START_TEST (encode_pixel_bytepack_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / LZ4HC
   * \anchor encode_pixel_bytepack_lz4hc_int16_inc
@@ -311,7 +328,7 @@ START_TEST (encode_pixel_bytepack_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / FastLZ
   * \anchor encode_pixel_bytepack_fastlz_int16_inc
@@ -328,7 +345,7 @@ START_TEST (encode_pixel_bytepack_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / zstd
   * \anchor encode_pixel_bytepack_zstd_int16_inc
@@ -345,7 +362,7 @@ START_TEST (encode_pixel_bytepack_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / zlib
@@ -363,7 +380,7 @@ START_TEST (encode_pixel_bytepack_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack-renibble / LZ4
   * \anchor encode_previous_bytepack_renibble_lz4_int16_inc
@@ -380,7 +397,7 @@ START_TEST (encode_previous_bytepack_renibble_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack-renibble / LZ4HC
   * \anchor encode_previous_bytepack_renibble_lz4hc_int16_inc
@@ -397,7 +414,7 @@ START_TEST (encode_previous_bytepack_renibble_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack-renibble / FastLZ
   * \anchor encode_previous_bytepack_renibble_fastlz_int16_inc
@@ -414,7 +431,7 @@ START_TEST (encode_previous_bytepack_renibble_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack-renibble / zstd
   * \anchor encode_previous_bytepack_renibble_zstd_int16_inc
@@ -431,7 +448,7 @@ START_TEST (encode_previous_bytepack_renibble_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bytepack-renibble / zlib
   * \anchor encode_previous_bytepack_renibble_zlib_int16_inc
@@ -448,7 +465,7 @@ START_TEST (encode_previous_bytepack_renibble_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bytepack-renibble / LZ4
   * \anchor encode_first_bytepack_renibble_lz4_int16_inc
@@ -465,7 +482,7 @@ START_TEST (encode_first_bytepack_renibble_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bytepack-renibble / LZ4HC
   * \anchor encode_first_bytepack_renibble_lz4hc_int16_inc
@@ -482,7 +499,7 @@ START_TEST (encode_first_bytepack_renibble_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bytepack-renibble / FastLZ
   * \anchor encode_first_bytepack_renibble_fastlz_int16_inc
@@ -499,7 +516,7 @@ START_TEST (encode_first_bytepack_renibble_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bytepack-renibble / zstd
   * \anchor encode_first_bytepack_renibble_zstd_int16_inc
@@ -516,7 +533,7 @@ START_TEST (encode_first_bytepack_renibble_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bytepack-renibble / zlib
   * \anchor encode_first_bytepack_renibble_zlib_int16_inc
@@ -533,7 +550,7 @@ START_TEST (encode_first_bytepack_renibble_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / LZ4
   * \anchor encode_pixel_bytepack_renibble_lz4_int16_inc
@@ -550,7 +567,7 @@ START_TEST (encode_pixel_bytepack_renibble_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / LZ4HC
   * \anchor encode_pixel_bytepack_renibble_lz4hc_int16_inc
@@ -567,7 +584,7 @@ START_TEST (encode_pixel_bytepack_renibble_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / FastLZ
   * \anchor encode_pixel_bytepack_renibble_fastlz_int16_inc
@@ -584,7 +601,7 @@ START_TEST (encode_pixel_bytepack_renibble_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / zstd
   * \anchor encode_pixel_bytepack_renibble_zstd_int16_inc
@@ -601,7 +618,7 @@ START_TEST (encode_pixel_bytepack_renibble_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / zlib
   * \anchor encode_pixel_bytepack_renibble_zlib_int16_inc
@@ -618,7 +635,7 @@ START_TEST (encode_pixel_bytepack_renibble_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bitpack / LZ4
@@ -636,7 +653,7 @@ START_TEST (encode_previous_bitpack_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bitpack / LZ4HC
   * \anchor encode_previous_bitpack_lz4hc_int16_inc
@@ -653,7 +670,7 @@ START_TEST (encode_previous_bitpack_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bitpack / FastLZ
   * \anchor encode_previous_bitpack_fastlz_int16_inc
@@ -670,7 +687,7 @@ START_TEST (encode_previous_bitpack_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bitpack / zstd
   * \anchor encode_previous_bitpack_zstd_int16_inc
@@ -687,7 +704,7 @@ START_TEST (encode_previous_bitpack_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bitpack / zlib
   * \anchor encode_previous_bitpack_zlib_int16_inc
@@ -704,7 +721,7 @@ START_TEST (encode_previous_bitpack_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bitpack / LZ4
   * \anchor encode_first_bitpack_lz4_int16_inc
@@ -721,7 +738,7 @@ START_TEST (encode_first_bitpack_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bitpack / LZ4HC
   * \anchor encode_first_bitpack_lz4hc_int16_inc
@@ -738,7 +755,7 @@ START_TEST (encode_first_bitpack_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bitpack / FastLZ
   * \anchor encode_first_bitpack_fastlz_int16_inc
@@ -755,7 +772,7 @@ START_TEST (encode_first_bitpack_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bitpack / zstd
   * \anchor encode_first_bitpack_zstd_int16_inc
@@ -772,7 +789,7 @@ START_TEST (encode_first_bitpack_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for first / bitpack / zlib
   * \anchor encode_first_bitpack_zlib_int16_inc
@@ -789,7 +806,7 @@ START_TEST (encode_first_bitpack_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / LZ4
   * \anchor encode_pixel_bitpack_lz4_int16_inc
@@ -806,7 +823,7 @@ START_TEST (encode_pixel_bitpack_lz4_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / LZ4HC
   * \anchor encode_pixel_bitpack_lz4hc_int16_inc
@@ -823,7 +840,7 @@ START_TEST (encode_pixel_bitpack_lz4hc_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / FastLZ
   * \anchor encode_pixel_bitpack_fastlz_int16_inc
@@ -840,7 +857,7 @@ START_TEST (encode_pixel_bitpack_fastlz_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / zstd
   * \anchor encode_pixel_bitpack_zstd_int16_inc
@@ -857,7 +874,7 @@ START_TEST (encode_pixel_bitpack_zstd_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / zlib
   * \anchor encode_pixel_bitpack_zlib_int16_inc
@@ -874,7 +891,7 @@ START_TEST (encode_pixel_bitpack_zlib_int16_inc)
    
    #include "testloop.c"
 }
-END_TEST
+END_TEST;
 
 Suite * increment_suite(void)
 {

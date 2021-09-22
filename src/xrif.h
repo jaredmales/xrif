@@ -1617,6 +1617,9 @@ size_t xrif_min_compressed_size_lz4(xrif_t handle /**< [in] the xrif handle */);
   * \returns XRIF_ERROR_FAILURE if lz4_compress_fast returns 0
   * \returns XRIF_NOERROR on success
   * 
+  * Tested by:
+  * - \ref encode_previous_bytepack_lz4_int16_inc
+  * 
   * \ingroup compress_lz4
   */
 xrif_error_t xrif_compress_lz4( xrif_t handle /**< [in/out] the xrif handle */);

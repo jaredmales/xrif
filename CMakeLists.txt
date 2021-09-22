@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project("xrif")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -std=c11") # -march=skylake")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -std=c11 -coverage") # -march=skylake")
 
 find_package(OpenMP)
 if(OPENMP_FOUND)

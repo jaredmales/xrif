@@ -115,7 +115,7 @@ START_TEST (ascii_pixel_none_lz4_xrif_h)
   
    size_t sz = stbuf.st_size;
                
-   rv = xrif_configure(hand, XRIF_DIFFERENCE_PIXEL, XRIF_REORDER_NONE, XRIF_COMPRESS_LZ4);
+   rv = xrif_configure(hand, XRIF_DIFFERENCE_PIXEL0, XRIF_REORDER_NONE, XRIF_COMPRESS_LZ4);
    ck_assert( rv == XRIF_NOERROR );
                
    rv = xrif_set_size(hand, sz, 1, 1, 1, XRIF_TYPECODE_INT8);

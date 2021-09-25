@@ -157,7 +157,7 @@ typedef uint32_t xrif_dimension_t;
 /// Pixel differencing, where the previous pixel is used as the reference
 /** \ingroup diff_methods
   */
-#define XRIF_DIFFERENCE_PIXEL (300)
+#define XRIF_DIFFERENCE_PIXEL0 (300)
 
 /// Default differencing, identical to PREVIOUS
 /** \ingroup diff_methods

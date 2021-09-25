@@ -263,7 +263,7 @@ size_t xrif_min_compressed_size_zlib(xrif_t handle)
 
 xrif_error_t xrif_compress_zlib( xrif_t handle )
 {
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    size_t compressed_size;
    
    if(handle == NULL)
@@ -278,15 +278,15 @@ xrif_error_t xrif_compress_zlib( xrif_t handle )
       return XRIF_ERROR_INVALIDCONFIG;
    }
 
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
+      m_compressed_buffer = handle->m_raw_buffer;
+      compressed_size = handle->m_raw_buffer_size;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
+      m_compressed_buffer = handle->m_compressed_buffer;
+      compressed_size = handle->m_compressed_buffer_size;
    }
    
    //zlib only takes ints for sizes
@@ -308,9 +308,9 @@ xrif_error_t xrif_compress_zlib( xrif_t handle )
 
 
    handle->m_zlib_stream->avail_in = srcSize;
-   handle->m_zlib_stream->next_in = handle->reordered_buffer;
+   handle->m_zlib_stream->next_in = handle->m_reordered_buffer;
    handle->m_zlib_stream->avail_out = compressed_size;
-   handle->m_zlib_stream->next_out = compressed_buffer;
+   handle->m_zlib_stream->next_out = m_compressed_buffer;
    handle->m_zlib_stream->data_type = Z_BINARY;
 
    rv = deflate(handle->m_zlib_stream, Z_FINISH);    
@@ -340,15 +340,15 @@ xrif_error_t xrif_decompress_zlib( xrif_t handle )
       return XRIF_ERROR_INVALIDCONFIG;
    }
 
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
+      m_compressed_buffer = handle->m_raw_buffer;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
+      m_compressed_buffer = handle->m_compressed_buffer;
    }
 
    int rv = inflateReset(handle->m_zlib_stream);
@@ -360,9 +360,9 @@ xrif_error_t xrif_decompress_zlib( xrif_t handle )
    }
 
    handle->m_zlib_stream->avail_in = handle->m_compressed_size;
-   handle->m_zlib_stream->next_in = compressed_buffer;
-   handle->m_zlib_stream->avail_out = handle->reordered_buffer_size;
-   handle->m_zlib_stream->next_out = handle->reordered_buffer;
+   handle->m_zlib_stream->next_in = m_compressed_buffer;
+   handle->m_zlib_stream->avail_out = handle->m_reordered_buffer_size;
+   handle->m_zlib_stream->next_out = handle->m_reordered_buffer;
    handle->m_zlib_stream->data_type = Z_BINARY;
 
    rv = inflate(handle->m_zlib_stream, Z_NO_FLUSH);
@@ -373,11 +373,11 @@ xrif_error_t xrif_decompress_zlib( xrif_t handle )
       return XRIF_ERROR_LIBERR + rv;
    }
 
-   int size_decomp =  handle->reordered_buffer_size - handle->m_zlib_stream->avail_out;
+   int size_decomp =  handle->m_reordered_buffer_size - handle->m_zlib_stream->avail_out;
 
    if(size_decomp == 0)
    {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "decompression failed.  check reordered_buffer_size, or possible corruption.");
+      XRIF_ERROR_PRINT("xrif_decompress_zlib", "decompression failed.  check m_reordered_buffer_size, or possible corruption.");
       return (XRIF_ERROR_FAILURE);
    }
    

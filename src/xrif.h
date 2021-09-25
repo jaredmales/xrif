@@ -564,25 +564,25 @@ typedef struct
      * @{
      */
    
-   unsigned char compress_on_raw; ///< Flag (true/false) indicating whether the raw buffer is used for compression.  Default on initialization is true.
+   unsigned char m_compress_on_raw; ///< Flag (true/false) indicating whether the raw buffer is used for compression.  Default on initialization is true.
    
-   unsigned char own_raw;  ///< Flag (true/false) indicating whether the raw_buffer pointer is managed by this handle
-   char * raw_buffer;      ///< The raw buffer pointer, contains the image data, and if compress_on_raw == true the compressed data.
-   size_t raw_buffer_size; ///< The size of the raw_buffer pointer.  
-                           /**< If `compress_on_raw` is false, then this must be at least width*height*depth*frames*data_size. If
-                             * ` compress_on_raw` is true, this should be at least LZ4_compressBound(width*height*depth*frames*data_size) in size, but this is not a strict 
-                             *  requirement in practice for most streams.  If this library is used to allocate it, it will be the larger of the two possibilities.
-                             */
+   unsigned char m_own_raw;  ///< Flag (true/false) indicating whether the raw_buffer pointer is managed by this handle
+   char * m_raw_buffer;      ///< The raw buffer pointer, contains the image data, and if compress_on_raw == true the compressed data.
+   size_t m_raw_buffer_size; ///< The size of the raw_buffer pointer.  
+                             /**< If `compress_on_raw` is false, then this must be at least width*height*depth*frames*data_size. If
+                               * ` compress_on_raw` is true, this should be at least LZ4_compressBound(width*height*depth*frames*data_size) in size, but this is not a strict 
+                               *  requirement in practice for most streams.  If this library is used to allocate it, it will be the larger of the two possibilities.
+                               */
    
-   unsigned char own_reordered;   ///< Flag (true/false) indicating whether the reordered_buffer pointer is managed by this handle.
-   char * reordered_buffer;       ///< The reordered buffer pointer, contains the reordered data.
-   size_t reordered_buffer_size;  ///< The size of the reordered_buffer pointer.  
-                                  /**< It must be at least the value given by xrif_min_reordered_size(xrif_t).
-                                    */
+   unsigned char m_own_reordered;   ///< Flag (true/false) indicating whether the reordered_buffer pointer is managed by this handle.
+   char * m_reordered_buffer;       ///< The reordered buffer pointer, contains the reordered data.
+   size_t m_reordered_buffer_size;  ///< The size of the reordered_buffer pointer.  
+                                    /**< It must be at least the value given by xrif_min_reordered_size(xrif_t).
+                                      */
    
-   unsigned char own_compressed;  ///< Flag (true/false) indicating whether the compressed_buffer pointer is managed by this handle.
-   char * compressed_buffer;      ///< The compressed buffer pointer, contains the compressed data.
-   size_t compressed_buffer_size; ///< The size of the compressed_buffer pointer.  
+   unsigned char m_own_compressed;  ///< Flag (true/false) indicating whether the compressed_buffer pointer is managed by this handle.
+   char * m_compressed_buffer;      ///< The compressed buffer pointer, contains the compressed data.
+   size_t m_compressed_buffer_size; ///< The size of the compressed_buffer pointer.  
                                   /**< Depends on compression method:
                                     * - LZ4: In principle should be at least LZ4_compressBound( xrif_min_reordered_size(xrif_t) ) 
                                     *        in size, but this is not a strict requirement in practice for most streams.  It must be at least width*height*depth*frames*data_size.  
@@ -595,27 +595,27 @@ typedef struct
    /** \name Performance Measurements
      * @{ 
      */
-   unsigned char calc_performance; ///< Flag (true/false) controlling whether performance metrics are calculated.  Default is true.
+   unsigned char m_calc_performance; ///< Flag (true/false) controlling whether performance metrics are calculated.  Default is true.
    
-   double compression_ratio; ///< The compression ratio, calculated as output-size/input-size
-   double encode_time;  ///< Time in seconds taken to encode the data
-   double encode_rate; ///< Rate at which the data was encoded in bytes per second
-   double difference_time; ///< Time in seconds taken to difference the data
-   double difference_rate;  ///< Rate at which the data was differenced in bytes per second
-   double reorder_time; ///< Time in seconds taken to reorder the data
-   double reorder_rate; ///< Rate at which the data was reordered in bytes per second
-   double compress_time; ///< Time in seconds taken to compress the data
-   double compress_rate; ///< Rate at which the data was compressed in bytes per second
+   double m_compression_ratio; ///< The compression ratio, calculated as output-size/input-size
+   double m_encode_time;  ///< Time in seconds taken to encode the data
+   double m_encode_rate; ///< Rate at which the data was encoded in bytes per second
+   double m_difference_time; ///< Time in seconds taken to difference the data
+   double m_difference_rate;  ///< Rate at which the data was differenced in bytes per second
+   double m_reorder_time; ///< Time in seconds taken to reorder the data
+   double m_reorder_rate; ///< Rate at which the data was reordered in bytes per second
+   double m_compress_time; ///< Time in seconds taken to compress the data
+   double m_compress_rate; ///< Rate at which the data was compressed in bytes per second
    
-   struct timespec ts_difference_start; ///< Timespec used to mark the beginning of differencing, which is also the beginning of encoding
-   struct timespec ts_reorder_start; ///< Timespec used to mark the beginning of reordering, which is the end of differencing
-   struct timespec ts_compress_start; ///< Timespec used to mark the beginning of compression, which is the end of reordering
-   struct timespec ts_compress_done; ///< Timespec used to mark the end of compression and encoding
+   struct timespec m_ts_difference_start; ///< Timespec used to mark the beginning of differencing, which is also the beginning of encoding
+   struct timespec m_ts_reorder_start; ///< Timespec used to mark the beginning of reordering, which is the end of differencing
+   struct timespec m_ts_compress_start; ///< Timespec used to mark the beginning of compression, which is the end of reordering
+   struct timespec m_ts_compress_done; ///< Timespec used to mark the end of compression and encoding
    
-   struct timespec ts_decompress_start; ///< Timespec used to mark the beginning of decompression, which is also the beginning of decoding
-   struct timespec ts_unreorder_start; ///< Timespec used to mark the beginning of unreordering, which is the end of decompression
-   struct timespec ts_undifference_start; ///< Timespec used to mark the beginning of undifferencing, which is the end of unreordering
-   struct timespec ts_undifference_done; ///< Timespec used to mark the end of undifferencing and decoding
+   struct timespec m_ts_decompress_start; ///< Timespec used to mark the beginning of decompression, which is also the beginning of decoding
+   struct timespec m_ts_unreorder_start; ///< Timespec used to mark the beginning of unreordering, which is the end of decompression
+   struct timespec m_ts_undifference_start; ///< Timespec used to mark the beginning of undifferencing, which is the end of unreordering
+   struct timespec m_ts_undifference_done; ///< Timespec used to mark the end of undifferencing and decoding
    
    ///@}
    
@@ -897,8 +897,46 @@ xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
   */
 xrif_error_t xrif_allocate_raw( xrif_t handle /**< [in/out] the xrif object to modify */);
 
+/// Get the current value of the own_raw flag
+/** This returns the current value of the own_raw flag, which indicates if the raw_buffer is owned by the handle.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the value of the own_raw flag
+  * \returns 0 if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */ 
+unsigned char xrif_own_raw( xrif_t handle /**< [in] the xrif handle */);
 
-/// Set the rordered (working) data buffer to a pre-allocated pointer
+/// Get the raw_buffer pointer
+/** This returns the current value of the raw_buffer pointer.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the raw_buffer pointer
+  * \returns NULL if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */
+char * xrif_raw_buffer( xrif_t handle /**< [in] the xrif handle */);
+
+/// Get the allocated size of the raw_buffer
+/** This returns the current size allocated for the raw_buffer pointer.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the allocated size of the raw_buffer pointer
+  * \returns 0 if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */
+size_t xrif_raw_buffer_size( xrif_t handle /**< [in] the xrif handle */);
+
+/// Set the reordered (working) data buffer to a pre-allocated pointer
 /** Must only be called after xrif_set_size and xrif_configure have been called. 
   * 
   * If the handle's reordered_buffer is currently allocated and owned, it is first free()-ed.
@@ -938,6 +976,45 @@ xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object t
   */
 xrif_error_t xrif_allocate_reordered( xrif_t handle /**< [in/out] the xrif object to modify */);
 
+/// Get the current value of the own_reordered flag
+/** This returns the current value of the own_reordered flag, which indicates if the reordered_buffer is owned by the handle.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the value of the own_reordered flag
+  * \returns 0 if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */ 
+unsigned char xrif_own_reordered( xrif_t handle /**< [in] the xrif handle */);
+
+/// Get the reordered_buffer pointer
+/** This returns the current value of the reordered_buffer pointer.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the reordered_buffer pointer
+  * \returns NULL if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */
+char * xrif_reordered_buffer( xrif_t handle /**< [in] the xrif handle */);
+
+/// Get the allocated size of the reordered_buffer
+/** This returns the current size allocated for the reordered_buffer pointer.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the allocated size of the reordered_buffer pointer
+  * \returns 0 if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */
+size_t xrif_reordered_buffer_size( xrif_t handle /**< [in] the xrif handle */);
+
 /// Set the compressed data buffer to a pre-allocated pointer
 /** Must only be called after xrif_set_size and xrif_configure have been called. 
   * 
@@ -974,6 +1051,45 @@ xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object 
   * \ingroup xrif_alloc
   */
 xrif_error_t xrif_allocate_compressed( xrif_t handle /**< [in/out] the xrif handle */);
+
+/// Get the current value of the own_compressed flag
+/** This returns the current value of the own_compressed flag, which indicates if the compressed_buffer is owned by the handle.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the value of the own_compressed flag
+  * \returns 0 if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */ 
+unsigned char xrif_own_compressed( xrif_t handle /**< [in] the xrif handle */);
+
+/// Get the compressed_buffer pointer
+/** This returns the current value of the compressed_buffer pointer.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, NULL is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the compressed_buffer pointer
+  * \returns NULL if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */
+char * xrif_compressed_buffer( xrif_t handle /**< [in] the xrif handle */);
+
+/// Get the allocated size of the compressed_buffer
+/** This returns the current size allocated for the compressed_buffer pointer.
+  *
+  * Error handling: the only possible error is that \p handle is NULL.  In this case, 0 is returned.  
+  * If discrimination is needed you must check handle before calling this function.
+  * 
+  * \returns the allocated size of the compressed_buffer pointer
+  * \returns 0 if an error occurs (which could be a valid value)
+  * 
+  * \ingroup xrif_alloc
+  */
+size_t xrif_compressed_buffer_size( xrif_t handle /**< [in] the xrif handle */);
 
 //==========================================================
 //             Get Current Configuration

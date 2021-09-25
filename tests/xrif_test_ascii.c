@@ -124,11 +124,11 @@ START_TEST (ascii_pixel_none_lz4_xrif_h)
    rv = xrif_allocate(hand);
    ck_assert( rv == XRIF_NOERROR );
                
-   rv = fread(hand->raw_buffer, 1, sz, fp);
+   rv = fread(hand->m_raw_buffer, 1, sz, fp);
    ck_assert( rv == sz );
               
    int8_t * compbuff = (int8_t *) malloc( hand->m_width*hand->m_height*hand->m_frames*sizeof(int8_t));
-   memcpy(compbuff, hand->raw_buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(int8_t));
+   memcpy(compbuff, hand->m_raw_buffer, hand->m_width*hand->m_height*hand->m_frames*sizeof(int8_t));
             
    xrif_encode(hand);
    xrif_decode(hand);
@@ -136,7 +136,7 @@ START_TEST (ascii_pixel_none_lz4_xrif_h)
    int neq = 0;
    for( size_t i = 0 ; i < hand->m_width*hand->m_height*hand->m_frames ; ++i ) 
    {
-      if(hand->raw_buffer[i] != compbuff[i]) 
+      if(hand->m_raw_buffer[i] != compbuff[i]) 
       {
          ++neq;
       }

@@ -143,7 +143,7 @@ START_TEST (diff_first_int16_white)
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
                
-               int16_t * buffer = (int16_t *) hand->raw_buffer;
+               int16_t * buffer = (int16_t *) hand->m_raw_buffer;
                rv = fill_int16_white( buffer, hand->m_width*hand->m_height*hand->m_frames, q);
                ck_assert( rv == 0 );
                
@@ -208,7 +208,7 @@ START_TEST (diff_first_uint16_white)
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
                
-               uint16_t * buffer = (uint16_t *) hand->raw_buffer;
+               uint16_t * buffer = (uint16_t *) hand->m_raw_buffer;
                rv = fill_uint16_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
@@ -273,7 +273,7 @@ START_TEST (diff_first_int32_white)
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
                
-               int32_t * buffer = (int32_t *) hand->raw_buffer;
+               int32_t * buffer = (int32_t *) hand->m_raw_buffer;
                rv = fill_int32_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
@@ -338,7 +338,7 @@ START_TEST (diff_first_uint32_white)
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
                
-               uint32_t * buffer = (uint32_t *) hand->raw_buffer;
+               uint32_t * buffer = (uint32_t *) hand->m_raw_buffer;
                rv = fill_uint32_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
@@ -403,7 +403,7 @@ START_TEST (diff_first_int64_white)
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
                
-               int64_t * buffer = (int64_t *) hand->raw_buffer;
+               int64_t * buffer = (int64_t *) hand->m_raw_buffer;
                rv = fill_int64_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                
@@ -468,7 +468,7 @@ START_TEST (diff_first_uint64_white)
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
                
-               uint64_t * buffer = (uint64_t *) hand->raw_buffer;
+               uint64_t * buffer = (uint64_t *) hand->m_raw_buffer;
                rv = fill_uint64_white( buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                ck_assert( rv == 0 );
                

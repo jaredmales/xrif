@@ -92,7 +92,7 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   int16_t * rb = (int16_t *) handle->raw_buffer;
+   int16_t * rb = (int16_t *) handle->m_raw_buffer;
    
    for(int n=0; n < handle->m_frames-1; ++n)
    {
@@ -133,7 +133,7 @@ xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   int32_t * rb = (int32_t *) handle->raw_buffer;
+   int32_t * rb = (int32_t *) handle->m_raw_buffer;
    
    for(int n=0; n < handle->m_frames-1; ++n)
    {
@@ -174,7 +174,7 @@ xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   int64_t * rb = (int64_t *) handle->raw_buffer;
+   int64_t * rb = (int64_t *) handle->m_raw_buffer;
    
    for(int n=0; n < handle->m_frames-1; ++n)
    {
@@ -221,13 +221,13 @@ xrif_error_t xrif_difference_previous( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( handle->raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
+   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
       XRIF_ERROR_PRINT("xrif_difference_previous", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
-   if(handle->raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
+   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
       XRIF_ERROR_PRINT("xrif_difference_previous", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
@@ -260,7 +260,7 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   int16_t * rb = (int16_t *) handle->raw_buffer;
+   int16_t * rb = (int16_t *) handle->m_raw_buffer;
    
    for(int n=1; n < handle->m_frames; ++n)
    {
@@ -301,7 +301,7 @@ xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   int32_t * rb = (int32_t *) handle->raw_buffer;
+   int32_t * rb = (int32_t *) handle->m_raw_buffer;
    
    for(int n=1; n < handle->m_frames; ++n)
    {
@@ -342,7 +342,7 @@ xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   int64_t * rb = (int64_t *) handle->raw_buffer;
+   int64_t * rb = (int64_t *) handle->m_raw_buffer;
    
    for(int n=1; n < handle->m_frames; ++n)
    {
@@ -389,13 +389,13 @@ xrif_error_t xrif_undifference_previous( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( handle->raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
+   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
       XRIF_ERROR_PRINT("xrif_undifference_previous", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
-   if(handle->raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
+   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
       XRIF_ERROR_PRINT("xrif_undifference_previous", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;

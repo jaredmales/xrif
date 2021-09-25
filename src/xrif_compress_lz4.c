@@ -153,7 +153,7 @@ size_t xrif_min_compressed_size_lz4(xrif_t handle)
 //Compress using LZ4
 xrif_error_t xrif_compress_lz4( xrif_t handle )
 {
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    size_t compressed_size;
    
    if(handle == NULL)
@@ -162,15 +162,15 @@ xrif_error_t xrif_compress_lz4( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
 
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
+      m_compressed_buffer = handle->m_raw_buffer;
+      compressed_size = handle->m_raw_buffer_size;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
+      m_compressed_buffer = handle->m_compressed_buffer;
+      compressed_size = handle->m_compressed_buffer_size;
    }
    
    //LZ4 only takes ints for sizes
@@ -182,7 +182,7 @@ xrif_error_t xrif_compress_lz4( xrif_t handle )
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
 
-   handle->m_compressed_size = LZ4_compress_fast ( handle->reordered_buffer, compressed_buffer, srcSize, compressed_size, handle->m_lz4_acceleration);
+   handle->m_compressed_size = LZ4_compress_fast ( handle->m_reordered_buffer, m_compressed_buffer, srcSize, compressed_size, handle->m_lz4_acceleration);
    
    if(handle->m_compressed_size == 0 )
    {
@@ -203,18 +203,18 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
+      m_compressed_buffer = handle->m_raw_buffer;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
+      m_compressed_buffer = handle->m_compressed_buffer;
    }
    
-   int size_decomp = LZ4_decompress_safe (compressed_buffer, handle->reordered_buffer, handle->m_compressed_size, handle->reordered_buffer_size);
+   int size_decomp = LZ4_decompress_safe (m_compressed_buffer, handle->m_reordered_buffer, handle->m_compressed_size, handle->m_reordered_buffer_size);
 
    if(size_decomp < 0)
    {

@@ -282,7 +282,7 @@ size_t xrif_min_compressed_size_zstd(xrif_t handle)
 //Compress using zstd
 xrif_error_t xrif_compress_zstd( xrif_t handle )
 {
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    size_t compressed_size;
    
    if(handle == NULL)
@@ -297,15 +297,15 @@ xrif_error_t xrif_compress_zstd( xrif_t handle )
       return XRIF_ERROR_INVALIDCONFIG;
    }
 
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
+      m_compressed_buffer = handle->m_raw_buffer;
+      compressed_size = handle->m_raw_buffer_size;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
+      m_compressed_buffer = handle->m_compressed_buffer;
+      compressed_size = handle->m_compressed_buffer_size;
    }
    
    size_t srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
@@ -316,7 +316,7 @@ xrif_error_t xrif_compress_zstd( xrif_t handle )
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
 
-   size_t zrv = ZSTD_compress2(handle->m_zstd_cctx, compressed_buffer, compressed_size, handle->reordered_buffer, srcSize);
+   size_t zrv = ZSTD_compress2(handle->m_zstd_cctx, m_compressed_buffer, compressed_size, handle->m_reordered_buffer, srcSize);
    
    if(ZSTD_isError(zrv))
    {
@@ -345,18 +345,18 @@ xrif_error_t xrif_decompress_zstd( xrif_t handle )
       return XRIF_ERROR_INVALIDCONFIG;
    }
 
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
+      m_compressed_buffer = handle->m_raw_buffer;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
+      m_compressed_buffer = handle->m_compressed_buffer;
    }
    
-   size_t size_decomp = ZSTD_decompressDCtx(handle->m_zstd_dctx, handle->reordered_buffer, handle->reordered_buffer_size, compressed_buffer, handle->m_compressed_size);
+   size_t size_decomp = ZSTD_decompressDCtx(handle->m_zstd_dctx, handle->m_reordered_buffer, handle->m_reordered_buffer_size, m_compressed_buffer, handle->m_compressed_size);
 
    if( ZSTD_isError(size_decomp))
    {

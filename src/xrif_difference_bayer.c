@@ -95,7 +95,7 @@ xrif_error_t xrif_difference_bayer_sint8( xrif_t handle )
    {
       for(size_t kk=0; kk< handle->m_depth; ++kk)
       {
-         int8_t * rboff = (int8_t*) handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int8_t * rboff = (int8_t*) handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -132,7 +132,7 @@ xrif_error_t xrif_difference_bayer_sint16( xrif_t handle )
    {
       for(size_t kk=0; kk< handle->m_depth; ++kk)
       {
-         int16_t * rboff = (int16_t*) handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int16_t * rboff = (int16_t*) handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -180,7 +180,7 @@ xrif_error_t xrif_difference_bayer_sint32( xrif_t handle )
    {
       for(size_t kk=0; kk< handle->m_depth; ++kk)
       {
-         int32_t * rboff = (int32_t*) handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int32_t * rboff = (int32_t*) handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -214,7 +214,7 @@ xrif_error_t xrif_difference_bayer_sint64( xrif_t handle )
    {
       for(size_t kk=0; kk< handle->m_depth; ++kk)
       {
-         int64_t * rboff = (int64_t*) handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int64_t * rboff = (int64_t*) handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -250,13 +250,13 @@ xrif_error_t xrif_difference_bayer( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( handle->raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
+   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
       XRIF_ERROR_PRINT("xrif_difference_bayer", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
-   if(handle->raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
+   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
       XRIF_ERROR_PRINT("xrif_difference_bayer", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
@@ -303,7 +303,7 @@ xrif_error_t xrif_undifference_pixel_sint8( xrif_t handle )
    {
       for(int kk=0; kk< handle->m_depth; ++kk)
       {
-         int8_t * rboff = (int8_t*)handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int8_t * rboff = (int8_t*)handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -337,7 +337,7 @@ xrif_error_t xrif_undifference_pixel_sint16( xrif_t handle )
    {
       for(int kk=0; kk< handle->m_depth; ++kk)
       {
-         int16_t * rboff = (int16_t*)handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int16_t * rboff = (int16_t*)handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -371,7 +371,7 @@ xrif_error_t xrif_undifference_pixel_sint32( xrif_t handle )
    {
       for(int kk=0; kk< handle->m_depth; ++kk)
       {
-         int32_t * rboff = (int32_t*)handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int32_t * rboff = (int32_t*)handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -405,7 +405,7 @@ xrif_error_t xrif_undifference_pixel_sint64( xrif_t handle )
    {
       for(int kk=0; kk< handle->m_depth; ++kk)
       {
-         int64_t * rboff = (int64_t*)handle->raw_buffer + n * npix * handle->m_depth + kk*npix;
+         int64_t * rboff = (int64_t*)handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -441,13 +441,13 @@ xrif_error_t xrif_undifference_pixel( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   if( handle->raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
+   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
       XRIF_ERROR_PRINT("xrif_undifference_pixel", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
-   if(handle->raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
+   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
       XRIF_ERROR_PRINT("xrif_undifference_pixel", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;

@@ -123,7 +123,7 @@
                rv = xrif_allocate_reordered(hand);
                ck_assert( rv == XRIF_NOERROR );
       
-               XRIF_TESTLOOP_TYPE * buffer = (XRIF_TESTLOOP_TYPE *) hand->raw_buffer;
+               XRIF_TESTLOOP_TYPE * buffer = (XRIF_TESTLOOP_TYPE *) hand->m_raw_buffer;
                
                rv = XRIF_TESTLOOP_FILL_FUNC(buffer, hand->m_width*hand->m_height*hand->m_frames,q);
                

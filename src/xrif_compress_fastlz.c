@@ -152,7 +152,7 @@ size_t xrif_min_compressed_size_fastlz(xrif_t handle)
 // Compress using FastLZ
 xrif_error_t xrif_compress_fastlz( xrif_t handle )
 {
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    size_t compressed_size;
    
    if(handle == NULL)
@@ -161,15 +161,15 @@ xrif_error_t xrif_compress_fastlz( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
 
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
-      compressed_size = handle->raw_buffer_size;
+      m_compressed_buffer = handle->m_raw_buffer;
+      compressed_size = handle->m_raw_buffer_size;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
-      compressed_size = handle->compressed_buffer_size;
+      m_compressed_buffer = handle->m_compressed_buffer;
+      compressed_size = handle->m_compressed_buffer_size;
    }
    
    //FastLZ only takes ints for sizes
@@ -182,7 +182,7 @@ xrif_error_t xrif_compress_fastlz( xrif_t handle )
    }
 
 
-   handle->m_compressed_size = fastlz_compress_level(handle->m_fastlz_level, handle->reordered_buffer, srcSize, compressed_buffer);
+   handle->m_compressed_size = fastlz_compress_level(handle->m_fastlz_level, handle->m_reordered_buffer, srcSize, m_compressed_buffer);
    
    if(handle->m_compressed_size == 0 )
    {
@@ -203,22 +203,22 @@ xrif_error_t xrif_decompress_fastlz( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   char *compressed_buffer;
+   char *m_compressed_buffer;
    
-   if(handle->compress_on_raw) 
+   if(handle->m_compress_on_raw) 
    {
-      compressed_buffer = handle->raw_buffer;
+      m_compressed_buffer = handle->m_raw_buffer;
    }
    else 
    {
-      compressed_buffer = handle->compressed_buffer;
+      m_compressed_buffer = handle->m_compressed_buffer;
    }
    
-   int size_decomp = fastlz_decompress(compressed_buffer, handle->m_compressed_size, handle->reordered_buffer, handle->reordered_buffer_size);
+   int size_decomp = fastlz_decompress(m_compressed_buffer, handle->m_compressed_size, handle->m_reordered_buffer, handle->m_reordered_buffer_size);
 
    if(size_decomp == 0)
    {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "decompression failed.  check reordered_buffer_size, or possible corruption.");
+      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "decompression failed.  check m_reordered_buffer_size, or possible corruption.");
       return (XRIF_ERROR_FAILURE);
    }
    

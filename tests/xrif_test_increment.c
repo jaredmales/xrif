@@ -296,10 +296,10 @@ START_TEST (encode_first_bytepack_zlib_int16_inc)
 END_TEST;
 
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / LZ4
-  * \anchor encode_pixel_bytepack_lz4_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack / LZ4
+  * \anchor encode_pixel0_bytepack_lz4_int16_inc
   */
-START_TEST (encode_pixel_bytepack_lz4_int16_inc)
+START_TEST (encode_pixel0_bytepack_lz4_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -313,10 +313,10 @@ START_TEST (encode_pixel_bytepack_lz4_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / LZ4HC
-  * \anchor encode_pixel_bytepack_lz4hc_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack / LZ4HC
+  * \anchor encode_pixel0_bytepack_lz4hc_int16_inc
   */
-START_TEST (encode_pixel_bytepack_lz4hc_int16_inc)
+START_TEST (encode_pixel0_bytepack_lz4hc_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -330,10 +330,10 @@ START_TEST (encode_pixel_bytepack_lz4hc_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / FastLZ
-  * \anchor encode_pixel_bytepack_fastlz_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack / FastLZ
+  * \anchor encode_pixel0_bytepack_fastlz_int16_inc
   */
-START_TEST (encode_pixel_bytepack_fastlz_int16_inc)
+START_TEST (encode_pixel0_bytepack_fastlz_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -347,10 +347,10 @@ START_TEST (encode_pixel_bytepack_fastlz_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / zstd
-  * \anchor encode_pixel_bytepack_zstd_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack / zstd
+  * \anchor encode_pixel0_bytepack_zstd_int16_inc
   */
-START_TEST (encode_pixel_bytepack_zstd_int16_inc)
+START_TEST (encode_pixel0_bytepack_zstd_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -365,13 +365,99 @@ START_TEST (encode_pixel_bytepack_zstd_int16_inc)
 END_TEST;
 
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack / zlib
-  * \anchor encode_pixel_bytepack_zlib_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack / zlib
+  * \anchor encode_pixel0_bytepack_zlib_int16_inc
   */
-START_TEST (encode_pixel_bytepack_zlib_int16_inc)
+START_TEST (encode_pixel0_bytepack_zlib_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZLIB)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack / LZ4
+  * \anchor encode_pixel1_bytepack_lz4_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_lz4_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack / LZ4HC
+  * \anchor encode_pixel1_bytepack_lz4hc_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_lz4hc_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4HC)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack / FastLZ
+  * \anchor encode_pixel1_bytepack_fastlz_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_fastlz_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_FASTLZ)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack / zstd
+  * \anchor encode_pixel1_bytepack_zstd_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_zstd_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZSTD)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack / zlib
+  * \anchor encode_pixel1_bytepack_zlib_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_zlib_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZLIB)
    #define XRIF_TESTLOOP_FILL 0
@@ -552,10 +638,10 @@ START_TEST (encode_first_bytepack_renibble_zlib_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / LZ4
-  * \anchor encode_pixel_bytepack_renibble_lz4_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack-renibble / LZ4
+  * \anchor encode_pixel0_bytepack_renibble_lz4_int16_inc
   */
-START_TEST (encode_pixel_bytepack_renibble_lz4_int16_inc)
+START_TEST (encode_pixel0_bytepack_renibble_lz4_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -569,10 +655,10 @@ START_TEST (encode_pixel_bytepack_renibble_lz4_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / LZ4HC
-  * \anchor encode_pixel_bytepack_renibble_lz4hc_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack-renibble / LZ4HC
+  * \anchor encode_pixel0_bytepack_renibble_lz4hc_int16_inc
   */
-START_TEST (encode_pixel_bytepack_renibble_lz4hc_int16_inc)
+START_TEST (encode_pixel0_bytepack_renibble_lz4hc_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -586,10 +672,10 @@ START_TEST (encode_pixel_bytepack_renibble_lz4hc_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / FastLZ
-  * \anchor encode_pixel_bytepack_renibble_fastlz_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack-renibble / FastLZ
+  * \anchor encode_pixel0_bytepack_renibble_fastlz_int16_inc
   */
-START_TEST (encode_pixel_bytepack_renibble_fastlz_int16_inc)
+START_TEST (encode_pixel0_bytepack_renibble_fastlz_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -603,10 +689,10 @@ START_TEST (encode_pixel_bytepack_renibble_fastlz_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / zstd
-  * \anchor encode_pixel_bytepack_renibble_zstd_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack-renibble / zstd
+  * \anchor encode_pixel0_bytepack_renibble_zstd_int16_inc
   */
-START_TEST (encode_pixel_bytepack_renibble_zstd_int16_inc)
+START_TEST (encode_pixel0_bytepack_renibble_zstd_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -620,10 +706,10 @@ START_TEST (encode_pixel_bytepack_renibble_zstd_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bytepack-renibble / zlib
-  * \anchor encode_pixel_bytepack_renibble_zlib_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bytepack-renibble / zlib
+  * \anchor encode_pixel0_bytepack_renibble_zlib_int16_inc
   */
-START_TEST (encode_pixel_bytepack_renibble_zlib_int16_inc)
+START_TEST (encode_pixel0_bytepack_renibble_zlib_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -637,6 +723,90 @@ START_TEST (encode_pixel_bytepack_renibble_zlib_int16_inc)
 }
 END_TEST;
 
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack-renibble / LZ4
+  * \anchor encode_pixel1_bytepack_renibble_lz4_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_renibble_lz4_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack-renibble / LZ4HC
+  * \anchor encode_pixel1_bytepack_renibble_lz4hc_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_renibble_lz4hc_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4HC)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack-renibble / FastLZ
+  * \anchor encode_pixel1_bytepack_renibble_fastlz_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_renibble_fastlz_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_FASTLZ)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack-renibble / zstd
+  * \anchor encode_pixel1_bytepack_renibble_zstd_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_renibble_zstd_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZSTD)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bytepack-renibble / zlib
+  * \anchor encode_pixel1_bytepack_renibble_zlib_int16_inc
+  */
+START_TEST (encode_pixel1_bytepack_renibble_zlib_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BYTEPACK_RENIBBLE)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZLIB)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
 
 /** Verify full encode/decode for incrementing int16_t values for previous / bitpack / LZ4
   * \anchor encode_previous_bitpack_lz4_int16_inc
@@ -808,10 +978,10 @@ START_TEST (encode_first_bitpack_zlib_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / LZ4
-  * \anchor encode_pixel_bitpack_lz4_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bitpack / LZ4
+  * \anchor encode_pixel0_bitpack_lz4_int16_inc
   */
-START_TEST (encode_pixel_bitpack_lz4_int16_inc)
+START_TEST (encode_pixel0_bitpack_lz4_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -825,10 +995,10 @@ START_TEST (encode_pixel_bitpack_lz4_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / LZ4HC
-  * \anchor encode_pixel_bitpack_lz4hc_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bitpack / LZ4HC
+  * \anchor encode_pixel0_bitpack_lz4hc_int16_inc
   */
-START_TEST (encode_pixel_bitpack_lz4hc_int16_inc)
+START_TEST (encode_pixel0_bitpack_lz4hc_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -842,10 +1012,10 @@ START_TEST (encode_pixel_bitpack_lz4hc_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / FastLZ
-  * \anchor encode_pixel_bitpack_fastlz_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bitpack / FastLZ
+  * \anchor encode_pixel0_bitpack_fastlz_int16_inc
   */
-START_TEST (encode_pixel_bitpack_fastlz_int16_inc)
+START_TEST (encode_pixel0_bitpack_fastlz_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -859,10 +1029,10 @@ START_TEST (encode_pixel_bitpack_fastlz_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / zstd
-  * \anchor encode_pixel_bitpack_zstd_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bitpack / zstd
+  * \anchor encode_pixel0_bitpack_zstd_int16_inc
   */
-START_TEST (encode_pixel_bitpack_zstd_int16_inc)
+START_TEST (encode_pixel0_bitpack_zstd_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
@@ -876,13 +1046,98 @@ START_TEST (encode_pixel_bitpack_zstd_int16_inc)
 }
 END_TEST;
 
-/** Verify full encode/decode for incrementing int16_t values for pixel / bitpack / zlib
-  * \anchor encode_pixel_bitpack_zlib_int16_inc
+/** Verify full encode/decode for incrementing int16_t values for pixel0 / bitpack / zlib
+  * \anchor encode_pixel0_bitpack_zlib_int16_inc
   */
-START_TEST (encode_pixel_bitpack_zlib_int16_inc)
+START_TEST (encode_pixel0_bitpack_zlib_int16_inc)
 {
    #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
    #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL0)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BITPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZLIB)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bitpack / LZ4
+  * \anchor encode_pixel1_bitpack_lz4_int16_inc
+  */
+START_TEST (encode_pixel1_bitpack_lz4_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BITPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bitpack / LZ4HC
+  * \anchor encode_pixel1_bitpack_lz4hc_int16_inc
+  */
+START_TEST (encode_pixel1_bitpack_lz4hc_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BITPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_LZ4HC)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bitpack / FastLZ
+  * \anchor encode_pixel1_bitpack_fastlz_int16_inc
+  */
+START_TEST (encode_pixel1_bitpack_fastlz_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BITPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_FASTLZ)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bitpack / zstd
+  * \anchor encode_pixel1_bitpack_zstd_int16_inc
+  */
+START_TEST (encode_pixel1_bitpack_zstd_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
+   #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BITPACK)
+   #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZSTD)
+   #define XRIF_TESTLOOP_FILL 0
+   #define XRIF_TESTLOOP_ENCODE xrif_encode
+   #define XRIF_TESTLOOP_DECODE xrif_decode
+   
+   #include "testloop.c"
+}
+END_TEST;
+
+/** Verify full encode/decode for incrementing int16_t values for pixel1 / bitpack / zlib
+  * \anchor encode_pixel1_bitpack_zlib_int16_inc
+  */
+START_TEST (encode_pixel1_bitpack_zlib_int16_inc)
+{
+   #define XRIF_TESTLOOP_TYPECODE (XRIF_TYPECODE_INT16)
+   #define XRIF_TESTLOOP_DIFFERENCE (XRIF_DIFFERENCE_PIXEL1)
    #define XRIF_TESTLOOP_REORDER (XRIF_REORDER_BITPACK)
    #define XRIF_TESTLOOP_COMPRESS (XRIF_COMPRESS_ZLIB)
    #define XRIF_TESTLOOP_FILL 0
@@ -920,12 +1175,19 @@ Suite * increment_suite(void)
       tcase_add_test(tc_core, encode_first_bytepack_zstd_int16_inc);
       tcase_add_test(tc_core, encode_first_bytepack_zlib_int16_inc);
 
-      // pixel / bytepack
-      tcase_add_test(tc_core, encode_pixel_bytepack_lz4_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_lz4hc_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_fastlz_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_zstd_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_zlib_int16_inc);
+      // pixel0 / bytepack
+      tcase_add_test(tc_core, encode_pixel0_bytepack_lz4_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_lz4hc_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_fastlz_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_zstd_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_zlib_int16_inc);
+
+      // pixel1 / bytepack
+      tcase_add_test(tc_core, encode_pixel1_bytepack_lz4_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_lz4hc_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_fastlz_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_zstd_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_zlib_int16_inc);
 
       // previous / bytepack-renibble
       tcase_add_test(tc_core, encode_previous_bytepack_renibble_lz4_int16_inc);
@@ -941,12 +1203,19 @@ Suite * increment_suite(void)
       tcase_add_test(tc_core, encode_first_bytepack_renibble_zstd_int16_inc);
       tcase_add_test(tc_core, encode_first_bytepack_renibble_zlib_int16_inc);
 
-      // pixel / bytepack-renibble
-      tcase_add_test(tc_core, encode_pixel_bytepack_renibble_lz4_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_renibble_lz4hc_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_renibble_fastlz_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_renibble_zstd_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bytepack_renibble_zlib_int16_inc);
+      // pixel0 / bytepack-renibble
+      tcase_add_test(tc_core, encode_pixel0_bytepack_renibble_lz4_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_renibble_lz4hc_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_renibble_fastlz_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_renibble_zstd_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bytepack_renibble_zlib_int16_inc);
+
+      // pixel1 / bytepack-renibble
+      tcase_add_test(tc_core, encode_pixel1_bytepack_renibble_lz4_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_renibble_lz4hc_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_renibble_fastlz_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_renibble_zstd_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bytepack_renibble_zlib_int16_inc);
 
       // previous / bitpack
       tcase_add_test(tc_core, encode_previous_bitpack_lz4_int16_inc);
@@ -962,12 +1231,19 @@ Suite * increment_suite(void)
       tcase_add_test(tc_core, encode_first_bitpack_zstd_int16_inc);
       tcase_add_test(tc_core, encode_first_bitpack_zlib_int16_inc);
 
-      // pixel / bitpack
-      tcase_add_test(tc_core, encode_pixel_bitpack_lz4_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bitpack_lz4hc_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bitpack_fastlz_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bitpack_zstd_int16_inc);
-      tcase_add_test(tc_core, encode_pixel_bitpack_zlib_int16_inc);
+      // pixel0 / bitpack
+      tcase_add_test(tc_core, encode_pixel0_bitpack_lz4_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bitpack_lz4hc_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bitpack_fastlz_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bitpack_zstd_int16_inc);
+      tcase_add_test(tc_core, encode_pixel0_bitpack_zlib_int16_inc);
+
+      // pixel1 / bitpack
+      tcase_add_test(tc_core, encode_pixel1_bitpack_lz4_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bitpack_lz4hc_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bitpack_fastlz_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bitpack_zstd_int16_inc);
+      tcase_add_test(tc_core, encode_pixel1_bitpack_zlib_int16_inc);
 
       suite_add_tcase(s, tc_core);
 

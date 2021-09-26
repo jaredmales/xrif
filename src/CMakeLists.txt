@@ -4,7 +4,8 @@
 set(libsrc xrif.c 
            xrif_difference_previous.c 
            xrif_difference_first.c 
-           xrif_difference_pixel.c 
+           xrif_difference_pixel0.c
+           xrif_difference_pixel1.c 
            xrif_difference_bayer.c 
            xrif_compress_lz4.c 
            xrif_compress_lz4hc.c 

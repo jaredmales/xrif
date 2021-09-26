@@ -159,6 +159,11 @@ typedef uint32_t xrif_dimension_t;
   */
 #define XRIF_DIFFERENCE_PIXEL0 (300)
 
+/// Pixel differencing, where the previous pixel is used as the reference
+/** \ingroup diff_methods
+  */
+#define XRIF_DIFFERENCE_PIXEL1 (310)
+
 /// Default differencing, identical to PREVIOUS
 /** \ingroup diff_methods
   */
@@ -1396,7 +1401,7 @@ xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif hand
   */
 xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Difference the images using the previous pixel as a reference.
+/// Difference the images using the previous pixel as a reference, ignoring rows.
 /** This function calls the type specific difference function for the type specified by
   * handle->type_code.
   * 
@@ -1415,7 +1420,28 @@ xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle 
   * 
   * \ingroup xrif_diff_pixel
   */
-xrif_error_t xrif_difference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_difference_pixel0( xrif_t handle /**< [in/out] the xrif handle */ );
+
+/// Difference the images using the previous pixel as a reference, respecting rows.
+/** This function calls the type specific difference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOT_SETUP if the handle is not configured
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if raw_buffer_size is not big enough given the configuration
+  * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify pixel differencing for int16_t \ref diff_pixel_int16_white "[test doc]"
+  * \test Verify pixel differencing for uint16_t \ref diff_pixel_uint16_white "[test doc]"
+  * \test Verify pixel differencing for int32_t \ref diff_pixel_int32_white "[test doc]"
+  * \test Verify pixel differencing for uint32_t \ref diff_pixel_uint32_white "[test doc]"
+  * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
+  * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_pixel
+  */
+xrif_error_t xrif_difference_pixel1( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Difference the images using the previous pixel as a reference.
 /** This function calls the type specific difference function for the type specified by
@@ -1492,8 +1518,28 @@ xrif_error_t xrif_undifference_first( xrif_t handle /**< [in/out] the xrif handl
   * 
   * \ingroup xrif_diff_pixel
   */
-xrif_error_t xrif_undifference_pixel( xrif_t handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_undifference_pixel0( xrif_t handle /**< [in/out] the xrif handle */ );
 
+/// Undifference the images using the previous pixel as a reference.
+/** This function calls the type specific undifference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOT_SETUP if the handle is not configured
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if raw_buffer_size is not big enough given the configuration
+  * \returns \ref XRIF_ERROR_NOTIMPL if undifferencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify pixel differencing for int16_t \ref diff_pixel_int16_white "[test doc]"
+  * \test Verify pixel differencing for uint16_t \ref diff_pixel_uint16_white "[test doc]"
+  * \test Verify pixel differencing for int32_t \ref diff_pixel_int32_white "[test doc]"
+  * \test Verify pixel differencing for uint32_t \ref diff_pixel_uint32_white "[test doc]"
+  * \test Verify pixel differencing for int64_t \ref diff_pixel_int64_white "[test doc]"
+  * \test Verify pixel differencing for uint64_t \ref diff_pixel_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_pixel
+  */
+xrif_error_t xrif_undifference_pixel1( xrif_t handle /**< [in/out] the xrif handle */ );
 
 //==========================================================
 //             Reordering

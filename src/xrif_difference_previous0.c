@@ -1,5 +1,5 @@
-/** \file xrif_difference_previous.c
-  * \brief Implementation of xrif previous frame differencing
+/** \file xrif_difference_previous0.c
+  * \brief Implementation of xrif previous frame differencing (deprecated version)
   *
   * \author Jared R. Males (jaredmales@gmail.com)
   *
@@ -88,7 +88,7 @@ matter of this Agreement.
 
 
 
-xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
+xrif_error_t xrif_difference_previous0_sint16( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
@@ -125,50 +125,12 @@ xrif_error_t xrif_difference_previous_sint16( xrif_t handle )
          #endif
       }
    } 
-
-   //And now do one round of pixelL differencing on first frame
-   for(int kk=0; kk< handle->m_depth; ++kk)
-   {
-      int16_t * imoff = ((int16_t*) handle->m_raw_buffer) + kk*handle->m_width*handle->m_height;
-      
-      #ifndef XRIF_NO_OMP
-      #pragma omp parallel if (handle->m_omp_parallel > 0) 
-      {
-      #endif
    
-      #ifndef XRIF_NO_OMP
-      #pragma omp for
-      #endif
-
-      //First difference across each column
-      for(size_t cc = 0; cc < handle->m_height; ++cc)
-      {
-         int16_t * rowoff = imoff + cc*handle->m_width;
-           
-         for(size_t nn = 0; nn < handle->m_width-1; ++nn)
-         {
-            rowoff[handle->m_width - nn - 1] -= rowoff[handle->m_width - nn - 2];
-         }   
-      }
-
-      #ifndef XRIF_NO_OMP
-      }
-      #endif
-
-      //Now do first row
-      for(size_t nn=0; nn < handle->m_height-1; ++nn)
-      {
-         size_t idx0 = (handle->m_height - nn - 1)*handle->m_width;
-         size_t idx1 = (handle->m_height - nn - 2)*handle->m_width;
-         imoff[idx0] -= imoff[idx1];
-      }
-   }
-
    return XRIF_NOERROR;
    
-} //xrif_difference_previous_sint16
+} //xrif_difference_previous0_sint16
 
-xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
+xrif_error_t xrif_difference_previous0_sint32( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
@@ -206,49 +168,10 @@ xrif_error_t xrif_difference_previous_sint32( xrif_t handle )
       }
    } 
    
-      //And now do one round of pixelL differencing on first frame
-   for(int kk=0; kk< handle->m_depth; ++kk)
-   {
-      int32_t * imoff = ((int32_t*) handle->m_raw_buffer) + kk*handle->m_width*handle->m_height;
-      
-      #ifndef XRIF_NO_OMP
-      #pragma omp parallel if (handle->m_omp_parallel > 0) 
-      {
-      #endif
-   
-      #ifndef XRIF_NO_OMP
-      #pragma omp for
-      #endif
-
-      //First difference across each column
-      for(size_t cc = 0; cc < handle->m_height; ++cc)
-      {
-         int32_t * rowoff = imoff + cc*handle->m_width;
-           
-         for(size_t nn = 0; nn < handle->m_width-1; ++nn)
-         {
-            rowoff[handle->m_width - nn - 1] -= rowoff[handle->m_width - nn - 2];
-         }   
-      }
-
-      #ifndef XRIF_NO_OMP
-      }
-      #endif
-
-      //Now do first row
-      for(size_t nn=0; nn < handle->m_height-1; ++nn)
-      {
-         size_t idx0 = (handle->m_height - nn - 1)*handle->m_width;
-         size_t idx1 = (handle->m_height - nn - 2)*handle->m_width;
-         imoff[idx0] -= imoff[idx1];
-      }
-   }
-
    return XRIF_NOERROR;
+} //xrif_difference_previous0_sint32
 
-} //xrif_difference_previous_sint32
-
-xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
+xrif_error_t xrif_difference_previous0_sint64( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
@@ -286,138 +209,58 @@ xrif_error_t xrif_difference_previous_sint64( xrif_t handle )
       }
    } 
    
-      //And now do one round of pixelL differencing on first frame
-   for(int kk=0; kk< handle->m_depth; ++kk)
-   {
-      int64_t * imoff = ((int64_t*) handle->m_raw_buffer) + kk*handle->m_width*handle->m_height;
-      
-      #ifndef XRIF_NO_OMP
-      #pragma omp parallel if (handle->m_omp_parallel > 0) 
-      {
-      #endif
-   
-      #ifndef XRIF_NO_OMP
-      #pragma omp for
-      #endif
-
-      //First difference across each column
-      for(size_t cc = 0; cc < handle->m_height; ++cc)
-      {
-         int64_t * rowoff = imoff + cc*handle->m_width;
-           
-         for(size_t nn = 0; nn < handle->m_width-1; ++nn)
-         {
-            rowoff[handle->m_width - nn - 1] -= rowoff[handle->m_width - nn - 2];
-         }   
-      }
-
-      #ifndef XRIF_NO_OMP
-      }
-      #endif
-
-      //Now do first row
-      for(size_t nn=0; nn < handle->m_height-1; ++nn)
-      {
-         size_t idx0 = (handle->m_height - nn - 1)*handle->m_width;
-         size_t idx1 = (handle->m_height - nn - 2)*handle->m_width;
-         imoff[idx0] -= imoff[idx1];
-      }
-   }
-
    return XRIF_NOERROR;
-
-} //xrif_difference_previous_sint64
+} //xrif_difference_previous0_sint64
 
 
 //Dispatch differencing w.r.t. previous according to type
-xrif_error_t xrif_difference_previous( xrif_t handle )
+xrif_error_t xrif_difference_previous0( xrif_t handle )
 {
    if( handle == NULL) 
    {
-      XRIF_ERROR_PRINT("xrif_difference_previous", "can not use a null pointer");
+      XRIF_ERROR_PRINT("xrif_difference_previous0", "can not use a null pointer");
       return XRIF_ERROR_NULLPTR;
    }
    
    if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
-      XRIF_ERROR_PRINT("xrif_difference_previous", "handle not set up");
+      XRIF_ERROR_PRINT("xrif_difference_previous0", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
    if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
-      XRIF_ERROR_PRINT("xrif_difference_previous", "raw buffer size not sufficient");
+      XRIF_ERROR_PRINT("xrif_difference_previous0", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
-      return xrif_difference_previous_sint16(handle);
+      return xrif_difference_previous0_sint16(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
    {
-      return xrif_difference_previous_sint32(handle);
+      return xrif_difference_previous0_sint32(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
    {
-      return xrif_difference_previous_sint64(handle);
+      return xrif_difference_previous0_sint64(handle);
    }
    else
    {
-      XRIF_ERROR_PRINT("xrif_difference_previous", "previous differencing not implemented for type");
+      XRIF_ERROR_PRINT("xrif_difference_previous0", "previous differencing not implemented for type");
       return XRIF_ERROR_NOTIMPL;
    }
-
-} //xrif_difference_previous
+} //xrif_difference_previous0
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // undifferencing
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
+xrif_error_t xrif_undifference_previous0_sint16( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
-
-   //Undifference the first frame, which is pixelL
-   for(size_t kk=0; kk< handle->m_depth; ++kk)
-   {
-      //This offsets to the first pixel in the image.
-      int16_t * imoff = ((int16_t*) handle->m_raw_buffer) + kk*npix;
-
-      //First do first row
-      for(size_t nn=1; nn < handle->m_height; ++nn)
-      {
-         size_t idx0 = (nn-1)*handle->m_width;
-         size_t idx1 = (nn)*handle->m_width;
-         imoff[idx1] += imoff[idx0];
-      }
-
-      #ifndef XRIF_NO_OMP
-      #pragma omp parallel if (handle->m_omp_parallel > 0) 
-      {
-      #endif
    
-      #ifndef XRIF_NO_OMP
-      #pragma omp for
-      #endif
-
-      //Now undifference across each column
-      for(size_t cc = 0; cc < handle->m_height; ++cc)
-      {
-         int16_t * rowoff = imoff + cc*handle->m_width;
-            
-         for(size_t nn = 1; nn < handle->m_width; ++nn)
-         {
-            rowoff[nn] += rowoff[nn - 1];
-         }   
-      }
-
-      #ifndef XRIF_NO_OMP
-      }
-      #endif
-   }
-   
-   //Now do the remaining frames
    int16_t * rb = (int16_t *) handle->m_raw_buffer;
    
    for(int n=1; n < handle->m_frames; ++n)
@@ -453,52 +296,12 @@ xrif_error_t xrif_undifference_previous_sint16( xrif_t handle )
    }
    
    return XRIF_NOERROR;
-}//xrif_undifference_previous_sint16
+}//xrif_undifference_previous0_sint16
 
-xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
+xrif_error_t xrif_undifference_previous0_sint32( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
    
-   //Undifference the first frame, which is pixelL
-   for(size_t kk=0; kk< handle->m_depth; ++kk)
-   {
-      //This offsets to the first pixel in the image.
-      int32_t * imoff = ((int32_t*) handle->m_raw_buffer) + kk*npix;
-
-      //First do first row
-      for(size_t nn=1; nn < handle->m_height; ++nn)
-      {
-         size_t idx0 = (nn-1)*handle->m_width;
-         size_t idx1 = (nn)*handle->m_width;
-         imoff[idx1] += imoff[idx0];
-      }
-
-      #ifndef XRIF_NO_OMP
-      #pragma omp parallel if (handle->m_omp_parallel > 0) 
-      {
-      #endif
-   
-      #ifndef XRIF_NO_OMP
-      #pragma omp for
-      #endif
-
-      //Now undifference across each column
-      for(size_t cc = 0; cc < handle->m_height; ++cc)
-      {
-         int32_t * rowoff = imoff + cc*handle->m_width;
-            
-         for(size_t nn = 1; nn < handle->m_width; ++nn)
-         {
-            rowoff[nn] += rowoff[nn - 1];
-         }   
-      }
-
-      #ifndef XRIF_NO_OMP
-      }
-      #endif
-   }
-   
-   //Now do the remaining frames
    int32_t * rb = (int32_t *) handle->m_raw_buffer;
    
    for(int n=1; n < handle->m_frames; ++n)
@@ -534,52 +337,12 @@ xrif_error_t xrif_undifference_previous_sint32( xrif_t handle )
    }
    
    return XRIF_NOERROR;
-} //xrif_undifference_previous_sint32
+} //xrif_undifference_previous0_sint32
 
-xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
+xrif_error_t xrif_undifference_previous0_sint64( xrif_t handle )
 {
    size_t npix = handle->m_width*handle->m_height;
-
-   //Undifference the first frame, which is pixelL
-   for(size_t kk=0; kk< handle->m_depth; ++kk)
-   {
-      //This offsets to the first pixel in the image.
-      int64_t * imoff = ((int64_t*) handle->m_raw_buffer) + kk*npix;
-
-      //First do first row
-      for(size_t nn=1; nn < handle->m_height; ++nn)
-      {
-         size_t idx0 = (nn-1)*handle->m_width;
-         size_t idx1 = (nn)*handle->m_width;
-         imoff[idx1] += imoff[idx0];
-      }
-
-      #ifndef XRIF_NO_OMP
-      #pragma omp parallel if (handle->m_omp_parallel > 0) 
-      {
-      #endif
    
-      #ifndef XRIF_NO_OMP
-      #pragma omp for
-      #endif
-
-      //Now undifference across each column
-      for(size_t cc = 0; cc < handle->m_height; ++cc)
-      {
-         int64_t * rowoff = imoff + cc*handle->m_width;
-            
-         for(size_t nn = 1; nn < handle->m_width; ++nn)
-         {
-            rowoff[nn] += rowoff[nn - 1];
-         }   
-      }
-
-      #ifndef XRIF_NO_OMP
-      }
-      #endif
-   }
-   
-   //Now do the remaining frames
    int64_t * rb = (int64_t *) handle->m_raw_buffer;
    
    for(int n=1; n < handle->m_frames; ++n)
@@ -615,45 +378,45 @@ xrif_error_t xrif_undifference_previous_sint64( xrif_t handle )
    }
    
    return XRIF_NOERROR;
-}//xrif_undifference_previous_sint64
+}//xrif_undifference_previous0_sint64
 
 
 //Dispatch undifferencing w.r.t. previous according to type
-xrif_error_t xrif_undifference_previous( xrif_t handle )
+xrif_error_t xrif_undifference_previous0( xrif_t handle )
 {
    if( handle == NULL) 
    {
-      XRIF_ERROR_PRINT("xrif_undifference_previous", "can not use a null pointer");
+      XRIF_ERROR_PRINT("xrif_undifference_previous0", "can not use a null pointer");
       return XRIF_ERROR_NULLPTR;
    }
    
    if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
-      XRIF_ERROR_PRINT("xrif_undifference_previous", "handle not set up");
+      XRIF_ERROR_PRINT("xrif_undifference_previous0", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
    if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
-      XRIF_ERROR_PRINT("xrif_undifference_previous", "raw buffer size not sufficient");
+      XRIF_ERROR_PRINT("xrif_undifference_previous0", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
-      return xrif_undifference_previous_sint16(handle);
+      return xrif_undifference_previous0_sint16(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
    {
-      return xrif_undifference_previous_sint32(handle);
+      return xrif_undifference_previous0_sint32(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
    {
-      return xrif_undifference_previous_sint64(handle);
+      return xrif_undifference_previous0_sint64(handle);
    }
    else
    {
-      XRIF_ERROR_PRINT("xrif_difference_previous", "previous undifferencing not implemented for type");
+      XRIF_ERROR_PRINT("xrif_difference_previous0", "previous undifferencing not implemented for type");
       return XRIF_ERROR_NULLPTR;
    }
-} //xrif_undifference_previous
+} //xrif_undifference_previous0

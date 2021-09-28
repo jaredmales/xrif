@@ -1,4 +1,4 @@
-/** \file xrif_difference_pixel1.c
+/** \file xrif_difference_pixelL.c
   * \brief Implementation of xrif pixel differencing
   *
   * \author Jared R. Males (jaredmales@gmail.com)
@@ -86,7 +86,7 @@ matter of this Agreement.
 
 #include "xrif.h"
 
-xrif_error_t xrif_difference_pixel1_sint8( xrif_t handle )
+xrif_error_t xrif_difference_pixelL_sint8( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -132,9 +132,9 @@ xrif_error_t xrif_difference_pixel1_sint8( xrif_t handle )
 
    return XRIF_NOERROR;
 
-} //xrif_difference_pixel1_sint8
+} //xrif_difference_pixelL_sint8
 
-xrif_error_t xrif_difference_pixel1_sint16( xrif_t handle )
+xrif_error_t xrif_difference_pixelL_sint16( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -180,9 +180,9 @@ xrif_error_t xrif_difference_pixel1_sint16( xrif_t handle )
    
    return XRIF_NOERROR;
    
-} //xrif_difference_pixel1_sint16
+} //xrif_difference_pixelL_sint16
 
-xrif_error_t xrif_difference_pixel1_sint32( xrif_t handle )
+xrif_error_t xrif_difference_pixelL_sint32( xrif_t handle )
 {
 for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -228,9 +228,9 @@ for(size_t n=0; n < handle->m_frames; ++n)
    
    return XRIF_NOERROR;
 
-} //xrif_difference_pixel1_sint32
+} //xrif_difference_pixelL_sint32
 
-xrif_error_t xrif_difference_pixel1_sint64( xrif_t handle )
+xrif_error_t xrif_difference_pixelL_sint64( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -276,59 +276,59 @@ xrif_error_t xrif_difference_pixel1_sint64( xrif_t handle )
    
    return XRIF_NOERROR;
    
-} //xrif_difference_pixel1_sint64
+} //xrif_difference_pixelL_sint64
 
 
 //Dispatch differencing w.r.t. previous according to type
-xrif_error_t xrif_difference_pixel1( xrif_t handle )
+xrif_error_t xrif_difference_pixelL( xrif_t handle )
 {
    if( handle == NULL) 
    {
-      XRIF_ERROR_PRINT("xrif_difference_pixel1", "can not use a null pointer");
+      XRIF_ERROR_PRINT("xrif_difference_pixelL", "can not use a null pointer");
       return XRIF_ERROR_NULLPTR;
    }
    
    if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
-      XRIF_ERROR_PRINT("xrif_difference_pixel1", "handle not set up");
+      XRIF_ERROR_PRINT("xrif_difference_pixelL", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
    if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
-      XRIF_ERROR_PRINT("xrif_difference_pixel1", "raw buffer size not sufficient");
+      XRIF_ERROR_PRINT("xrif_difference_pixelL", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT8 || handle->m_type_code == XRIF_TYPECODE_UINT8)
    {
-      return xrif_difference_pixel1_sint8(handle);
+      return xrif_difference_pixelL_sint8(handle);
    }
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
-      return xrif_difference_pixel1_sint16(handle);
+      return xrif_difference_pixelL_sint16(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
    {
-      return xrif_difference_pixel1_sint32(handle);
+      return xrif_difference_pixelL_sint32(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
    {
-      return xrif_difference_pixel1_sint64(handle);
+      return xrif_difference_pixelL_sint64(handle);
    }
    else
    {
-      XRIF_ERROR_PRINT("xrif_difference_pixel1", "pixel1 differencing not implemented for type");
+      XRIF_ERROR_PRINT("xrif_difference_pixelL", "pixelL differencing not implemented for type");
       return XRIF_ERROR_NOTIMPL;
    }
-} //xrif_difference_pixel1
+} //xrif_difference_pixelL
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // undifferencing
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-xrif_error_t xrif_undifference_pixel1_sint8( xrif_t handle )
+xrif_error_t xrif_undifference_pixelL_sint8( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -375,9 +375,9 @@ xrif_error_t xrif_undifference_pixel1_sint8( xrif_t handle )
    
    return XRIF_NOERROR;
 
-}//xrif_undifference_pixel1_sint8
+}//xrif_undifference_pixelL_sint8
 
-xrif_error_t xrif_undifference_pixel1_sint16( xrif_t handle )
+xrif_error_t xrif_undifference_pixelL_sint16( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -424,9 +424,9 @@ xrif_error_t xrif_undifference_pixel1_sint16( xrif_t handle )
    
    return XRIF_NOERROR;
    
-}//xrif_undifference_pixel1_sint16
+}//xrif_undifference_pixelL_sint16
 
-xrif_error_t xrif_undifference_pixel1_sint32( xrif_t handle )
+xrif_error_t xrif_undifference_pixelL_sint32( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -474,9 +474,9 @@ xrif_error_t xrif_undifference_pixel1_sint32( xrif_t handle )
    return XRIF_NOERROR;
 
    
-} //xrif_undifference_pixel1_sint32
+} //xrif_undifference_pixelL_sint32
 
-xrif_error_t xrif_undifference_pixel1_sint64( xrif_t handle )
+xrif_error_t xrif_undifference_pixelL_sint64( xrif_t handle )
 {
    for(size_t n=0; n < handle->m_frames; ++n)
    {
@@ -524,50 +524,50 @@ xrif_error_t xrif_undifference_pixel1_sint64( xrif_t handle )
    return XRIF_NOERROR;
 
    
-}//xrif_undifference_pixel1_sint64
+}//xrif_undifference_pixelL_sint64
 
 
 //Dispatch undifferencing w.r.t. previous according to type
-xrif_error_t xrif_undifference_pixel1( xrif_t handle )
+xrif_error_t xrif_undifference_pixelL( xrif_t handle )
 {
    if( handle == NULL) 
    {
-      XRIF_ERROR_PRINT("xrif_undifference_pixel1", "can not use a null pointer");
+      XRIF_ERROR_PRINT("xrif_undifference_pixelL", "can not use a null pointer");
       return XRIF_ERROR_NULLPTR;
    }
    
    if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
    {
-      XRIF_ERROR_PRINT("xrif_undifference_pixel1", "handle not set up");
+      XRIF_ERROR_PRINT("xrif_undifference_pixelL", "handle not set up");
       return XRIF_ERROR_NOT_SETUP;
    }
       
    if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
    {
-      XRIF_ERROR_PRINT("xrif_undifference_pixel1", "raw buffer size not sufficient");
+      XRIF_ERROR_PRINT("xrif_undifference_pixelL", "raw buffer size not sufficient");
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT8 || handle->m_type_code == XRIF_TYPECODE_UINT8)
    {
-      return xrif_undifference_pixel1_sint8(handle);
+      return xrif_undifference_pixelL_sint8(handle);
    }
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
-      return xrif_undifference_pixel1_sint16(handle);
+      return xrif_undifference_pixelL_sint16(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
    {
-      return xrif_undifference_pixel1_sint32(handle);
+      return xrif_undifference_pixelL_sint32(handle);
    }
    else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
    {
-      return xrif_undifference_pixel1_sint64(handle);
+      return xrif_undifference_pixelL_sint64(handle);
    }
    else
    {
-      XRIF_ERROR_PRINT("xrif_difference_pixel1", "pixel1 undifferencing not implemented for type");
+      XRIF_ERROR_PRINT("xrif_difference_pixelL", "pixelL undifferencing not implemented for type");
       return XRIF_ERROR_NULLPTR;
    }
    
-} //xrif_undifference_pixel1
+} //xrif_undifference_pixelL

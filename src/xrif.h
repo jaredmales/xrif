@@ -144,30 +144,37 @@ typedef uint32_t xrif_dimension_t;
   */
 #define XRIF_DIFFERENCE_NONE (-1)
 
-/// Previous differencing, where the previous frame is used as the reference
+/// Previous differencing, where the previous frame is used as the reference but not differenced. [deprecated]
 /** \ingroup diff_methods
   */
-#define XRIF_DIFFERENCE_PREVIOUS (100)
+#define XRIF_DIFFERENCE_PREVIOUS0 (100)
+
+/// Previous differencing, where the previous frame is used as the reference, and is itself left-pixel-differenced.
+/** \ingroup diff_methods
+  */
+#define XRIF_DIFFERENCE_PREVIOUS (101)
 
 /// First differencing, where the first frame is used as a the reference
 /** \ingroup diff_methods
   */
 #define XRIF_DIFFERENCE_FIRST (200)
 
-/// Pixel differencing, where the previous pixel is used as the reference
-/** \ingroup diff_methods
+/// Pixel differencing, where the previous pixel is used as the reference, ignoring image structure.
+/** This method treats the image as a vector.
+  *  \ingroup diff_methods
   */
 #define XRIF_DIFFERENCE_PIXEL0 (300)
 
-/// Pixel differencing, where the previous pixel is used as the reference
-/** \ingroup diff_methods
+/// Pixel differencing, where the left pixel is used as the reference.
+/** This method uses the image structure, differencing each column to the first row, then differencing along the first row. 
+  * \ingroup diff_methods
   */
-#define XRIF_DIFFERENCE_PIXEL1 (310)
+#define XRIF_DIFFERENCE_PIXELL (310)
 
 /// Default differencing, identical to PREVIOUS
 /** \ingroup diff_methods
   */
-#define XRIF_DIFFERENCE_DEFAULT (100)
+#define XRIF_DIFFERENCE_DEFAULT (101)
 
 
 
@@ -1359,7 +1366,28 @@ xrif_error_t xrif_difference( xrif_t handle /**< [in/out] the xrif handle */ );
   */
 xrif_error_t xrif_undifference( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Difference the images using the previous image as a reference.
+/// Difference the images using the previous image as a reference, but not differencing the first image.
+/** This function calls the type specific difference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOT_SETUP if the handle is not configured
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if raw_buffer_size is not big enough given the configuration
+  * \returns \ref XRIF_ERROR_NOTIMPL if differencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify previous differencing for int16_t \ref diff_previous_int16_white "[test doc]"
+  * \test Verify previous differencing for uint16_t \ref diff_previous_uint16_white "[test doc]"
+  * \test Verify previous differencing for int32_t \ref diff_previous_int32_white "[test doc]"
+  * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
+  * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
+  * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_previous
+  */
+xrif_error_t xrif_difference_previous0( xrif_t handle /**< [in/out] the xrif handle */ );
+
+/// Difference the images using the previous image as a reference, but not differencing the first image.
 /** This function calls the type specific difference function for the type specified by
   * handle->type_code.
   * 
@@ -1401,8 +1429,9 @@ xrif_error_t xrif_difference_previous( xrif_t handle /**< [in/out] the xrif hand
   */
 xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Difference the images using the previous pixel as a reference, ignoring rows.
-/** This function calls the type specific difference function for the type specified by
+/// Difference the images using the previous pixel as a reference, ignoring columns.
+/**  
+  * This function calls the type specific difference function for the type specified by
   * handle->type_code.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
@@ -1422,8 +1451,10 @@ xrif_error_t xrif_difference_first( xrif_t handle /**< [in/out] the xrif handle 
   */
 xrif_error_t xrif_difference_pixel0( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Difference the images using the previous pixel as a reference, respecting rows.
-/** This function calls the type specific difference function for the type specified by
+/// Difference the images using the previous pixel as a reference, respecting columns.
+/** Each column is differenced to the first row.  The the first row is differenced to the first pixel.
+  * 
+  * This function calls the type specific difference function for the type specified by
   * handle->type_code.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
@@ -1441,7 +1472,7 @@ xrif_error_t xrif_difference_pixel0( xrif_t handle /**< [in/out] the xrif handle
   * 
   * \ingroup xrif_diff_pixel
   */
-xrif_error_t xrif_difference_pixel1( xrif_t handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_difference_pixelL( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Difference the images using the previous pixel as a reference.
 /** This function calls the type specific difference function for the type specified by
@@ -1457,8 +1488,31 @@ xrif_error_t xrif_difference_pixel1( xrif_t handle /**< [in/out] the xrif handle
   */ 
 xrif_error_t xrif_difference_bayer( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Undifference the images using the previous image as a reference.
+/// Undifference the images using the previous image as a reference, when the first image is not differenced.[deprecated]
 /** This function calls the type specific undifference function for the type specified by
+  * handle->type_code.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
+  * \returns \ref XRIF_ERROR_NOT_SETUP if the handle is not configured
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if raw_buffer_size is not big enough given the configuration
+  * \returns \ref XRIF_ERROR_NOTIMPL if undifferencing is not implemented for the type specified in xrif_handle::type_code
+  * \returns \ref XRIF_NOERROR on success
+  * 
+  * \test Verify previous differencing for int16_t \ref diff_previous_int16_white "[test doc]"
+  * \test Verify previous differencing for uint16_t \ref diff_previous_uint16_white "[test doc]"
+  * \test Verify previous differencing for int32_t \ref diff_previous_int32_white "[test doc]"
+  * \test Verify previous differencing for uint32_t \ref diff_previous_uint32_white "[test doc]"
+  * \test Verify previous differencing for int64_t \ref diff_previous_int64_white "[test doc]"
+  * \test Verify previous differencing for uint64_t \ref diff_previous_uint64_white "[test doc]"
+  * 
+  * \ingroup xrif_diff_previous
+  */
+xrif_error_t xrif_undifference_previous0( xrif_t handle /**< [in/out] the xrif handle */ );
+
+/// Undifference the images using the previous image as a reference.
+/** After all other frames are differenced w.r.t. each other, the first frame is differenced using the left-pixel.
+  *  
+  * This function calls the type specific undifference function for the type specified by
   * handle->type_code.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if the handle is NULL
@@ -1539,7 +1593,7 @@ xrif_error_t xrif_undifference_pixel0( xrif_t handle /**< [in/out] the xrif hand
   * 
   * \ingroup xrif_diff_pixel
   */
-xrif_error_t xrif_undifference_pixel1( xrif_t handle /**< [in/out] the xrif handle */ );
+xrif_error_t xrif_undifference_pixelL( xrif_t handle /**< [in/out] the xrif handle */ );
 
 //==========================================================
 //             Reordering

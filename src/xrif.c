@@ -390,10 +390,11 @@ xrif_error_t xrif_set_difference_method( xrif_t handle,
    
    if( difference_method == XRIF_DIFFERENCE_NONE ) handle->m_difference_method = XRIF_DIFFERENCE_NONE;
    else if( difference_method == XRIF_DIFFERENCE_DEFAULT ) handle->m_difference_method = XRIF_DIFFERENCE_DEFAULT;
+   else if( difference_method == XRIF_DIFFERENCE_PREVIOUS0 ) handle->m_difference_method = XRIF_DIFFERENCE_PREVIOUS0;
    else if( difference_method == XRIF_DIFFERENCE_PREVIOUS ) handle->m_difference_method = XRIF_DIFFERENCE_PREVIOUS;
    else if( difference_method == XRIF_DIFFERENCE_FIRST ) handle->m_difference_method = XRIF_DIFFERENCE_FIRST;
    else if( difference_method == XRIF_DIFFERENCE_PIXEL0 ) handle->m_difference_method = XRIF_DIFFERENCE_PIXEL0;
-   else if( difference_method == XRIF_DIFFERENCE_PIXEL1 ) handle->m_difference_method = XRIF_DIFFERENCE_PIXEL1;
+   else if( difference_method == XRIF_DIFFERENCE_PIXELL ) handle->m_difference_method = XRIF_DIFFERENCE_PIXELL;
    else
    {
       handle->m_difference_method = XRIF_DIFFERENCE_DEFAULT;
@@ -1332,14 +1333,16 @@ xrif_error_t xrif_difference( xrif_t handle )
    {
       case XRIF_DIFFERENCE_NONE:
          return XRIF_NOERROR;
+      case XRIF_DIFFERENCE_PREVIOUS0:
+         return xrif_difference_previous0(handle);
       case XRIF_DIFFERENCE_PREVIOUS:
          return xrif_difference_previous(handle);
       case XRIF_DIFFERENCE_FIRST:
          return xrif_difference_first(handle);
       case XRIF_DIFFERENCE_PIXEL0:
          return xrif_difference_pixel0(handle);
-      case XRIF_DIFFERENCE_PIXEL1:
-         return xrif_difference_pixel1(handle);
+      case XRIF_DIFFERENCE_PIXELL:
+         return xrif_difference_pixelL(handle);
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -1361,14 +1364,16 @@ xrif_error_t xrif_undifference( xrif_t handle )
    {
       case XRIF_DIFFERENCE_NONE:
          return XRIF_NOERROR;
+      case XRIF_DIFFERENCE_PREVIOUS0:
+         return xrif_undifference_previous0(handle);
       case XRIF_DIFFERENCE_PREVIOUS:
          return xrif_undifference_previous(handle);
       case XRIF_DIFFERENCE_FIRST:
          return xrif_undifference_first(handle);
       case XRIF_DIFFERENCE_PIXEL0:
          return xrif_undifference_pixel0(handle);
-      case XRIF_DIFFERENCE_PIXEL1:
-         return xrif_undifference_pixel1(handle);
+      case XRIF_DIFFERENCE_PIXELL:
+         return xrif_undifference_pixelL(handle);
       default:
          return XRIF_ERROR_NOTIMPL;
    }
@@ -1493,13 +1498,12 @@ xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
       return XRIF_ERROR_NULLPTR;
    }
    
-   //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXEL1)
+   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method == XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
-   else //Otherwise we don't include the first frame in the re-ordering
+   else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
       one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
@@ -1545,8 +1549,6 @@ xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
          
       m_reordered_buffer[pix] = x2; 
       m_reordered_buffer2[pix] = x1;
-      
-      
    }
    
    #ifndef XRIF_NO_OMP
@@ -1563,12 +1565,12 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    
    size_t one_frame, npix;
    
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXEL1)
+   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
-   else
+   else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
       one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
@@ -1672,13 +1674,13 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
    
    size_t one_frame, npix;
    
-   //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXEL1)
+   
+   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
-   else //Otherwise we don't include the first frame in the re-ordering
+   else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
       one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
@@ -1842,7 +1844,7 @@ xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
    }
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXEL1)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXELL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
@@ -1894,7 +1896,7 @@ xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
    size_t one_frame, npix;
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXEL1)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXELL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
@@ -1972,7 +1974,7 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
    size_t one_frame, npix;
    
    //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXEL1)
+   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXELL)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
@@ -2326,7 +2328,7 @@ const char * xrif_difference_method_string( int diff_method )
    {
       case XRIF_DIFFERENCE_NONE:
          return "none";
-      case XRIF_DIFFERENCE_PREVIOUS:
+      case XRIF_DIFFERENCE_PREVIOUS0:
          return "previous";
       case XRIF_DIFFERENCE_FIRST:
          return "first";

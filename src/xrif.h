@@ -1644,17 +1644,6 @@ xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ )
   */ 
 xrif_error_t xrif_reorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */ );
 
-/// Perform bytepack reodering for signed 16 bit ints
-/** 
-  *
-  * \returns \ref XRIF_NOERROR on success
-  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
-  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
-  * 
-  * 
-  * \ingroup xrif_reorder_bytepack
-  */ 
-xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Perform bytepack-renibble reordering
 /** \ingroup xrif_reorder_bytepack_renibble
@@ -1702,18 +1691,6 @@ xrif_error_t xrif_unreorder_none( xrif_t handle /**< [in/out] the xrif handle */
   * \ingroup xrif_reorder_bytepack
   */ 
 xrif_error_t xrif_unreorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */);
-
-/// Perform bytepack unreodering for signed 16 bit ints
-/** 
-  * \todo this does not actually perform any size checks, but should.
-  * 
-  * \returns \ref XRIF_NOERROR on success
-  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
-  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
-  * 
-  * \ingroup xrif_reorder_bytepack
-  */ 
-xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Perform bytepack-renibble unreordering
 /** \todo document

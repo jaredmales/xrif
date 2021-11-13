@@ -1453,110 +1453,8 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
 }
 
 //--------------------------------------------------------------------
-//  bytepack reordering
+//  bytepack_renibble reordering
 //--------------------------------------------------------------------
-
-//Dispatch bytepack reordering according to type
-xrif_error_t xrif_reorder_bytepack( xrif_t handle )
-{
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
-   {
-      return xrif_reorder_bytepack_sint16(handle);
-   }
-   else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "bytepack reordering not implemented for 32 bit ints");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "bytepack reordering not implemented for 64 bit ints");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   else
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack", "bytepack reordering not implemented for type");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   
-}
-
-//Bytepack reodering for 16 bit ints
-xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
-{
-   size_t one_frame, npix;
- 
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack_sint16", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method == XRIF_DIFFERENCE_PREVIOUS0)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //For the deprecated frame-to-frame methods we don't do the first frame.
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-
-   if( handle->m_raw_buffer_size < one_frame + npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   if( handle->m_reordered_buffer_size < one_frame + npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   char * m_raw_buffer = handle->m_raw_buffer + one_frame ;
-   char * m_reordered_buffer = handle->m_reordered_buffer + one_frame;
-   char * m_reordered_buffer2 = m_reordered_buffer + npix;
-
-   ///\todo is this actually necessary, and can this can be just the extra pixels?
-   //Zero the reordered buffer.
-   //memset(handle->m_reordered_buffer, 0, handle->m_reordered_buffer_size); 
-   
-   //Set the first part of the reordered buffer to the first frame (always the reference frame)
-   memcpy(handle->m_reordered_buffer,handle->m_raw_buffer, one_frame);
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-   for(size_t pix = 0; pix < npix; ++pix)
-   {
-      //Note: a lookup table for this was found to be 2x slower than the following algorithm.
-      int_fast8_t x2 = m_raw_buffer[2*pix];
-      int_fast8_t x1 = m_raw_buffer[2*pix+1];
-
-      if(x2 < 0)
-      {
-         if(x1 == -1)  x1 = 0;
-         else if(x1 == 0) x1 = -1;
-      }
-         
-      m_reordered_buffer[pix] = x2; 
-      m_reordered_buffer2[pix] = x1;
-   }
-   
-   #ifndef XRIF_NO_OMP
-   }
-   #endif
-
-   return XRIF_NOERROR;
-}
 
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
 {
@@ -1665,6 +1563,10 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
    return XRIF_NOERROR;
 }
 
+//--------------------------------------------------------------------
+//  bitpack reordering
+//--------------------------------------------------------------------
+
 ///\todo xrif_reorder_bitpack needs a size check
 xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 {
@@ -1752,9 +1654,6 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
       {      
          m_reordered_buffer[sbyte8 +  bits2[b]*stride] +=  bit_to_position[st1 + bits2[b]];
       }
-      
-      
-      
    }
    #ifndef XRIF_NO_OMP
    }
@@ -1796,112 +1695,19 @@ xrif_error_t xrif_unreorder_none( xrif_t handle )
 }
 
 //--------------------------------------------------------------------
-//  bytepack unreodering
+//  bytepack_renibble unreodering
 //--------------------------------------------------------------------
-
-//Dispatch bytepack unreordering according to type
-xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
-{
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
-   {
-      return xrif_unreorder_bytepack_sint16(handle);
-   }
-   else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 32 bit ints");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 64 bit ints");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   else
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for type");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   
-}
-
-//Unreorder bytepack for signed 16 bit ints
-xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
-{
-   
-
-   size_t one_frame, npix;
-   
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack_sint16", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXELL)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //Otherwise we don't include the first frame in the re-ordering
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-   
-   char * m_raw_buffer = handle->m_raw_buffer + one_frame;
-   char * m_reordered_buffer = handle->m_reordered_buffer + one_frame;
-      
-   for(size_t pix=0; pix<one_frame; ++pix)
-   {
-      handle->m_raw_buffer[pix] = handle->m_reordered_buffer[pix];
-   }
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-   for(size_t pix = 0; pix < npix; ++pix)
-   {
-      int_fast8_t x2 = m_reordered_buffer[pix]; 
-      int_fast8_t x1 = m_reordered_buffer[npix+pix];
-         
-      if(x2 < 0)
-      {
-         if(x1 == -1) x1 = 0;
-         else if(x1 == 0) x1 = -1;
-      }
-         
-      m_raw_buffer[2*pix] = x2;
-      m_raw_buffer[2*pix+1] = x1;
-         
-   }
-   
-   #ifndef XRIF_NO_OMP
-   }
-   #endif
-      
-   return XRIF_NOERROR;
-}
 
 xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
 {
    size_t one_frame, npix;
    
-   //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXELL)
+   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
-   else //Otherwise we don't include the first frame in the re-ordering
+   else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
       one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
@@ -1973,13 +1779,12 @@ xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
 {
    size_t one_frame, npix;
    
-   //If it's pixel, we reorder the first frame too.
-   if(handle->m_difference_method == XRIF_DIFFERENCE_PIXEL0 || handle->m_difference_method == XRIF_DIFFERENCE_PIXELL)
+   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
       npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
    }
-   else //Otherwise we don't include the first frame in the re-ordering
+   else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
       one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
       npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes

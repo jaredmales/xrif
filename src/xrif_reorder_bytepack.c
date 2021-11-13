@@ -90,7 +90,15 @@ matter of this Agreement.
 //  bytepack reordering
 //--------------------------------------------------------------------
 
-//Bytepack reodering for 16 bit ints
+/// Perform bytepack reodering for signed 16 bit ints
+/** 
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * 
+  * \ingroup xrif_reorder_bytepack
+  */ 
 xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
 {
    size_t one_frame, npix;
@@ -161,7 +169,15 @@ xrif_error_t xrif_reorder_bytepack_sint16( xrif_t handle )
    return XRIF_NOERROR;
 }
 
-//Bytepack reodering for 32 bit ints
+/// Perform bytepack reodering for signed 32 bit ints
+/** 
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * 
+  * \ingroup xrif_reorder_bytepack
+  */
 xrif_error_t xrif_reorder_bytepack_sint32( xrif_t handle )
 {
    size_t one_frame, npix;
@@ -270,42 +286,19 @@ xrif_error_t xrif_reorder_bytepack( xrif_t handle )
 //  bytepack unreodering
 //--------------------------------------------------------------------
 
-//Dispatch bytepack unreordering according to type
-xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
-{
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
-   {
-      return xrif_unreorder_bytepack_sint16(handle);
-   }
-   else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 32 bit ints");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 64 bit ints");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   else
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for type");
-      return XRIF_ERROR_NOTIMPL;
-   }
-   
-}
 
-//Unreorder bytepack for signed 16 bit ints
+/// Perform bytepack unreodering for signed 16 bit ints
+/** 
+  * \todo this does not actually perform any size checks, but should.
+  * 
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * \ingroup xrif_reorder_bytepack
+  */ 
 xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
 {
-   
-
    size_t one_frame, npix;
    
    if( handle == NULL) 
@@ -360,3 +353,35 @@ xrif_error_t xrif_unreorder_bytepack_sint16( xrif_t handle )
       
    return XRIF_NOERROR;
 }
+
+//Dispatch bytepack unreordering according to type
+xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
+{
+   if( handle == NULL) 
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "can not use a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
+   {
+      return xrif_unreorder_bytepack_sint16(handle);
+   }
+   else if(handle->m_type_code == XRIF_TYPECODE_INT32 || handle->m_type_code == XRIF_TYPECODE_UINT32)
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 32 bit ints");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   else if(handle->m_type_code == XRIF_TYPECODE_INT64 || handle->m_type_code == XRIF_TYPECODE_UINT64)
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for 64 bit ints");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   else
+   {
+      XRIF_ERROR_PRINT("xrif_unreorder_bytepack", "bytepack unreordering not implemented for type");
+      return XRIF_ERROR_NOTIMPL;
+   }
+   
+}//xrif_error_t xrif_unreorder_bytepack( xrif_t handle )
+

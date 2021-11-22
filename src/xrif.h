@@ -1630,9 +1630,6 @@ xrif_error_t xrif_unreorder( xrif_t handle /**< [in/out] the xrif handle */);
   */ 
 xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ );
 
-
-
-
 /// Dispatch bytepack reodering based on type
 /** Calls the type appropriate xrif_reorder_bytepack_X function.
   *
@@ -1644,31 +1641,22 @@ xrif_error_t xrif_reorder_none( xrif_t handle /**< [in/out] the xrif handle */ )
   */ 
 xrif_error_t xrif_reorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */ );
 
-
-/// Perform bytepack-renibble reordering
-/** \ingroup xrif_reorder_bytepack_renibble
+/// Perform bytepack_renibble reordering
+/** Calls the type appropriate xrif_reorder_bytepack_renibble_X function.
   *
-  * \todo document
-  */
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
+  * \ingroup xrif_reorder_bytepack_renibble
+  */ 
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */ );
-
-/// Perform bytepack-renibble reordering for signed int16
-/** \ingroup xrif_reorder_bytepack_renibble
-  * \todo document
-  */
-xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Perform bitpack reordering
 /** \ingroup xrif_reorder_bitpack
   * \todo document
   */
 xrif_error_t xrif_reorder_bitpack( xrif_t handle /**< [in/out] the xrif handle */ );
-
-/// Perform bitpack reordering for signed int16
-/** \ingroup xrif_reorder_bitpack
-  * \todo document
-  */      
-xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle /**< [in/out] the xrif handle */ );
 
 /// Perform no un-re-ordering, simply copy reordered to raw.
 /** Also zeroes any excess in xrif_handle::raw_buffer.
@@ -1692,11 +1680,15 @@ xrif_error_t xrif_unreorder_none( xrif_t handle /**< [in/out] the xrif handle */
   */ 
 xrif_error_t xrif_unreorder_bytepack( xrif_t handle /**< [in/out] the xrif handle */);
 
-/// Perform bytepack-renibble unreordering
-/** \todo document
+/// Perform bytepack_renibble unreordering
+/** Calls the type appropriate xrif_unreorder_bytepack_renibble_X function.
   *
+  * \returns \ref XRIF_NOERROR on success
+  * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
+  * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
+  * 
   * \ingroup xrif_reorder_bytepack_renibble
-  */ 
+  */  
 xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle /**< [in/out] the xrif handle */);
 
 /// Perform bitpack unreordering

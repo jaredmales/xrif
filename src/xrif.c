@@ -1453,217 +1453,10 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
 }
 
 //--------------------------------------------------------------------
-//  bytepack_renibble reordering
+//  none unreodering
 //--------------------------------------------------------------------
 
-xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
-{
-   //The lookup table, a static array
-   #include "bitshift_and_nibbles.inc"
-   
-   size_t one_frame, npix;
-   
-   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //For the deprecated frame-to-frame methods we don't do the first frame.
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-   
-   
-   if( handle->m_raw_buffer_size < one_frame + npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   //The reordered buffer must be frames+1 big to be sure it can handle odd sizes. 
-   if( handle->m_reordered_buffer_size < xrif_min_reordered_size(handle) )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   //Zero the reordered buffer.
-   memset(handle->m_reordered_buffer,0, xrif_min_reordered_size(handle));
-   
-   int16_t * m_raw_buffer = (int16_t*)(handle->m_raw_buffer + one_frame);
-   
-   //Get pointer that starts one image into the handle->m_reordered_buffer.  This area is 2*npix bytes long
-   unsigned char * m_reordered_buffer = (unsigned char *) handle->m_reordered_buffer + one_frame;
-   
-   //Get point that starts halfway through, splitting at npix bytes
-   unsigned char * m_reordered_buffer2 = (unsigned char*) m_reordered_buffer + npix; 
-   
-   //Set the first part of the reordered buffer to the first frame (always the reference frame)
-   /*for(size_t pix=0; pix< one_frame; ++pix)
-   {
-      handle->m_reordered_buffer[pix] = handle->m_raw_buffer[pix];
-   }*/
-   memcpy(handle->m_reordered_buffer, handle->m_raw_buffer, one_frame);
-   
-   //Corrections necessary to handle odd numbers
-   size_t halfoff = ((double) npix)/2.0 + 0.5;
-   size_t oneoff = 0;
-   if(halfoff > npix/2) oneoff = 0;
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-   for(size_t pix = 0; pix < npix; ++pix)
-   {
-      /* This block of commented code is left in to document the algorithm implemented in the lookup table.
-       * And maybe we'll implement some defines to avoid lookup tables . . .
-       */
-      
-      /*
-      int_fast16_t s = m_raw_buffer[pix]; //Get the first 2 bytes
-      int_fast16_t sbit = (s < 0); //and the signbit
-
-      s *= (1-2*sbit); //make it positive
-      
-      uint16_t us = ( (s) << 1) | sbit; //This moves the sign bit
-       
-      m_reordered_buffer[pix] = ((char *)(&us))[0]; //store first byte, which includes the sign bit?
-
-      // Note: A pre-calculated table look-up for just nibble values produced slightly slower code.
-      uint16_t nib1, nib2;
-      
-      if(pix % 2 == 0)
-      {
-         nib1 = ((unsigned char *)(&us))[1] << 4; //Move low 4 to high 4
-         nib2 = ((unsigned char *)(&us))[1] & 240; //Select the high 4
-      }
-      else
-      {
-         nib1 = (((unsigned char *)(&us))[1] & 15); //Select the low 4
-         nib2 = ((unsigned char *)(&us))[1] >> 4; //Move the high 4 to the low 4
-      }
-      
-      m_reordered_buffer2[pix/2] |= nib1;
-      m_reordered_buffer2[pix/2 + oneoff + halfoff] |= nib2;
-      */
-      /*
-      Here we use a lookup table calculated according to the above algorithm:
-      */
-
-      const unsigned char * bsn = &bitshift_and_nibbles[ ((uint16_t) m_raw_buffer[pix]) * 6 + (pix&1)*3];
-      m_reordered_buffer[pix] = (char) bsn[0];
-      m_reordered_buffer2[pix/2] += bsn[1];
-      m_reordered_buffer2[pix/2 + oneoff + halfoff] += bsn[2];
-
-   }
-   #ifndef XRIF_NO_OMP
-   }
-   #endif
-   
-   return XRIF_NOERROR;
-}
-
-//--------------------------------------------------------------------
-//  bitpack reordering
-//--------------------------------------------------------------------
-
-///\todo xrif_reorder_bitpack needs a size check
-xrif_error_t xrif_reorder_bitpack( xrif_t handle )
-{
-   //The lookup tables (static arrays)
-   #include "bit_to_position.inc"
-   #include "set_bits.inc"
-   
-   size_t one_frame, npix;
-   
-   
-   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //For the deprecated frame-to-frame methods we don't do the first frame.
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-   
-   for(size_t pix=0; pix < one_frame; ++pix)
-   {
-      handle->m_reordered_buffer[pix] = handle->m_raw_buffer[pix];
-   }
-   
-   int16_t * m_raw_buffer = (int16_t *) (handle->m_raw_buffer + one_frame);
-   uint16_t * m_reordered_buffer = (uint16_t *) (handle->m_reordered_buffer + one_frame);
-   
-   memset( (char *) m_reordered_buffer, 0, handle->m_reordered_buffer_size - one_frame);
-
-   size_t stride = (handle->m_reordered_buffer_size - one_frame)/16/2; //stride in 16-bit pixels, not bytes
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-      
-  
-   for(size_t pix = 0; pix<npix; ++pix)
-   {
-      size_t sbyte = pix/16; //This is the starting byte for this pixel
-      int_fast8_t bit = pix % 16; //This is the bit position for this pixel
-     
-      
-      //--- Reordering sign bit [left in to document]
-      //int16_t s = m_raw_buffer[pix];
-      //int8_t sbit = (s < 0);
-      //s *= (1-2*sbit); //make positive
-      //uint16_t us = ( (s) << 1) | sbit; //shift by 1, putting sign bit in highest entropy spot
-      
-      //--- Simpler way to reorder, this is equivalent to above
-      int8_t sbit = (m_raw_buffer[pix] < 0);
-      uint16_t us = 2*m_raw_buffer[pix]*(1-2*sbit)+sbit;
-     
-
-      //---- This is the basic algorithm, without lookup tables:
-      /*
-      for(int b=0; b < 16; ++b)
-      {
-         m_reordered_buffer[sbyte + b*stride] += (((us >> b) & 1) << bit);
-      }
-      */
-      
-      //---- A full lookup table version
-      //Attempt with lookup table is slower, leaving this in to document this, possibly for future defines:
-      //uint16_t us = left_shift_one[*((uint16_t *) &m_raw_buffer[pix])];
-
-      //---- A faster lookup table version:
-      size_t sbyte8 = sbyte + 8*stride;
-      size_t st0 = ((unsigned char *) &us)[0]*16*8 + bit*8;
-      size_t st1 = ((unsigned char *) &us)[1]*16*8 + bit*8;
-      
-      for(int_fast8_t b = 0; b < 8; ++b)
-      {  
-         m_reordered_buffer[sbyte +  b*stride] += bit_to_position[st0 + b] ;
-      }
-      if(((unsigned char *) &us)[1] == 0) continue;
-      
-      //Get the number of set bits, and for this second byte we only process those bits.
-      unsigned char nbits2 = set_bits[((unsigned char *) &us)[1]*9];
-      const unsigned char* bits2 = &set_bits[((unsigned char *) &us)[1]*9 + 1];
-      for(int_fast8_t b = 0; b < nbits2; ++b)
-      {      
-         m_reordered_buffer[sbyte8 +  bits2[b]*stride] +=  bit_to_position[st1 + bits2[b]];
-      }
-   }
-   #ifndef XRIF_NO_OMP
-   }
-   #endif
-   
-   return XRIF_NOERROR;
-}
-      
-
-/// Perform no un-re-ordering, simply copy reordered to raw.
+/// Perform no unreordering, simply copy reordered to raw.
 xrif_error_t xrif_unreorder_none( xrif_t handle )
 {
    size_t npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames; 
@@ -1692,153 +1485,12 @@ xrif_error_t xrif_unreorder_none( xrif_t handle )
    }
    
    return XRIF_NOERROR;
-}
 
-//--------------------------------------------------------------------
-//  bytepack_renibble unreodering
-//--------------------------------------------------------------------
+}//xrif_error_t xrif_unreorder_none( xrif_t handle )
 
-xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
-{
-   size_t one_frame, npix;
-   
-   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //For the deprecated frame-to-frame methods we don't do the first frame.
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-   
-   int16_t * m_raw_buffer = (int16_t*)(handle->m_raw_buffer + one_frame);
-   unsigned char * m_reordered_buffer = (unsigned char *) handle->m_reordered_buffer + one_frame;
-   unsigned char * m_reordered_buffer2 = (unsigned char*) m_reordered_buffer + npix;
-   
-   for(size_t pix=0; pix<one_frame; ++pix)
-   {
-      handle->m_raw_buffer[pix] = handle->m_reordered_buffer[pix];
-   }
-   
-   size_t halfoff = ((double) npix)/2 + 0.5;
-   size_t oneoff = 0;
-   if(halfoff > npix/2) oneoff = 0;
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-   for(size_t pix = 0; pix < npix; ++pix)
-   {
-      uint16_t byte1 = 0;
-      byte1 = m_reordered_buffer[pix];
-      
-      uint16_t nib1 =0;
-      uint16_t nib2 = 0;
-      if(pix % 2 == 0)
-      {
-         nib1 |= ((m_reordered_buffer2[pix/2+oneoff])) >> 4;  
-         nib2 |= m_reordered_buffer2[pix/2+oneoff + halfoff] & 240; 
-      }
-      else
-      {
-         nib1 |= m_reordered_buffer2[pix/2] & 15;
-         nib2 |= (m_reordered_buffer2[pix/2 + oneoff + halfoff] & 15) << 4;
-      }
-      
-      byte1 |= (nib1 << 8);
-      byte1 |= (nib2 << 8);
-      
-      
-      unsigned int sbit = (byte1 & 1);
-
-      unsigned int s = (byte1 >> 1);
-      
-      
-      if(sbit == 1 && s == 0) 
-      {
-         m_raw_buffer[pix] = -32768;
-      }
-      else
-      {
-         m_raw_buffer[pix] = s*(1-2*sbit);
-      }
-   }
-   
-   #ifndef XRIF_NO_OMP
-   }
-   #endif
-
-   return XRIF_NOERROR;
-}
-
-xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
-{
-   size_t one_frame, npix;
-   
-   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //For the deprecated frame-to-frame methods we don't do the first frame.
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-   
-   for(size_t pix=0; pix< one_frame; ++pix)
-   {
-      handle->m_raw_buffer[pix] = handle->m_reordered_buffer[pix];
-   }
-   
-   int16_t * m_raw_buffer = (int16_t *) (handle->m_raw_buffer + one_frame);
-   uint16_t * m_reordered_buffer = (uint16_t *) (handle->m_reordered_buffer + one_frame);
-   
-   memset(m_raw_buffer, 0, npix*2);
-   
-   //size_t stride = npix/16;
-   size_t stride = (handle->m_reordered_buffer_size - one_frame)/16/2;
-   //printf("strides: %ld %ld\n", npix/16, stride);
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-   for(size_t pix = 0; pix<npix; ++pix)
-   {
-      
-      size_t sbyte = pix/16;
-      size_t bit = pix % 16;
-
-      char sbit = (m_reordered_buffer[sbyte] >> bit) & 1;
-      
-      for(int_fast8_t b=1; b<16;++b)
-      {
-         m_raw_buffer[pix] |= ((m_reordered_buffer[sbyte +  b*stride] >> bit) & 1) << (b-1);
-      }
-      
-      //Check if sign change needed
-      if(sbit == 1)
-      {
-         //Check for -0, which is actually -32768
-         if(m_raw_buffer[pix] == 0) m_raw_buffer[pix] = -32768;
-         else m_raw_buffer[pix] *= -1;
-      }
-      
-      
-   }
-   
-   #ifndef XRIF_NO_OMP
-   }
-   #endif
-
-   return XRIF_NOERROR;
-}
+//==========================================================
+//             Compression
+//==========================================================
 
 // Dispatch compression based on method
 xrif_error_t xrif_compress( xrif_t handle )
@@ -1872,7 +1524,7 @@ xrif_error_t xrif_compress( xrif_t handle )
          return XRIF_ERROR_NOTIMPL;
    }
       
-}
+} //xrif_error_t xrif_compress( xrif_t handle )
 
 // Dispatch decompression based on method
 xrif_error_t xrif_decompress( xrif_t handle )
@@ -1906,7 +1558,7 @@ xrif_error_t xrif_decompress( xrif_t handle )
          return XRIF_ERROR_NOTIMPL;
    }
       
-}
+} //xrif_error_t xrif_decompress( xrif_t handle )
 
 xrif_error_t xrif_compress_none( xrif_t handle )
 {
@@ -1957,7 +1609,8 @@ xrif_error_t xrif_compress_none( xrif_t handle )
    memcpy( m_compressed_buffer, handle->m_reordered_buffer, handle->m_compressed_size);
    
    return XRIF_NOERROR;
-}
+
+} //xrif_error_t xrif_compress_none( xrif_t handle )
 
 xrif_error_t xrif_decompress_none( xrif_t handle )
 {
@@ -1996,7 +1649,12 @@ xrif_error_t xrif_decompress_none( xrif_t handle )
    memcpy( handle->m_reordered_buffer, m_compressed_buffer, handle->m_compressed_size);
    
    return XRIF_NOERROR;
-}
+
+} //xrif_error_t xrif_decompress_none( xrif_t handle )
+
+//==========================================================
+//             Performance
+//==========================================================
 
 double xrif_compression_ratio( xrif_t handle )
 {
@@ -2042,8 +1700,6 @@ double xrif_compress_rate( xrif_t handle )
 {
    return ((double) handle->m_raw_size) /xrif_compress_time(handle);
 }
-
-//-
 
 double xrif_decode_time( xrif_t handle )
 {

@@ -9,6 +9,8 @@ set(libsrc xrif.c
            xrif_difference_pixelL.c 
            xrif_difference_bayer.c 
            xrif_reorder_bytepack.c
+           xrif_reorder_bytepack_renibble.c
+           xrif_reorder_bitpack.c
            xrif_compress_lz4.c 
            xrif_compress_lz4hc.c 
            xrif_compress_fastlz.c 

@@ -528,17 +528,17 @@ typedef struct
 
    xrif_int_t m_zlib_level; ///< zlib compression level
                             /**< Valid values 0 to 9.  0 is no compression.  1 is fastest, 9 highest compression.
-                              * The xrif default value is 6, set by XRIF_ZLIB_DEFAULT_LEVEL.
+                              * The xrif default value is Z_RLE, set by XRIF_ZLIB_DEFAULT_LEVEL.
                               * Note: if m_zlib_strategy is Z_RLE (the xrif default), this parameter has no detectable effect.
                               */ 
    
    xrif_int_t m_zlib_strategy; ///< zlib compression strategy.
                                /**< Possible values
                                  * - Z_DEFAULT_STRATEGY = 0
-                                 * -  Z_FILTERED  = 1
-                                 * -  Z_HUFFMAN_ONLY = 2
-                                 * -  Z_RLE = 3
-                                 * -  Z_FIXED = 4
+                                 * - Z_FILTERED  = 1
+                                 * - Z_HUFFMAN_ONLY = 2
+                                 * - Z_RLE = 3
+                                 * - Z_FIXED = 4
                                  * 
                                  * Z_RLE is the default, set by XRIF_ZLIB_DEFAULT_STRATEGY.
                                  */
@@ -552,7 +552,7 @@ typedef struct
 
    ZSTD_DCtx * m_zstd_dctx; ///< zstd decompression context.
 
-   xrif_int_t m_zstd_level; ///< zstd compression level
+   xrif_int_t m_zstd_level; ///< zstd compression level.  Positive values can only go to +22. This can be negative down to -131072.  
 
    ///@}
 
@@ -775,7 +775,7 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,     ///< [in/out] the xrif 
 
 /// Set the compression method and the direction.
 /** Sets the compression method and sets up the relevant library interface, and for compression methods with 
-  * directionality configures accordingly.
+  * directionality configures accordingly.  This can be used to change the direction of an already configured handle.
   *  
   * Valid methods are 
   * - \ref XRIF_COMPRESS_NONE
@@ -822,6 +822,21 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,             ///< [in/out] 
 xrif_error_t xrif_set_decompress_method( xrif_t handle,             ///< [in/out] the xrif handle to be configured
                                          xrif_int_t compress_method ///< [in] the new compress method
                                        );
+
+/// Set the compress direction, leaving the compress method unchanged.
+/** Sets the compression direction and sets up the relevant library interface, and for compression methods with 
+  * directionality sets it to decompress. Calls \ref xrif_set_compress_method_direction with the current compression method
+  * and the direction indicated by \p compress_direction. For details see \ref xrif_set_compress_method_direction.
+  * 
+  * This can be used to change the direction on an already configured (and used) handle, e.g. to decompress after
+  * compression.
+  * 
+  * \ingroup xrif_init_fine
+  */   
+xrif_error_t xrif_set_compress_direction( xrif_t handle,                ///< [in/out] the xrif handle to be configured
+                                          xrif_int_t compress_direction ///< [in] the new compress method
+                                        );
+
 
 //==========================================================
 //             Allocation
@@ -964,7 +979,7 @@ size_t xrif_raw_buffer_size( xrif_t handle /**< [in] the xrif handle */);
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
-  * \returns \ref XRIF_NOERROR on success\todo need to have a min size calculation function exposed
+  * \returns \ref XRIF_NOERROR on success
   * 
   * \ingroup xrif_alloc
   */  
@@ -1040,8 +1055,8 @@ size_t xrif_reordered_buffer_size( xrif_t handle /**< [in] the xrif handle */);
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if the size of the buffer is too small for the configured parameters
-  * \returns \ref XRIF_NOERROR on success\todo need to have a min size calculation function exposed
-  *
+  * \returns \ref XRIF_NOERROR on success
+  * 
   * \ingroup xrif_alloc
   */  
 xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object to modify
@@ -1273,8 +1288,6 @@ int xrif_omp_numthreads( xrif_t handle /**< [in] the xrif handle*/);
   * \returns \ref XRIF_ERROR_NULLPTR if either header or handle is NULL
   * \returns \ref XRIF_NOERROR on success 
   * 
-  * \todo add zstd and zlib to header write
-  * 
   * \ingroup header
   */
 xrif_error_t xrif_write_header( char * header, ///< [out] the buffer to hold the protocol header. Must be at least 48 bytes long.
@@ -1287,8 +1300,6 @@ xrif_error_t xrif_write_header( char * header, ///< [out] the buffer to hold the
   * \returns \ref XRIF_ERROR_BADHEADER if the xrif magic number is not the first 4 bytes
   * \returns \ref XRIF_ERROR_WRONGVERSION if the XRIF version in the header is too high for the compiled library
   * \returns \ref XRIF_NOERROR on success
-  * 
-  * \todo add zstd and zlib to header read
   * 
   * \ingroup header
   */
@@ -1765,8 +1776,6 @@ xrif_error_t xrif_decompress_none( xrif_t handle /**< [in/out] the xrif handle *
   * \returns \ref XRIF_ERROR_BADARG if `lz4_accel` is out of range.  Will set value to correspondling min or max limit.
   * \returns \ref XRIF_NOERROR on success.
   * 
-  * \todo this should not return badarg on out of range, just clamp
-  * 
   * \ingroup compress_lz4
   */ 
 xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    ///< [in/out] the xrif handle to be configured
@@ -1833,8 +1842,6 @@ xrif_error_t xrif_decompress_lz4( xrif_t handle /**< [in/out] the xrif handle */
   * \returns \ref XRIF_ERROR_BADARG if `lz4hc_clevel` is out of range.  Will set value to correspondling min or max limit.
   * \returns \ref XRIF_NOERROR on success.
   * 
-  * \todo this should not return badarg on out of range, just clamp
-  * 
   * \ingroup compress_lz4hc
   */ 
 xrif_error_t xrif_set_lz4hc_level( xrif_t handle,       ///< [in/out] the xrif handle to be configured
@@ -1897,8 +1904,6 @@ xrif_error_t xrif_decompress_lz4hc( xrif_t handle /**< [in/out] the xrif handle 
   * \returns \ref XRIF_ERROR_BADARG if `fastlz_lev` is out of range.  Will set value to 1.
   * \returns \ref XRIF_NOERROR on success.
   * 
-  * \todo this should not return badarg on out of range, just clamp
-  * 
   * \ingroup compress_fastlz
   */ 
 xrif_error_t xrif_set_fastlz_level( xrif_t handle,     ///< [in/out] the xrif handle to be configured
@@ -1958,7 +1963,7 @@ xrif_error_t xrif_decompress_fastlz( xrif_t handle /**< [in/out] the xrif handle
   * If direction is compression, the compression level is set in the context structure.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_INVALIDCONFIG if an invalid direction is specified in handle.
   * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zstd`, where code is the `zstd` error code.
   * \returns \ref XRIF_ERROR_MALLOC if an allocation error occurs.  Check errno in this case.
   * \returns \ref XRIF_NOERROR on success.
@@ -1973,7 +1978,7 @@ xrif_error_t xrif_setup_zstd(xrif_t handle );
 /** The `zstd` context structures owned by handle are free()-ed using the `zstd` library calls.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_INVALIDCONFIG if an invalid direction is specified in handle.
   * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zstd`, where code is the `zstd` error code.
   * \returns \ref XRIF_NOERROR on success.
   * 
@@ -2070,7 +2075,7 @@ xrif_error_t xrif_decompress_zstd( xrif_t handle /**< [in/out] the xrif handle *
   * according to the current compression direction.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_INVALIDCONFIG if an invalid direction is specified in handle.
   * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zlib`, where code is the `zlib` error code.
   * \returns \ref XRIF_ERROR_MALLOC if an allocation error occurs.  Check errno in this case.
   * \returns \ref XRIF_NOERROR on success.
@@ -2085,7 +2090,7 @@ xrif_error_t xrif_setup_zlib(xrif_t handle );
 /** The `zlib` end function is called and the `z_stream` structure owned by handle is free()-ed.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer.
-  * \returns \ref XRIF_ERROR_INAVALIDCONFIG if an invalid direction is specified in handle.
+  * \returns \ref XRIF_ERROR_INVALIDCONFIG if an invalid direction is specified in handle.
   * \returns \ref XRIF_ERROR_LIBERR + code on an error from `zlib`, where code is the `zlib` error code.
   * \returns \ref XRIF_NOERROR on success.
   * 
@@ -2094,6 +2099,41 @@ xrif_error_t xrif_setup_zlib(xrif_t handle );
   * \ingroup compress_zlib
   */
 xrif_error_t xrif_shutdown_zlib(xrif_t handle );
+
+/// Set the zlib compression level
+/** The zlib compression level can be any value from 0 to 9.  Valid values 0 to 9.  0 is no compression.  1 is fastest, 9 is highest compression.
+  * The xrif default value is Z_RLE, set by XRIF_ZLIB_DEFAULT_LEVEL.
+  * Note: if zlib strategy is Z_RLE (the xrif default), this parameter has no detectable effect.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `zlib_lev` is out of range.  Will set value to XRIF_ZLIB_DEFAULT_LEVEL.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \ingroup compress_zlib
+  */ 
+xrif_error_t xrif_set_zlib_level( xrif_t handle,   ///< [in/out] the xrif handle to be configured
+                                  xrif_int_t zlib_lev ///< [in] new zstd level
+                                );
+
+/// Set the zlib strategy
+/** Possible values
+  * - Z_DEFAULT_STRATEGY = 0
+  * - Z_FILTERED  = 1
+  * - Z_HUFFMAN_ONLY = 2
+  * - Z_RLE = 3
+  * - Z_FIXED = 4
+  * 
+  * Z_RLE is the default, set by XRIF_ZLIB_DEFAULT_STRATEGY.
+  * 
+  * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
+  * \returns \ref XRIF_ERROR_BADARG if `zlib_strat` is out of range.  Will set value to XRIF_ZLIB_DEFAULT_STRATEGY.
+  * \returns \ref XRIF_NOERROR on success.
+  * 
+  * \ingroup compress_zlib
+  */ 
+xrif_error_t xrif_set_zlib_strategy( xrif_t handle,   ///< [in/out] the xrif handle to be configured
+                                     xrif_int_t zlib_strat ///< [in] new zstd level
+                                   );
 
 /// Get the zlib stream structure of the configured handle.
 /** This returns the current pointer to the zlib stream structure.

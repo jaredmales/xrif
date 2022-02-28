@@ -117,7 +117,7 @@ xrif_error_t xrif_set_fastlz_level( xrif_t handle,     // [in/out] the xrif hand
 }
 
 // Get the FastLZ compression level of the configured handle.
-int xrif_fastlz_level( xrif_t handle )
+xrif_int_t xrif_fastlz_level( xrif_t handle )
 {
    if( handle == NULL)
    {

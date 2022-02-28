@@ -433,8 +433,8 @@ xrif_error_t xrif_set_reorder_method( xrif_t handle,
 
 // Set the compress method with direction if needed.
 xrif_error_t xrif_set_compress_method_direction( xrif_t handle,
-                                                 int compress_method,
-                                                 int compress_direction
+                                                 xrif_int_t compress_method,
+                                                 xrif_int_t compress_direction
                                                )
 {
    int rv;
@@ -498,7 +498,7 @@ xrif_error_t xrif_set_compress_method_direction( xrif_t handle,
 
 // Set the compress method.
 xrif_error_t xrif_set_compress_method( xrif_t handle,
-                                       int compress_method
+                                       xrif_int_t compress_method
                                      )
 {
    int rv;
@@ -515,7 +515,7 @@ xrif_error_t xrif_set_compress_method( xrif_t handle,
 
 // Set the decompress method.
 xrif_error_t xrif_set_decompress_method( xrif_t handle,
-                                         int compress_method
+                                         xrif_int_t compress_method
                                        )
 {
    int rv;
@@ -530,15 +530,22 @@ xrif_error_t xrif_set_decompress_method( xrif_t handle,
    return rv;
 }
 
+// Set the compression direction.
+xrif_error_t xrif_set_compress_direction( xrif_t handle,
+                                          xrif_int_t compress_direction
+                                        )
+{
+   int rv;
 
+   rv = xrif_set_compress_method_direction(handle, handle->m_compress_method, compress_direction);
 
+   if(rv != XRIF_NOERROR)
+   {
+      XRIF_ERROR_PRINT("xrif_set_decompress_method", "error in xrif_set_compress_method_direction");
+   }
 
-
-
-
-
-
-
+   return rv;
+}
 
 // Calculate the minimum size of the raw buffer.
 size_t xrif_min_raw_size(xrif_t handle)
@@ -1102,7 +1109,16 @@ xrif_error_t xrif_write_header( char * header,
    {
       *((uint16_t *) &header[40]) = handle->m_fastlz_level;
    }
-   
+   else if (handle->m_compress_method == XRIF_COMPRESS_ZLIB)
+   {
+      *((uint8_t *) &header[40]) = handle->m_zlib_level;
+      *((uint8_t *) &header[41]) = handle->m_zlib_strategy;
+   }
+   else if (handle->m_compress_method == XRIF_COMPRESS_ZSTD)
+   {
+      *((int32_t *) &header[40]) = handle->m_zstd_level; //This can be negative down to -131072.  Positive values can only go to +22.
+   }
+
    return XRIF_NOERROR;
    
 }
@@ -1176,6 +1192,15 @@ xrif_error_t xrif_read_header( xrif_t handle,
    else if(handle->m_compress_method == XRIF_COMPRESS_FASTLZ)
    {
       handle->m_fastlz_level = *((uint16_t *) &header[40]);
+   }
+   else if (handle->m_compress_method == XRIF_COMPRESS_ZLIB)
+   {
+      handle->m_zlib_level = *((uint8_t *) &header[40]);
+      handle->m_zlib_strategy = *((uint8_t *) &header[41]);
+   }
+   else if (handle->m_compress_method == XRIF_COMPRESS_ZSTD)
+   {
+      handle->m_zstd_level = *((int32_t *) &header[40]); 
    }
 
    return XRIF_NOERROR;

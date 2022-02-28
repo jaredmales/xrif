@@ -117,7 +117,7 @@ xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    // [in/out] the xrif h
 }
 
 // Get the current value of the LZ4 acceleration parameter
-int xrif_lz4_acceleration( xrif_t handle )
+xrif_int_t xrif_lz4_acceleration( xrif_t handle )
 {
    if( handle == NULL)
    {

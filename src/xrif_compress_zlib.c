@@ -86,42 +86,6 @@ matter of this Agreement.
 
 #include "xrif.h"
 
-// Get the zlib stream structure of the configured handle.
-z_stream * xrif_zlib_stream( xrif_t handle )
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_zlib_stream", "can not access a null pointer");
-      return NULL;
-   }
-   
-   return handle->m_zlib_stream;
-}
-
-// Get the zlib compression level of the configured handle.
-int xrif_zlib_level( xrif_t handle )
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_zlib_level", "can not access a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   return handle->m_zlib_level;
-}
-
-// Get the zlib compression strategy of the configured handle.
-int xrif_zlib_strategy( xrif_t handle )
-{
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_zlib_dir", "can not access a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   return handle->m_zlib_strategy;
-}
-
 // Allocate and configure the `zlib` stream structure
 xrif_error_t xrif_setup_zlib(xrif_t handle )
 {
@@ -229,6 +193,104 @@ xrif_error_t xrif_shutdown_zlib(xrif_t handle )
    return XRIF_NOERROR;
 
 }
+
+// Set the zlib compression level
+xrif_error_t xrif_set_zlib_level( xrif_t handle,  
+                                  xrif_int_t zlib_lev
+                                )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_set_zlib_level", "can not configure null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+
+   if(zlib_lev < 0)
+   {
+      XRIF_ERROR_PRINT("xrif_set_zlib_level", "level can not be less than zero. Setting default.");
+      handle->m_zlib_level = XRIF_ZLIB_LEVEL_DEFAULT;
+      return XRIF_ERROR_BADARG;
+   }
+
+   if(zlib_lev > 9)
+   {
+      XRIF_ERROR_PRINT("xrif_set_zlib_level", "level can not be greater than 9. Setting default.");
+      handle->m_zlib_level = XRIF_ZLIB_LEVEL_DEFAULT;
+      return XRIF_ERROR_BADARG;
+   }
+
+   handle->m_zlib_level = zlib_lev;
+
+   return XRIF_NOERROR;
+}
+
+// Set the zlib strategy
+xrif_error_t xrif_set_zlib_strategy( xrif_t handle,   
+                                     xrif_int_t zlib_strat
+                                   )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_set_zlib_strategy", "can not configure null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+
+   if(zlib_strat < 0)
+   {
+      XRIF_ERROR_PRINT("xrif_set_zlib_strategy", "strategy can not be less than zero. Setting default.");
+      handle->m_zlib_strategy = XRIF_ZLIB_STRATEGY_DEFAULT;
+      return XRIF_ERROR_BADARG;
+   }
+
+   if(zlib_strat > 4)
+   {
+      XRIF_ERROR_PRINT("xrif_set_zlib_level", "strategy can not be greater than 4. Setting default.");
+      handle->m_zlib_strategy = XRIF_ZLIB_STRATEGY_DEFAULT;
+      return XRIF_ERROR_BADARG;
+   }
+
+   handle->m_zlib_strategy = zlib_strat;
+
+   return XRIF_NOERROR;
+}
+
+// Get the zlib stream structure of the configured handle.
+z_stream * xrif_zlib_stream( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_zlib_stream", "can not access a null pointer");
+      return NULL;
+   }
+   
+   return handle->m_zlib_stream;
+}
+
+// Get the zlib compression level of the configured handle.
+xrif_int_t xrif_zlib_level( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_zlib_level", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_zlib_level;
+}
+
+// Get the zlib compression strategy of the configured handle.
+xrif_int_t xrif_zlib_strategy( xrif_t handle )
+{
+   if( handle == NULL)
+   {
+      XRIF_ERROR_PRINT("xrif_zlib_dir", "can not access a null pointer");
+      return XRIF_ERROR_NULLPTR;
+   }
+   
+   return handle->m_zlib_strategy;
+}
+
+
 
 // Calculate the minimum size of the compressed buffer for zlib compression
 size_t xrif_min_compressed_size_zlib(xrif_t handle)

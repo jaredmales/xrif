@@ -649,7 +649,7 @@ START_TEST (reorder_bytepack_renibble_uint16_white)
 END_TEST
 
 //Verify that xrif reorder-unreorder cycle works for signed 16 bit integers in the bitpack method
-//for int16_t
+//for uint16_t
 START_TEST (reorder_bitpack_uint16_white)
 {
    xrif_t hand = NULL;
@@ -678,7 +678,7 @@ START_TEST (reorder_bitpack_uint16_white)
                rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BITPACK, XRIF_COMPRESS_NONE);
                ck_assert( rv == XRIF_NOERROR );
                
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
       
                rv = xrif_allocate_raw(hand);
@@ -1309,7 +1309,7 @@ START_TEST (encode_previous_bytepack_lz4_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
       
                rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK, XRIF_COMPRESS_LZ4);
@@ -1384,7 +1384,7 @@ START_TEST (encode_previous_bytepack_renibble_lz4_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
       
                rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BYTEPACK_RENIBBLE, XRIF_COMPRESS_LZ4);
@@ -1461,7 +1461,7 @@ START_TEST (encode_previous_bitpack_lz4_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
       
                rv = xrif_configure(hand, XRIF_DIFFERENCE_PREVIOUS, XRIF_REORDER_BITPACK, XRIF_COMPRESS_LZ4);
@@ -1614,7 +1614,7 @@ START_TEST (encode_pixel_bytepack_renibble_lz4_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
       
                rv = xrif_configure(hand, XRIF_DIFFERENCE_PIXEL, XRIF_REORDER_BYTEPACK_RENIBBLE, XRIF_COMPRESS_LZ4);
@@ -1691,7 +1691,7 @@ START_TEST (encode_pixel_bitpack_lz4_uint16_white)
          {
             for(int p=0; p< sizeof(ps)/sizeof(ps[0]); ++p)
             {
-               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_INT16);
+               rv = xrif_set_size(hand, ws[w], hs[h], 1, ps[p], XRIF_TYPECODE_UINT16);
                ck_assert( rv == XRIF_NOERROR );
       
                rv = xrif_configure(hand, XRIF_DIFFERENCE_PIXEL, XRIF_REORDER_BITPACK, XRIF_COMPRESS_LZ4);

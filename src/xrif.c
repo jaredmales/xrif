@@ -244,7 +244,7 @@ xrif_error_t xrif_reset( xrif_t handle )
 {
    if( handle == NULL)
    {
-      XRIF_ERROR_PRINT("xrif_allocate", "can not reset null pointer");
+      XRIF_ERROR_PRINT("xrif_reset", "can not reset null pointer");
       return XRIF_ERROR_NULLPTR;
    }
    

@@ -10,7 +10,9 @@ Basis: [F01 in the bug audit](2026-10-11-xrif-bug-audit.md#f01--dimension-multip
 
 `xrif_dimension_t` is `uint32_t`. Expressions such as `w*h*d*f*sz` multiplied dimensions in 32-bit arithmetic before reaching the final `size_t` operand. The audit's `65536 × 65537 × 1 × 1` INT16 shape needs **8,590,065,664 bytes**, but previously reported 131,072 and allocated only 131,602 raw bytes with default LZ4. Related narrow arithmetic occurred in buffer bounds, transform offsets, and loop counters.
 
-The original F01 plan preserved the version-0 header and proposed rejecting compressed sizes above `UINT32_MAX`. The user expanded the scope: raise compressed payload lengths to `UINT64_MAX`, retain individual 32-bit axes, support checked larger products throughout the library, clearly document both header formats, and publish on `dev`. That instruction authorizes this task's `dev` update despite the default branch guidance in `AGENTS.md`. Work is prepared on `jrmales/audit-and-sizing-plan` before a normal fast-forward push.
+The original F01 plan preserved the version-0 header and proposed rejecting compressed sizes above `UINT32_MAX`. The expanded scope raises compressed payload lengths to `UINT64_MAX`, retains individual 32-bit axes, supports checked larger products throughout the library, and clearly documents both header formats. The user's latest instruction places this work on `jrmales/audit-and-sizing-plan`, following the feature-branch guidance in `AGENTS.md`.
+
+Branch correction: preserve the guidance, audit, and implementation commits on the remote feature branch and restore `dev` to its pre-push tip, `bddd4be`. The remote `dev` tip was verified as the agent-pushed `58e4200`; restoring it must use an exact lease for that commit so concurrent work cannot be overwritten. This changes branch placement only; the validated implementation remains intact.
 
 ## Decisions and compatibility
 

@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 // Allocate and configure the `zlib` stream structure
 xrif_error_t xrif_setup_zlib(xrif_t handle )
@@ -290,166 +291,117 @@ xrif_int_t xrif_zlib_strategy( xrif_t handle )
    return handle->m_zlib_strategy;
 }
 
-
-
-// Calculate the minimum size of the compressed buffer for zlib compression
+// Calculate the minimum size of the compressed buffer for zlib compression.
 size_t xrif_min_compressed_size_zlib(xrif_t handle)
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_zlib", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_zlib", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   if(handle->m_zlib_stream == NULL)
-   {
-      int rv;
-      if( (rv = xrif_setup_zlib(handle)) < 0)
-      {
-         XRIF_ERROR_PRINT("xrif_min_compressed_size_zlib", "xrif_setup_zlib failed");
-         return rv;
-      }
-   }
-
-   return deflateBound(handle->m_zlib_stream, rsz);
+    size_t bytes = xrif_min_reordered_size( handle );
+    size_t conservative;
+    /* Bound the library's internal additions before calling deflateBound. This
+       conservative formula also covers its non-default strategy fallback. */
+    if( bytes == 0 || bytes > ULONG_MAX || !xrif_size_add( bytes, bytes / 8 + ( bytes % 8 != 0 ), &conservative ) ||
+        !xrif_size_add( conservative, bytes / 64 + ( bytes % 64 != 0 ), &conservative ) ||
+        !xrif_size_add( conservative, 32, &conservative ) || conservative > ULONG_MAX )
+        return 0;
+    if( handle->m_zlib_stream == NULL && xrif_setup_zlib( handle ) != XRIF_NOERROR )
+        return 0;
+    uLong bound = deflateBound( handle->m_zlib_stream, (uLong)bytes );
+    if( bound < bytes || bound > SIZE_MAX || bound > UINT64_MAX )
+        return 0;
+    return (size_t)bound;
 }
 
+/* Override only in the boundary-test target to exercise multiple windows with small buffers. */
+#ifndef XRIF_ZLIB_WINDOW_SIZE
+    #define XRIF_ZLIB_WINDOW_SIZE UINT_MAX
+#endif
+_Static_assert( XRIF_ZLIB_WINDOW_SIZE > 0 && XRIF_ZLIB_WINDOW_SIZE <= UINT_MAX, "invalid zlib window size" );
+
+/// Process one zlib stream in bounded API windows, retaining size_t totals across calls.
+/** Each call offers at most UINT_MAX bytes. The wire representation remains a single
+  * zlib stream; no XRIF framing or chunks are added. A one-byte scratch destination
+  * lets inflate consume a trailer after filling the expected output exactly.
+  */
+static xrif_error_t xrif_zlib_transfer( xrif_t      handle,
+                                        const char *input,
+                                        size_t      input_bytes,
+                                        char       *output,
+                                        size_t      output_bytes,
+                                        int         decoding,
+                                        size_t     *produced )
+{
+    z_stream *stream = handle->m_zlib_stream;
+    int       rv     = decoding ? inflateReset( stream ) : deflateReset( stream );
+    if( rv != Z_OK )
+        return XRIF_ERROR_LIBERR;
+    stream->avail_in  = 0;
+    stream->avail_out = 0;
+    stream->data_type = Z_BINARY;
+    size_t consumed   = 0;
+    *produced         = 0;
+    unsigned char excess;
+    for( ;; )
+    {
+        size_t in_left    = input_bytes - consumed;
+        size_t out_left   = output_bytes - *produced;
+        uInt   in_window  = (uInt)( in_left > XRIF_ZLIB_WINDOW_SIZE ? XRIF_ZLIB_WINDOW_SIZE : in_left );
+        uInt   out_window = (uInt)( out_left > XRIF_ZLIB_WINDOW_SIZE ? XRIF_ZLIB_WINDOW_SIZE : out_left );
+        int    scratch    = decoding && out_window == 0;
+        if( out_window == 0 && !scratch )
+            return XRIF_ERROR_INSUFFICIENT_SIZE;
+        stream->next_in   = (Bytef *)( input + consumed );
+        stream->avail_in  = in_window;
+        stream->next_out  = scratch ? &excess : (Bytef *)( output + *produced );
+        stream->avail_out = scratch ? 1 : out_window;
+        uInt offered_out  = stream->avail_out;
+        int  flush        = decoding ? Z_NO_FLUSH : ( in_left == in_window ? Z_FINISH : Z_NO_FLUSH );
+        rv                = decoding ? inflate( stream, flush ) : deflate( stream, flush );
+        size_t used_in    = in_window - stream->avail_in;
+        size_t used_out   = offered_out - stream->avail_out;
+        consumed += used_in;
+        if( scratch && used_out != 0 )
+            return XRIF_ERROR_INVALID_SIZE;
+        *produced += used_out;
+        if( rv == Z_STREAM_END )
+        {
+            if( consumed != input_bytes || ( decoding && *produced != output_bytes ) )
+                return XRIF_ERROR_INVALID_SIZE;
+            return XRIF_NOERROR;
+        }
+        if( rv != Z_OK || ( used_in == 0 && used_out == 0 ) )
+            return XRIF_ERROR_LIBERR;
+    }
+}
 
 xrif_error_t xrif_compress_zlib( xrif_t handle )
 {
-   char *m_compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zlib", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->m_compress_direction != XRIF_DIRECTION_COMPRESS || handle->m_zlib_stream == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zlib", "not configured for compression by zlib");
-      return XRIF_ERROR_INVALIDCONFIG;
-   }
-
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-      compressed_size = handle->m_raw_buffer_size;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-      compressed_size = handle->m_compressed_buffer_size;
-   }
-   
-   //zlib only takes ints for sizes
-   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-
-   if(compressed_size < xrif_min_compressed_size_zlib(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zlib", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   int rv = deflateReset(handle->m_zlib_stream);
-
-   if(rv != Z_OK)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zlib", "zlib::deflateReset.");
-      return XRIF_ERROR_LIBERR + rv;
-   }
-
-
-   handle->m_zlib_stream->avail_in = srcSize;
-   handle->m_zlib_stream->next_in = handle->m_reordered_buffer;
-   handle->m_zlib_stream->avail_out = compressed_size;
-   handle->m_zlib_stream->next_out = m_compressed_buffer;
-   handle->m_zlib_stream->data_type = Z_BINARY;
-
-   rv = deflate(handle->m_zlib_stream, Z_FINISH);    
-
-   if(rv != Z_STREAM_END)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zlib", "compression error from zlib.");
-      return XRIF_ERROR_LIBERR + rv;;
-   }
-   
-   handle->m_compressed_size = compressed_size - handle->m_zlib_stream->avail_out;
-
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( handle->m_compress_direction != XRIF_DIRECTION_COMPRESS || handle->m_zlib_stream == NULL )
+        return XRIF_ERROR_INVALIDCONFIG;
+    size_t       bytes = xrif_min_reordered_size( handle );
+    size_t       bound = xrif_min_compressed_size_zlib( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, bound, 0 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char  *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    size_t produced;
+    rv = xrif_zlib_transfer( handle, handle->m_reordered_buffer, bytes, buffer, bound, 0, &produced );
+    handle->m_compressed_size = rv == XRIF_NOERROR ? produced : 0;
+    return rv;
 }
 
 xrif_error_t xrif_decompress_zlib( xrif_t handle )
 {
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_compress_direction != XRIF_DIRECTION_DECOMPRESS || handle->m_zlib_stream == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "not configured for decompression by zlib");
-      return XRIF_ERROR_INVALIDCONFIG;
-   }
-
-   char *m_compressed_buffer;
-   
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-   }
-
-   int rv = inflateReset(handle->m_zlib_stream);
-
-   if(rv != Z_OK)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "zlib::inflateReset.");
-      return XRIF_ERROR_LIBERR + rv;
-   }
-
-   handle->m_zlib_stream->avail_in = handle->m_compressed_size;
-   handle->m_zlib_stream->next_in = m_compressed_buffer;
-   handle->m_zlib_stream->avail_out = handle->m_reordered_buffer_size;
-   handle->m_zlib_stream->next_out = handle->m_reordered_buffer;
-   handle->m_zlib_stream->data_type = Z_BINARY;
-
-   rv = inflate(handle->m_zlib_stream, Z_NO_FLUSH);
-
-   if(rv != Z_STREAM_END)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "decompression error from zlib.");
-      return XRIF_ERROR_LIBERR + rv;
-   }
-
-   int size_decomp =  handle->m_reordered_buffer_size - handle->m_zlib_stream->avail_out;
-
-   if(size_decomp == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "decompression failed.  check m_reordered_buffer_size, or possible corruption.");
-      return (XRIF_ERROR_FAILURE);
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zlib", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   return XRIF_NOERROR;
-
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( handle->m_compress_direction != XRIF_DIRECTION_DECOMPRESS || handle->m_zlib_stream == NULL )
+        return XRIF_ERROR_INVALIDCONFIG;
+    size_t       bytes = xrif_min_reordered_size( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, 0, 1 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char  *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    size_t produced;
+    return xrif_zlib_transfer(
+        handle, buffer, handle->m_compressed_size, handle->m_reordered_buffer, bytes, 1, &produced );
 }

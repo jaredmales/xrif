@@ -4,6 +4,25 @@ Audited commit: `bddd4beb8a798ec306c470584106a0937dbba1a0`.
 
 This audit found **17 reproducible findings: five P1, eleven P2, and one P3**. The most urgent issues are undersized allocations caused by integer overflow, a double-free on an allocation error path, missing buffer bounds checks, and data corruption with parallel pixel differencing. No library, build, or test sources were changed.
 
+## Follow-up — 2026-10-12
+
+The original findings and reproductions below describe the audited commit and remain as historical evidence. The [checked-size/version-1 implementation record](2026-10-12-f01-checked-size-arithmetic.md) documents the subsequent repair, including the user-authorized move to a uint64_t payload length and the [two header layouts](../../../doc/header-format.md).
+
+| Findings | Follow-up result |
+| --- | --- |
+| F01 | Checked geometry, padding, traversal extents/counters, and codec conversions; exact 64-bit metadata and overflow regression coverage |
+| F02 | Rejected allocations retain prior ownership/storage; failed-reallocation/delete regression passes under ASan |
+| F03 | Raw and reordered byte-capacity validation at active transform entry points; undersized-buffer regressions pass |
+| F04 | All codec adapters validate advertised source length against actual capacity before decoding |
+| F06 | Separate-buffer all-NONE encode/decode now copies the checked payload; both buffer modes tested |
+| F07 | Both header versions reconstruct validated raw size; fresh-handle header/payload round trips pass |
+| F14 | Byte operations/memcpy replace typed header accesses; unaligned header regressions pass |
+| F16 | NONE decompression and the all-NONE shortcut reject incomplete payloads |
+| F13 | Touched sizing/reorder paths now check null handles first; other configuration APIs remain open |
+| F05, F08–F12, F15, F17 | Remain open; no claim that their independent behavior is repaired |
+
+Verification includes 9,720 serial INT16 round trips, two boundary suites (11 checks each), selected four-worker OpenMP comparisons, OpenMP-disabled builds, and C11/C++17 static/shared consumers. Full CTest has seven passing targets and the existing stale target not run. ASan reports no new invalid access; UBSan still reports bundled FastLZ alignment accesses. LeakSanitizer and real 32-bit execution were unavailable. See the implementation record for exact limits and build workarounds.
+
 ## Scope and validation
 
 Reviewed the tracked C library, compression adapters, header serialization, buffer ownership, CMake configuration, and tests. The pre-existing untracked `benchmarks/` directory and old `_build/` binaries were excluded. This is a targeted correctness audit, not an exhaustive security review of the bundled compression libraries.

@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 #if 0
 xrif_error_t xrif_difference_bayer_sint8( xrif_t handle )
@@ -124,15 +125,22 @@ xrif_error_t xrif_difference_bayer_sint8( xrif_t handle )
 
 xrif_error_t xrif_difference_bayer_sint16( xrif_t handle )
 {
-   size_t wid = handle->m_width;
-   size_t hgt = handle->m_height;
-   size_t npix = handle->m_width*handle->m_height;
-   
-   for(size_t n=0; n < handle->m_frames; ++n)
-   {
-      for(size_t kk=0; kk< handle->m_depth; ++kk)
-      {
-         int16_t * rboff = (int16_t*) handle->m_raw_buffer + n * npix * handle->m_depth + kk*npix;
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 2 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+    if( handle->m_width < 2 || handle->m_width % 2 != 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+
+    size_t wid  = handle->m_width;
+    size_t hgt  = handle->m_height;
+    size_t npix = geometry.m_plane_pixels;
+
+    for( size_t n = 0; n < handle->m_frames; ++n )
+    {
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            int16_t *rboff = (int16_t *)handle->m_raw_buffer + n * npix * handle->m_depth + kk * npix;
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0) 
@@ -244,24 +252,17 @@ xrif_error_t xrif_difference_bayer_sint64( xrif_t handle )
 //Dispatch differencing w.r.t. previous according to type
 xrif_error_t xrif_difference_bayer( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_difference_bayer", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_difference_bayer", "handle not set up");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-      
-   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
-   {
-      XRIF_ERROR_PRINT("xrif_difference_bayer", "raw buffer size not sufficient");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_difference_bayer", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
+
    #if 0
    if(handle->m_type_code == XRIF_TYPECODE_INT8 || handle->m_type_code == XRIF_TYPECODE_UINT8)
    {

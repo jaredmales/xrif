@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 //--------------------------------------------------------------------
 //  bitpack reordering
@@ -101,11 +102,16 @@ matter of this Agreement.
   */ 
 xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack_sint16", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 2, XRIF_REORDER_BITPACK );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_reorder_bytepack_sint16", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    //The lookup tables (static arrays)
    #include "bit_to_position.inc"
@@ -117,12 +123,12 @@ xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle )
    if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
+      npix      = geometry.m_total_pixels;
    }
    else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
+       one_frame = geometry.m_frame_bytes;                                //bytes
+       npix      = ( geometry.m_total_pixels - geometry.m_frame_pixels ); //pixels not bytes
    }
    
    for(size_t pix=0; pix < one_frame; ++pix)
@@ -203,11 +209,16 @@ xrif_error_t xrif_reorder_bitpack_sint16( xrif_t handle )
 //Dispatch bitpack reordering according to type
 xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bitpack", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 0, XRIF_REORDER_BITPACK );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_reorder_bitpack", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
@@ -240,77 +251,83 @@ xrif_error_t xrif_reorder_bitpack( xrif_t handle )
 
 /// Perform bitpack unreodering for signed 16 bit ints
 /** 
-  * \todo this does not actually perform any size checks, but should.
+  * Checks the raw and reordered byte capacities before accessing either buffer.
   * 
   * \returns \ref XRIF_NOERROR on success
   * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
   * 
   * \ingroup xrif_reorder_bitpack
-  */ 
+  */
 xrif_error_t xrif_unreorder_bitpack_sint16( xrif_t handle )
-{   
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bitpack_sint16", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+{
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 2, XRIF_REORDER_BITPACK );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
 
-   size_t one_frame, npix;
-   
-   if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
-   {
-      one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
-   }
-   else //For the deprecated frame-to-frame methods we don't do the first frame.
-   {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
-   }
-   
-   for(size_t pix=0; pix< one_frame; ++pix)
-   {
-      handle->m_raw_buffer[pix] = handle->m_reordered_buffer[pix];
-   }
-   
-   int16_t * m_raw_buffer = (int16_t *) (handle->m_raw_buffer + one_frame);
-   uint16_t * m_reordered_buffer = (uint16_t *) (handle->m_reordered_buffer + one_frame);
-   
-   memset(m_raw_buffer, 0, npix*2);
-   
-   //size_t stride = npix/16;
-   size_t stride = (handle->m_reordered_buffer_size - one_frame)/16/2;
-   //printf("strides: %ld %ld\n", npix/16, stride);
-   
-   #ifndef XRIF_NO_OMP
-   #pragma omp parallel if (handle->m_omp_parallel > 0) 
-   {
-   #pragma omp for
-   #endif
-   for(size_t pix = 0; pix<npix; ++pix)
-   {
-      
-      size_t sbyte = pix/16;
-      size_t bit = pix % 16;
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_unreorder_bitpack_sint16", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
 
-      char sbit = (m_reordered_buffer[sbyte] >> bit) & 1;
-      
-      for(int_fast8_t b=1; b<16;++b)
-      {
-         m_raw_buffer[pix] |= ((m_reordered_buffer[sbyte +  b*stride] >> bit) & 1) << (b-1);
-      }
-      
-      //Check if sign change needed
-      if(sbit == 1)
-      {
-         //Check for -0, which is actually -32768
-         if(m_raw_buffer[pix] == 0) m_raw_buffer[pix] = -32768;
-         else m_raw_buffer[pix] *= -1;
-      }
-      
-      
-   }
+    size_t one_frame, npix;
+
+    if( handle->m_difference_method != XRIF_DIFFERENCE_FIRST &&
+        handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0 )
+    {
+        one_frame = 0;
+        npix      = geometry.m_total_pixels;
+    }
+    else //For the deprecated frame-to-frame methods we don't do the first frame.
+    {
+        one_frame = geometry.m_frame_bytes;                                //bytes
+        npix      = ( geometry.m_total_pixels - geometry.m_frame_pixels ); //pixels not bytes
+    }
+
+    for( size_t pix = 0; pix < one_frame; ++pix )
+    {
+        handle->m_raw_buffer[pix] = handle->m_reordered_buffer[pix];
+    }
+
+    int16_t  *m_raw_buffer       = (int16_t *)( handle->m_raw_buffer + one_frame );
+    uint16_t *m_reordered_buffer = (uint16_t *)( handle->m_reordered_buffer + one_frame );
+
+    memset( m_raw_buffer, 0, npix * 2 );
+
+    //size_t stride = npix/16;
+    size_t stride = ( handle->m_reordered_buffer_size - one_frame ) / 16 / 2;
+    //printf("strides: %ld %ld\n", npix/16, stride);
+
+#ifndef XRIF_NO_OMP
+    #pragma omp parallel if( handle->m_omp_parallel > 0 )
+    {
+    #pragma omp for
+#endif
+        for( size_t pix = 0; pix < npix; ++pix )
+        {
+
+            size_t sbyte = pix / 16;
+            size_t bit   = pix % 16;
+
+            char sbit = ( m_reordered_buffer[sbyte] >> bit ) & 1;
+
+            for( int_fast8_t b = 1; b < 16; ++b )
+            {
+                m_raw_buffer[pix] |= ( ( m_reordered_buffer[sbyte + b * stride] >> bit ) & 1 ) << ( b - 1 );
+            }
+
+            //Check if sign change needed
+            if( sbit == 1 )
+            {
+                //Check for -0, which is actually -32768
+                if( m_raw_buffer[pix] == 0 )
+                    m_raw_buffer[pix] = -32768;
+                else
+                    m_raw_buffer[pix] *= -1;
+            }
+        }
    
    #ifndef XRIF_NO_OMP
    }
@@ -322,11 +339,16 @@ xrif_error_t xrif_unreorder_bitpack_sint16( xrif_t handle )
 //Dispatch bitpack unreordering according to type
 xrif_error_t xrif_unreorder_bitpack( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bitpack", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 0, XRIF_REORDER_BITPACK );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_unreorder_bitpack", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {

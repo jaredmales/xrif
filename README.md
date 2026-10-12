@@ -62,53 +62,18 @@ The library provides ways to use `source_data` directly (avoiding the memcpy), a
 
 Note that only `int16` monochrome images are fully supported at this time.
 
-# Header Format
+# Header Formats
 
-| Field | Bytes |  value
-|-------|-------|-----------------
-| 0     | 0-3   | `'x' 'r' 'i' 'f'` [magic number]
-| 1     | 4-7   | `uint32_t` version number of xrif protocol
-| 2     | 8-11  | `uint32_t` total size of header [offset to beginning of data, minimum is 48]
-| 3     | 12-15 | `uint32_t` width of a frame
-| 4     | 16-19 | `uint32_t` height of a frame
-| 5     | 20-23 | `uint32_t` depth of a frame [allows cubes, IFU spectra, etc]
-| 6     | 24-27 | `uint32_t` number of frames
-| 7     | 28-29 | `uint16_t` typecode [is uint8_t in struct, but alignment]
-| 7     | 30-31 | `uint16_t` difference method
-| 8     | 32-33 | `uint16_t` reorder method
-| 9     | 34-35 | `uint16_t` compression method
-| 10    | 36-39 | `uint32_t` size of compressed data 
-| 10    | 40-47 | Reserved, used for method specific parameters. 
+The current writer emits **version 1**, with a **56-byte header** and an unsigned **64-bit compressed payload length** (up to `UINT64_MAX`). Width, height, depth, and frame count each remain unsigned 32-bit values; their products use checked arithmetic. The reader also accepts the legacy **version-0, 48-byte header** with its 32-bit payload length.
 
-The current version is `0`
+| Format | Header byte order | Payload-length field | Codec-options field |
+| --- | --- | --- | --- |
+| Version 0 | Writer's native byte order | Bytes 36–39, `uint32_t` | Bytes 40–47 |
+| Version 1 | Little-endian | Bytes 40–47, `uint64_t` | Bytes 48–55 |
 
-The size of the data is specified by `width X height X depth X xrif_typesize(typecode) X frames`
+See [the complete header specification](doc/header-format.md) for every field's byte offsets, signed method identifiers, codec options, size limits, and migration guidance. Payload lengths exclude the header. Host address-space and codec limits still apply.
 
-Difference method can be:
-
-| Val. | Meaning
-|------|---------
-|  0   |none
-|  100 | w.r.t. previous frame
-|  200 | w.r.t. first frame
-
-Reorder method can be:
-
-| Val. | Meaning
-|------|---------
-| 0    | none
-| 100  | bytepack
-| 200  | bytepack-renibble
-| 300  | bitpack [warning: bitpack is broken, do not use]
-
-Compression method can be:
-
-| Val. | Meaning
-|------|---------
-| 0    | none
-| 100  | LZ4
-
-If Compression method is LZ4 then bytes 40-41 are `uint16_t` containing the `lz4_acceleration` parameter.
+Allocate new headers using `XRIF_HEADER_SIZE`, and prefer the capacity-checked `xrif_write_header_sized` / `xrif_read_header_sized` APIs. Recompile callers that used a hard-coded 48-byte writer buffer. Older libraries reject version 1; the new reader retains version-0 support.
 
 # Code Documentation
 

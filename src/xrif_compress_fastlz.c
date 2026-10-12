@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 // Set the FastLZ compression level
 xrif_error_t xrif_set_fastlz_level( xrif_t handle,     // [in/out] the xrif handle to be configured
@@ -131,103 +132,59 @@ xrif_int_t xrif_fastlz_level( xrif_t handle )
 // Calculate the minimum size of the compressed buffer for FastLZ compression
 size_t xrif_min_compressed_size_fastlz(xrif_t handle)
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_fastlz", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_fastlz", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   //FastLZ wants 5% more than the input size.  We compress the reordered buffer, and it can be the largest buffer.
-   return 1.05*rsz + 1; //make sure we take the next one up.
+    size_t bytes = xrif_min_reordered_size( handle );
+    size_t bound;
+    if( bytes == 0 || bytes > INT_MAX || !xrif_size_add( bytes, bytes / 20 + 1, &bound ) )
+        return 0;
+    if( bound < 66 )
+        bound = 66;
+    return bound <= INT_MAX ? bound : 0;
 }
 
 // Compress using FastLZ
 xrif_error_t xrif_compress_fastlz( xrif_t handle )
 {
-   char *m_compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_fastlz", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-      compressed_size = handle->m_raw_buffer_size;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-      compressed_size = handle->m_compressed_buffer_size;
-   }
-   
-   //FastLZ only takes ints for sizes
-   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-
-   if(compressed_size < xrif_min_compressed_size_fastlz(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_fastlz", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-
-   handle->m_compressed_size = fastlz_compress_level(handle->m_fastlz_level, handle->m_reordered_buffer, srcSize, m_compressed_buffer);
-   
-   if(handle->m_compressed_size == 0 )
-   {
-      XRIF_ERROR_PRINT("xrif_compress_fastlz", "compression failed.");
-      return XRIF_ERROR_FAILURE;
-   }
-   
-   
-   return XRIF_NOERROR;
+    size_t       bytes = xrif_min_reordered_size( handle );
+    size_t       bound = xrif_min_compressed_size_fastlz( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, bound, 0 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    /* Below FastLZ's documented minimum input size, emit the identical single
+       literal run directly, avoiding its before-begin pointer arithmetic. */
+    if( bytes < 16 )
+    {
+        if( handle->m_fastlz_level != 1 && handle->m_fastlz_level != 2 )
+            return XRIF_ERROR_INVALIDCONFIG;
+        buffer[0] = (char)( ( bytes - 1 ) | ( handle->m_fastlz_level == 2 ? 32 : 0 ) );
+        memcpy( buffer + 1, handle->m_reordered_buffer, bytes );
+        handle->m_compressed_size = bytes + 1;
+        return XRIF_NOERROR;
+    }
+    int result = fastlz_compress_level( handle->m_fastlz_level, handle->m_reordered_buffer, (int)bytes, buffer );
+    if( result <= 0 )
+    {
+        handle->m_compressed_size = 0;
+        return XRIF_ERROR_FAILURE;
+    }
+    handle->m_compressed_size = (size_t)result;
+    return XRIF_NOERROR;
 }
 
 // Decompress using FastLZ
 xrif_error_t xrif_decompress_fastlz( xrif_t handle )
 {
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   char *m_compressed_buffer;
-   
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-   }
-   
-   int size_decomp = fastlz_decompress(m_compressed_buffer, handle->m_compressed_size, handle->m_reordered_buffer, handle->m_reordered_buffer_size);
-
-   if(size_decomp == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "decompression failed.  check m_reordered_buffer_size, or possible corruption.");
-      return (XRIF_ERROR_FAILURE);
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_fastlz", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    size_t bytes = xrif_min_reordered_size( handle );
+    if( bytes > INT_MAX || handle->m_compressed_size > INT_MAX )
+        return XRIF_ERROR_INVALID_SIZE;
+    xrif_error_t rv = xrif_validate_codec( handle, bytes, 0, 1 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    int   result = fastlz_decompress( buffer, (int)handle->m_compressed_size, handle->m_reordered_buffer, (int)bytes );
+    if( result <= 0 )
+        return XRIF_ERROR_LIBERR;
+    return (size_t)result == bytes ? XRIF_NOERROR : XRIF_ERROR_INVALID_SIZE;
 }

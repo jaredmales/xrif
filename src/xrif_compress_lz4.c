@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 // Set the LZ4 acceleration parameter
 xrif_error_t xrif_set_lz4_acceleration( xrif_t handle,    // [in/out] the xrif handle to be configured
@@ -131,103 +132,47 @@ xrif_int_t xrif_lz4_acceleration( xrif_t handle )
 // Calculate the minimum size of the compressed buffer for LZ4 compression
 size_t xrif_min_compressed_size_lz4(xrif_t handle)
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_lz4", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_lz4", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   //We compress the reordered buffer, and it can be the largest buffer.
-   return LZ4_compressBound(rsz);
+    size_t bytes = xrif_min_reordered_size( handle );
+    if( bytes == 0 || bytes > LZ4_MAX_INPUT_SIZE )
+        return 0;
+    return (size_t)LZ4_compressBound( (int)bytes );
 }
 
 
 //Compress using LZ4
 xrif_error_t xrif_compress_lz4( xrif_t handle )
 {
-   char *m_compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-      compressed_size = handle->m_raw_buffer_size;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-      compressed_size = handle->m_compressed_buffer_size;
-   }
-   
-   //LZ4 only takes ints for sizes
-   int srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-   
-   if(compressed_size < xrif_min_compressed_size_lz4(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   handle->m_compressed_size = LZ4_compress_fast ( handle->m_reordered_buffer, m_compressed_buffer, srcSize, compressed_size, handle->m_lz4_acceleration);
-   
-   if(handle->m_compressed_size == 0 )
-   {
-      XRIF_ERROR_PRINT("xrif_compress_lz4", "compression failed");
-      return XRIF_ERROR_FAILURE;
-   }
-   
-   
-   return XRIF_NOERROR;
+    size_t       bytes = xrif_min_reordered_size( handle );
+    size_t       bound = xrif_min_compressed_size_lz4( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, bound, 0 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    int   result =
+        LZ4_compress_fast( handle->m_reordered_buffer, buffer, (int)bytes, (int)bound, handle->m_lz4_acceleration );
+    if( result <= 0 )
+    {
+        handle->m_compressed_size = 0;
+        return XRIF_ERROR_FAILURE;
+    }
+    handle->m_compressed_size = (size_t)result;
+    return XRIF_NOERROR;
 }
 
 //Decompress using LZ4
 xrif_error_t xrif_decompress_lz4( xrif_t handle )
 {
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   char *m_compressed_buffer;
-   
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-   }
-   
-   int size_decomp = LZ4_decompress_safe (m_compressed_buffer, handle->m_reordered_buffer, handle->m_compressed_size, handle->m_reordered_buffer_size);
-
-   if(size_decomp < 0)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4", "error in LZ4_decompress_safe");
-      return (XRIF_ERROR_LIBERR + size_decomp);
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_lz4", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    size_t bytes = xrif_min_reordered_size( handle );
+    if( bytes > INT_MAX || handle->m_compressed_size > INT_MAX )
+        return XRIF_ERROR_INVALID_SIZE;
+    xrif_error_t rv = xrif_validate_codec( handle, bytes, 0, 1 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    int result = LZ4_decompress_safe( buffer, handle->m_reordered_buffer, (int)handle->m_compressed_size, (int)bytes );
+    if( result < 0 )
+        return XRIF_ERROR_LIBERR;
+    return (size_t)result == bytes ? XRIF_NOERROR : XRIF_ERROR_INVALID_SIZE;
 }

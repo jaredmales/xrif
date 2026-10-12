@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 //--------------------------------------------------------------------
 //  bytepack_renibble reordering
@@ -101,13 +102,18 @@ matter of this Agreement.
   */ 
 xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle )
 {
-   size_t one_frame, npix;
- 
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack_sint16", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 2, XRIF_REORDER_BYTEPACK_RENIBBLE );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    size_t one_frame, npix;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_reorder_bytepack_sint16", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
       //The lookup table, a static array
    #include "bitshift_and_nibbles.inc"
@@ -115,12 +121,12 @@ xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle )
    if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
+      npix      = geometry.m_total_pixels;
    }
    else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
+       one_frame = geometry.m_frame_bytes;                                //bytes
+       npix      = ( geometry.m_total_pixels - geometry.m_frame_pixels ); //pixels not bytes
    }
    
    
@@ -129,14 +135,17 @@ xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle )
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    
-   //The reordered buffer must be frames+1 big to be sure it can handle odd sizes. 
-   if( handle->m_reordered_buffer_size < xrif_min_reordered_size(handle) )
+   //The reordered buffer must be frames+1 big to be sure it can handle odd sizes.
+   if( handle->m_reordered_buffer_size <
+       xrif_reordered_bytes( &geometry, handle->m_frames, XRIF_REORDER_BYTEPACK_RENIBBLE ) )
    {
       return XRIF_ERROR_INSUFFICIENT_SIZE;
    }
    //Zero the reordered buffer.
-   memset(handle->m_reordered_buffer,0, xrif_min_reordered_size(handle));
-   
+   memset( handle->m_reordered_buffer,
+           0,
+           xrif_reordered_bytes( &geometry, handle->m_frames, XRIF_REORDER_BYTEPACK_RENIBBLE ) );
+
    int16_t * m_raw_buffer = (int16_t*)(handle->m_raw_buffer + one_frame);
    
    //Get pointer that starts one image into the handle->m_reordered_buffer.  This area is 2*npix bytes long
@@ -153,7 +162,7 @@ xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle )
    memcpy(handle->m_reordered_buffer, handle->m_raw_buffer, one_frame);
    
    //Corrections necessary to handle odd numbers
-   size_t halfoff = ((double) npix)/2.0 + 0.5;
+   size_t halfoff = npix / 2 + npix % 2;
    size_t oneoff = 0;
    if(halfoff > npix/2) oneoff = 0;
    
@@ -216,11 +225,16 @@ xrif_error_t xrif_reorder_bytepack_renibble_sint16( xrif_t handle )
 //Dispatch bytepack_renibble reordering according to type
 xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_reorder_bytepack_renibble", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 0, XRIF_REORDER_BYTEPACK_RENIBBLE );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_reorder_bytepack_renibble", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
@@ -253,33 +267,38 @@ xrif_error_t xrif_reorder_bytepack_renibble( xrif_t handle )
 
 /// Perform bytepack_renibble unreodering for signed 16 bit ints
 /** 
-  * \todo this does not actually perform any size checks, but should.
+  * Checks the raw and reordered byte capacities before accessing either buffer.
   * 
   * \returns \ref XRIF_NOERROR on success
   * \returns \ref XRIF_ERROR_NULLPTR if handle is null.
   * \returns \ref XRIF_ERROR_INSUFFICIENT_SIZE if either raw_buffer or reorderd_buffer aren't big enough
   * 
   * \ingroup xrif_reorder_bytepack_renibble
-  */ 
+  */
 xrif_error_t xrif_unreorder_bytepack_renibble_sint16( xrif_t handle )
 {
-   size_t one_frame, npix;
-   
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack_renibble_sint16", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 2, XRIF_REORDER_BYTEPACK_RENIBBLE );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    size_t one_frame, npix;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_unreorder_bytepack_renibble_sint16", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
       
    if(handle->m_difference_method != XRIF_DIFFERENCE_FIRST && handle->m_difference_method != XRIF_DIFFERENCE_PREVIOUS0)
    {
       one_frame = 0;
-      npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames;
+      npix      = geometry.m_total_pixels;
    }
    else //For the deprecated frame-to-frame methods we don't do the first frame.
    {
-      one_frame = handle->m_width*handle->m_height* handle->m_depth *handle->m_data_size; //bytes
-      npix = handle->m_width * handle->m_height * handle->m_depth * (handle->m_frames-1); //pixels not bytes
+       one_frame = geometry.m_frame_bytes;                                //bytes
+       npix      = ( geometry.m_total_pixels - geometry.m_frame_pixels ); //pixels not bytes
    }
    
    int16_t * m_raw_buffer = (int16_t*)(handle->m_raw_buffer + one_frame);
@@ -290,8 +309,8 @@ xrif_error_t xrif_unreorder_bytepack_renibble_sint16( xrif_t handle )
    {
       handle->m_raw_buffer[pix] = handle->m_reordered_buffer[pix];
    }
-   
-   size_t halfoff = ((double) npix)/2 + 0.5;
+
+   size_t halfoff = npix / 2 + npix % 2;
    size_t oneoff = 0;
    if(halfoff > npix/2) oneoff = 0;
    
@@ -347,11 +366,16 @@ xrif_error_t xrif_unreorder_bytepack_renibble_sint16( xrif_t handle )
 //Dispatch bytepack_renibble unreordering according to type
 xrif_error_t xrif_unreorder_bytepack_renibble( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_unreorder_bytepack_renibble", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_reorder( handle, &geometry, 0, XRIF_REORDER_BYTEPACK_RENIBBLE );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_unreorder_bytepack_renibble", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {

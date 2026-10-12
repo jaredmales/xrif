@@ -488,6 +488,15 @@ END_TEST
 
 //-------------------------------------------------------------------
 
+/// Read little-endian fields in assertions without alignment or host-endian assumptions.
+static uint64_t header_uint( const char *header, size_t offset, size_t bytes )
+{
+    uint64_t value = 0;
+    for( size_t i = 0; i < bytes; ++i )
+        value |= (uint64_t)(unsigned char)header[offset + i] << ( 8 * i );
+    return value;
+}
+
 START_TEST (header_write)
 {
    //This test verifies that header fields are correctly populated
@@ -513,22 +522,22 @@ START_TEST (header_write)
    ck_assert( header[1] == 'r' );
    ck_assert( header[2] == 'i' );
    ck_assert( header[3] == 'f' );
- 
-   ck_assert( *((uint32_t *) &header[4]) == XRIF_VERSION);   
-   ck_assert( *((uint32_t *) &header[8]) == XRIF_HEADER_SIZE); 
-   ck_assert( *((uint32_t *) &header[12]) == hand.m_width);
-   ck_assert( *((uint32_t *) &header[16]) == hand.m_height);
-   ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
-   ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
-   ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
-   ck_assert( *((uint16_t *) &header[30]) == hand.m_difference_method);
-   ck_assert( *((uint16_t *) &header[32]) == hand.m_reorder_method);
-   ck_assert( *((uint16_t *) &header[34]) == hand.m_compress_method);
-   ck_assert( *((uint32_t *) &header[36]) == hand.m_compressed_size);
-   ck_assert( *((uint16_t *) &header[40]) == hand.m_lz4_acceleration);
-   ck_assert( *((uint16_t *) &header[42]) == 0);
-   ck_assert( *((uint16_t *) &header[44]) == 0);
-   ck_assert( *((uint16_t *) &header[46]) == 0);
+
+   ck_assert( header_uint( header, 4, 4 ) == XRIF_VERSION );
+   ck_assert( header_uint( header, 8, 4 ) == XRIF_HEADER_SIZE );
+   ck_assert( header_uint( header, 12, 4 ) == (uint64_t)hand.m_width );
+   ck_assert( header_uint( header, 16, 4 ) == (uint64_t)hand.m_height );
+   ck_assert( header_uint( header, 20, 4 ) == (uint64_t)hand.m_depth );
+   ck_assert( header_uint( header, 24, 4 ) == (uint64_t)hand.m_frames );
+   ck_assert( header_uint( header, 28, 2 ) == (uint64_t)hand.m_type_code );
+   ck_assert( header_uint( header, 30, 2 ) == (uint64_t)hand.m_difference_method );
+   ck_assert( header_uint( header, 32, 2 ) == (uint64_t)hand.m_reorder_method );
+   ck_assert( header_uint( header, 34, 2 ) == (uint64_t)hand.m_compress_method );
+   ck_assert( header_uint( header, 40, 8 ) == (uint64_t)hand.m_compressed_size );
+   ck_assert( header_uint( header, 48, 2 ) == (uint64_t)hand.m_lz4_acceleration );
+   ck_assert( header_uint( header, 50, 2 ) == 0 );
+   ck_assert( header_uint( header, 52, 2 ) == 0 );
+   ck_assert( header_uint( header, 54, 2 ) == 0 );
 }
 END_TEST
 
@@ -565,22 +574,22 @@ START_TEST (header_write_lz4hc)
    ck_assert( header[1] == 'r' );
    ck_assert( header[2] == 'i' );
    ck_assert( header[3] == 'f' );
- 
-   ck_assert( *((uint32_t *) &header[4]) == XRIF_VERSION);   
-   ck_assert( *((uint32_t *) &header[8]) == XRIF_HEADER_SIZE); 
-   ck_assert( *((uint32_t *) &header[12]) == hand.m_width);
-   ck_assert( *((uint32_t *) &header[16]) == hand.m_height);
-   ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
-   ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
-   ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
-   ck_assert( *((uint16_t *) &header[30]) == hand.m_difference_method);
-   ck_assert( *((uint16_t *) &header[32]) == hand.m_reorder_method);
-   ck_assert( *((uint16_t *) &header[34]) == hand.m_compress_method);
-   ck_assert( *((uint32_t *) &header[36]) == hand.m_compressed_size);
-   ck_assert( *((uint16_t *) &header[40]) == hand.m_lz4hc_level);
-   ck_assert( *((uint16_t *) &header[42]) == 0);
-   ck_assert( *((uint16_t *) &header[44]) == 0);
-   ck_assert( *((uint16_t *) &header[46]) == 0);
+
+   ck_assert( header_uint( header, 4, 4 ) == XRIF_VERSION );
+   ck_assert( header_uint( header, 8, 4 ) == XRIF_HEADER_SIZE );
+   ck_assert( header_uint( header, 12, 4 ) == (uint64_t)hand.m_width );
+   ck_assert( header_uint( header, 16, 4 ) == (uint64_t)hand.m_height );
+   ck_assert( header_uint( header, 20, 4 ) == (uint64_t)hand.m_depth );
+   ck_assert( header_uint( header, 24, 4 ) == (uint64_t)hand.m_frames );
+   ck_assert( header_uint( header, 28, 2 ) == (uint64_t)hand.m_type_code );
+   ck_assert( header_uint( header, 30, 2 ) == (uint64_t)hand.m_difference_method );
+   ck_assert( header_uint( header, 32, 2 ) == (uint64_t)hand.m_reorder_method );
+   ck_assert( header_uint( header, 34, 2 ) == (uint64_t)hand.m_compress_method );
+   ck_assert( header_uint( header, 40, 8 ) == (uint64_t)hand.m_compressed_size );
+   ck_assert( header_uint( header, 48, 2 ) == (uint64_t)hand.m_lz4hc_level );
+   ck_assert( header_uint( header, 50, 2 ) == 0 );
+   ck_assert( header_uint( header, 52, 2 ) == 0 );
+   ck_assert( header_uint( header, 54, 2 ) == 0 );
 }
 END_TEST
 
@@ -617,22 +626,22 @@ START_TEST (header_write_fastlz)
    ck_assert( header[1] == 'r' );
    ck_assert( header[2] == 'i' );
    ck_assert( header[3] == 'f' );
- 
-   ck_assert( *((uint32_t *) &header[4]) == XRIF_VERSION);   
-   ck_assert( *((uint32_t *) &header[8]) == XRIF_HEADER_SIZE); 
-   ck_assert( *((uint32_t *) &header[12]) == hand.m_width);
-   ck_assert( *((uint32_t *) &header[16]) == hand.m_height);
-   ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
-   ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
-   ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
-   ck_assert( *((uint16_t *) &header[30]) == hand.m_difference_method);
-   ck_assert( *((uint16_t *) &header[32]) == hand.m_reorder_method);
-   ck_assert( *((uint16_t *) &header[34]) == hand.m_compress_method);
-   ck_assert( *((uint32_t *) &header[36]) == hand.m_compressed_size);
-   ck_assert( *((uint16_t *) &header[40]) == hand.m_fastlz_level);
-   ck_assert( *((uint16_t *) &header[42]) == 0);
-   ck_assert( *((uint16_t *) &header[44]) == 0);
-   ck_assert( *((uint16_t *) &header[46]) == 0);
+
+   ck_assert( header_uint( header, 4, 4 ) == XRIF_VERSION );
+   ck_assert( header_uint( header, 8, 4 ) == XRIF_HEADER_SIZE );
+   ck_assert( header_uint( header, 12, 4 ) == (uint64_t)hand.m_width );
+   ck_assert( header_uint( header, 16, 4 ) == (uint64_t)hand.m_height );
+   ck_assert( header_uint( header, 20, 4 ) == (uint64_t)hand.m_depth );
+   ck_assert( header_uint( header, 24, 4 ) == (uint64_t)hand.m_frames );
+   ck_assert( header_uint( header, 28, 2 ) == (uint64_t)hand.m_type_code );
+   ck_assert( header_uint( header, 30, 2 ) == (uint64_t)hand.m_difference_method );
+   ck_assert( header_uint( header, 32, 2 ) == (uint64_t)hand.m_reorder_method );
+   ck_assert( header_uint( header, 34, 2 ) == (uint64_t)hand.m_compress_method );
+   ck_assert( header_uint( header, 40, 8 ) == (uint64_t)hand.m_compressed_size );
+   ck_assert( header_uint( header, 48, 2 ) == (uint64_t)hand.m_fastlz_level );
+   ck_assert( header_uint( header, 50, 2 ) == 0 );
+   ck_assert( header_uint( header, 52, 2 ) == 0 );
+   ck_assert( header_uint( header, 54, 2 ) == 0 );
 }
 END_TEST
 
@@ -669,21 +678,21 @@ START_TEST (header_write_zstd)
    ck_assert( header[1] == 'r' );
    ck_assert( header[2] == 'i' );
    ck_assert( header[3] == 'f' );
- 
-   ck_assert( *((uint32_t *) &header[4]) == XRIF_VERSION);   
-   ck_assert( *((uint32_t *) &header[8]) == XRIF_HEADER_SIZE); 
-   ck_assert( *((uint32_t *) &header[12]) == hand.m_width);
-   ck_assert( *((uint32_t *) &header[16]) == hand.m_height);
-   ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
-   ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
-   ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
-   ck_assert( *((uint16_t *) &header[30]) == hand.m_difference_method);
-   ck_assert( *((uint16_t *) &header[32]) == hand.m_reorder_method);
-   ck_assert( *((uint16_t *) &header[34]) == hand.m_compress_method);
-   ck_assert( *((uint32_t *) &header[36]) == hand.m_compressed_size);
-   ck_assert( *((int32_t *) &header[40]) == hand.m_zstd_level);
-   ck_assert( *((uint16_t *) &header[44]) == 0);
-   ck_assert( *((uint16_t *) &header[46]) == 0);
+
+   ck_assert( header_uint( header, 4, 4 ) == XRIF_VERSION );
+   ck_assert( header_uint( header, 8, 4 ) == XRIF_HEADER_SIZE );
+   ck_assert( header_uint( header, 12, 4 ) == (uint64_t)hand.m_width );
+   ck_assert( header_uint( header, 16, 4 ) == (uint64_t)hand.m_height );
+   ck_assert( header_uint( header, 20, 4 ) == (uint64_t)hand.m_depth );
+   ck_assert( header_uint( header, 24, 4 ) == (uint64_t)hand.m_frames );
+   ck_assert( header_uint( header, 28, 2 ) == (uint64_t)hand.m_type_code );
+   ck_assert( header_uint( header, 30, 2 ) == (uint64_t)hand.m_difference_method );
+   ck_assert( header_uint( header, 32, 2 ) == (uint64_t)hand.m_reorder_method );
+   ck_assert( header_uint( header, 34, 2 ) == (uint64_t)hand.m_compress_method );
+   ck_assert( header_uint( header, 40, 8 ) == (uint64_t)hand.m_compressed_size );
+   ck_assert( (int32_t)header_uint( header, 48, 4 ) == hand.m_zstd_level );
+   ck_assert( header_uint( header, 52, 2 ) == 0 );
+   ck_assert( header_uint( header, 54, 2 ) == 0 );
 }
 END_TEST
 
@@ -724,21 +733,23 @@ START_TEST (header_write_zlib)
    ck_assert( header[1] == 'r' );
    ck_assert( header[2] == 'i' );
    ck_assert( header[3] == 'f' );
- 
-   ck_assert( *((uint32_t *) &header[4]) == XRIF_VERSION);   
-   ck_assert( *((uint32_t *) &header[8]) == XRIF_HEADER_SIZE); 
-   ck_assert( *((uint32_t *) &header[12]) == hand.m_width);
-   ck_assert( *((uint32_t *) &header[16]) == hand.m_height);
-   ck_assert( *((uint32_t *) &header[20]) == hand.m_depth);
-   ck_assert( *((uint32_t *) &header[24]) == hand.m_frames);
-   ck_assert( *((uint16_t *) &header[28]) == hand.m_type_code);
-   ck_assert( *((uint16_t *) &header[30]) == hand.m_difference_method);
-   ck_assert( *((uint16_t *) &header[32]) == hand.m_reorder_method);
-   ck_assert( *((uint16_t *) &header[34]) == hand.m_compress_method);
-   ck_assert( *((uint32_t *) &header[36]) == hand.m_compressed_size);
-   ck_assert( *((int32_t *) &header[40]) == hand.m_zstd_level);
-   ck_assert( *((uint16_t *) &header[44]) == 0);
-   ck_assert( *((uint16_t *) &header[46]) == 0);
+
+   ck_assert( header_uint( header, 4, 4 ) == XRIF_VERSION );
+   ck_assert( header_uint( header, 8, 4 ) == XRIF_HEADER_SIZE );
+   ck_assert( header_uint( header, 12, 4 ) == (uint64_t)hand.m_width );
+   ck_assert( header_uint( header, 16, 4 ) == (uint64_t)hand.m_height );
+   ck_assert( header_uint( header, 20, 4 ) == (uint64_t)hand.m_depth );
+   ck_assert( header_uint( header, 24, 4 ) == (uint64_t)hand.m_frames );
+   ck_assert( header_uint( header, 28, 2 ) == (uint64_t)hand.m_type_code );
+   ck_assert( header_uint( header, 30, 2 ) == (uint64_t)hand.m_difference_method );
+   ck_assert( header_uint( header, 32, 2 ) == (uint64_t)hand.m_reorder_method );
+   ck_assert( header_uint( header, 34, 2 ) == (uint64_t)hand.m_compress_method );
+   ck_assert( header_uint( header, 40, 8 ) == (uint64_t)hand.m_compressed_size );
+   ck_assert( header_uint( header, 48, 1 ) == (uint64_t)hand.m_zlib_level );
+   ck_assert( header_uint( header, 49, 1 ) == (uint64_t)hand.m_zlib_strategy );
+   ck_assert( header_uint( header, 50, 2 ) == 0 );
+   ck_assert( header_uint( header, 52, 2 ) == 0 );
+   ck_assert( header_uint( header, 54, 2 ) == 0 );
 }
 END_TEST
 
@@ -850,6 +861,7 @@ Suite * headerformat_suite(void)
     tcase_add_test(tc_core, header_write_lz4hc );
     tcase_add_test(tc_core, header_write_fastlz );
     tcase_add_test(tc_core, header_write_zstd );
+    tcase_add_test( tc_core, header_write_zlib );
     tcase_add_test(tc_core, header_read );
     suite_add_tcase(s, tc_core);
 

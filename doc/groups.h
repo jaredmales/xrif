@@ -85,6 +85,7 @@
         */
       /** \defgroup header Header Processing 
         * \brief Functions to read and write the xrif header.
+        * See \ref xrif_header_formats for the version-0 and version-1 byte layouts.
         * \ingroup xrif_interface
         */
       /** \defgroup xrif_encode_decode Encoding & Decoding

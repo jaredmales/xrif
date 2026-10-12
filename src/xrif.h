@@ -102,6 +102,7 @@ extern "C"
 #define LZ4_MEMORY_USAGE (20)
 #endif
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -117,10 +118,12 @@ extern "C"
 #include <zlib.h>
 #include <zstd.h>
 
-
-#define XRIF_VERSION (0)
-#define XRIF_HEADER_SIZE (48)
-
+/// Current wire protocol: version 1 uses a 64-bit compressed payload length.
+#define XRIF_VERSION ( 1 )
+/// Fixed version-0 header size, retained for reading legacy streams.
+#define XRIF_HEADER_SIZE_V0 ( 48 )
+/// Size emitted by the current writer; allocate using this macro, not a literal 48.
+#define XRIF_HEADER_SIZE ( 56 )
 
 /// The error reporting type. 
 /** \ingroup xrif_types 
@@ -656,11 +659,13 @@ typedef xrif_handle* xrif_t;
 xrif_error_t xrif_new(xrif_t * handle_ptr /**< [out] a pointer to an xrif handle. */);
 
 /// Set the basic parameters of an xrif handle
-/** After setting these parameters, a call to one of the allocate or set functions
-  * will succeed.
+/** Validates geometry independently of codecs. Buffer allocation/attachment can still fail
+  * due to method limits, insufficient capacity, or allocation failure. All products must fit
+  * both uint64_t and size_t. Failure preserves metadata and storage; success does not resize
+  * existing buffers, whose capacities are checked again before processing.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
-  * \returns \ref XRIF_ERROR_INVALID_SIZE if any of `w`, `h`, `d`, or `f` are 0.
+  * \returns \ref XRIF_ERROR_INVALID_SIZE if an axis is zero or a pixel/byte product exceeds UINT64_MAX or SIZE_MAX.
   * \returns \ref XRIF_ERROR_INVALID_TYPE if `c` specifies an invalid type code
   * \returns \ref XRIF_NOERROR on success
   * 
@@ -693,6 +698,9 @@ xrif_error_t xrif_configure( xrif_t handle,         ///< [in/out] the xrif handl
 
 /// Allocate all memory buffers according to the configuration specified in the handle.
 /** You must call xrif_set_size and xrif_configure prior to calling this function.
+  * All required bounds are validated before any allocation. A later malloc failure can leave
+  * some buffers replaced, but ownership remains valid and the handle can be reset/deleted.
+  * \returns \ref XRIF_ERROR_INVALID_SIZE for overflow or an unsupported method extent
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the handle has not been configured
@@ -700,7 +708,7 @@ xrif_error_t xrif_configure( xrif_t handle,         ///< [in/out] the xrif handl
   * \returns \ref XRIF_NOERROR on success. 
   * 
   * \ingroup xrif_init
-  */ 
+  */
 xrif_error_t xrif_allocate( xrif_t handle   /**< [in/out] the xrif object to be allocated */);
 
 
@@ -845,10 +853,11 @@ xrif_error_t xrif_set_compress_direction( xrif_t handle,                ///< [in
 /// Calculate the minimum size of the raw buffer.
 /** Result is based on current connfiguration of the handle.
   * 
-  * If \ref compress_on_raw = 1, this returns xrif_min_compressed_size(xrif_t).
+  * If m_compress_on_raw = 1, this returns the larger of raw bytes and the valid compression bound.
+  * An invalid bound returns zero rather than falling back to raw bytes.
   * 
   * \returns the minimum size of the raw buffer for a valid configuration.
-  * \returns 0 for an invalid configuration. 
+  * \returns 0 for invalid metadata/configuration, overflow, or an unsupported method size.
   * 
   * \ingroup xrif_alloc
   */
@@ -858,7 +867,7 @@ size_t xrif_min_raw_size(xrif_t handle /**< [in] the xrif handle */ );
 /** Result is based on current connfiguration of the handle.
   * 
   * \returns the minimum size of the reordered buffer for a valid configuration.
-  * \returns 0 for an invalid configuration. 
+  * \returns 0 for invalid metadata/configuration, overflow, or an unsupported method size.
   * 
   * \ingroup xrif_alloc
   */
@@ -870,7 +879,7 @@ size_t xrif_min_reordered_size(xrif_t handle /**< [in] the xrif handle */ );
   * The basic minimum size is set by xrif_min_reordered_size(xrif_t), since the reordered buffer is
   * what is compressed.
   * 
-  * For LZ4, this calls xrif_min_compressed_size_lsz(xrif_t).
+  * For LZ4, this calls xrif_min_compressed_size_lz4(xrif_t).
   * 
   * For FastLZ, this calls xrif_min_compressed_size_fastlz(xrif_t).
   * 
@@ -884,12 +893,14 @@ size_t xrif_min_compressed_size(xrif_t handle /**< [in] the xrif handle */ );
 /// Set the raw data buffer to a pre-allocated pointer
 /** Must only be called after \ref xrif_set_size and \ref xrif_configure have been called.
   * 
-  * If handle's raw_buffer is currently allocated and owned, it is first free()-ed.
+  * An owned raw_buffer is released only after validation and successful replacement.
+  * Failure preserves the existing pointer, capacity, and ownership.
   * 
   * The buffer must be at least as large as the value returned by \ref xrif_min_raw_size.
   * This will return an error if \p size is too small for the currently set values.
   * 
-  * This pointer passed here as \p raw will not be free()-ed on a call to \ref xrif_reset_handle.
+  * A new caller-owned pointer is not freed by xrif_reset_handle. Passing the existing
+  * buffer pointer retains its current ownership; it must still describe the actual allocation.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
@@ -899,7 +910,7 @@ size_t xrif_min_compressed_size(xrif_t handle /**< [in] the xrif handle */ );
   * \see xrif_allocate_raw
   * 
   * \ingroup xrif_alloc
-  */  
+  */
 xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
                            void * raw,     ///< [in] the pointer to a pre-allocated block
                            size_t size     ///< [in] the size of the pre-allocated block
@@ -909,13 +920,14 @@ xrif_error_t xrif_set_raw( xrif_t handle,  ///< [in/out] the xrif handle
 /** Must only be called after \ref xrif_set_size and \ref xrif_configure have been called. This is
   * called by xrif_allocate(), and does not normally need to be called individually.
   * 
-  * If handle's raw_buffer is currently allocated and owned, it is first free()-ed.
+  * An owned raw_buffer is released only after validation and successful replacement.
+  * Failure preserves the existing pointer, capacity, and ownership.
   * 
-  * The size will be set to the maximum of the pre-setup data size and \ref xrif_min_raw_size.
+  * The allocated byte capacity is the checked result of \ref xrif_min_raw_size.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
-  * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
+  * \returns \ref XRIF_ERROR_MALLOC if malloc fails; previous storage and ownership are retained.
   * \returns \ref XRIF_NOERROR on success
   * 
   * \see xrif_set_raw
@@ -966,12 +978,14 @@ size_t xrif_raw_buffer_size( xrif_t handle /**< [in] the xrif handle */);
 /// Set the reordered (working) data buffer to a pre-allocated pointer
 /** Must only be called after xrif_set_size and xrif_configure have been called. 
   * 
-  * If the handle's reordered_buffer is currently allocated and owned, it is first free()-ed.
+  * An owned reordered_buffer is released only after validation and successful replacement.
+  * Failure preserves the existing pointer, capacity, and ownership.
   * 
   * The buffer must be at least as large as the value returned by \ref xrif_min_reordered_size.
   * This will return an error if \p size is too small for the currently set values.
   * 
-  * The pointer passed here will not be free()-ed on a call to xrif_reset_handle.
+  * A new caller-owned pointer is not freed by xrif_reset_handle. Passing the existing
+  * buffer pointer retains its current ownership; it must still describe the actual allocation.
   *
   * \returns 0 on success
   * \returns < 0 on error, with the appropriate XRIF_ERROR_* code.
@@ -982,7 +996,7 @@ size_t xrif_raw_buffer_size( xrif_t handle /**< [in] the xrif handle */);
   * \returns \ref XRIF_NOERROR on success
   * 
   * \ingroup xrif_alloc
-  */  
+  */
 xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object to modify
                                  void * reordered, ///< [in] pointer to a pre-allocated block
                                  size_t size       ///< [in] the size of the pre-allocated block
@@ -992,11 +1006,12 @@ xrif_error_t xrif_set_reordered( xrif_t handle,  ///< [in/out] the xrif object t
 /** Must only be called after xrif_set_size and xrif_configure have been called. This is
   * called by xrif_allocate(), and does not normally need to be called individually.
   * 
-  * If the handle's reordered_buffer is currently allocated and owned, it is first free()-ed.
+  * An owned reordered_buffer is released only after validation and successful replacement.
+  * Failure preserves the existing pointer, capacity, and ownership.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
-  * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
+  * \returns \ref XRIF_ERROR_MALLOC if malloc fails; previous storage and ownership are retained.
   * \returns \ref XRIF_NOERROR on success
   * 
   * \ingroup xrif_alloc
@@ -1045,12 +1060,14 @@ size_t xrif_reordered_buffer_size( xrif_t handle /**< [in] the xrif handle */);
 /// Set the compressed data buffer to a pre-allocated pointer
 /** Must only be called after xrif_set_size and xrif_configure have been called. 
   * 
-  * If the handle's compressed_buffer is currently allocated and owned, it is first free()-ed.
+  * An owned compressed_buffer is released only after validation and successful replacement.
+  * Failure preserves the existing pointer, capacity, and ownership.
   * 
   * The buffer must be at least as large as the value returned by \ref xrif_min_compressed_size.
   * This will return an error if \p size is too small for the currently set values.
   * 
-  * The pointer passed here will not be free()-ed on a call to xrif_reset_handle.
+  * A new caller-owned pointer is not freed by xrif_reset_handle. Passing the existing
+  * buffer pointer retains its current ownership; it must still describe the actual allocation.
   *
   * \returns \ref XRIF_ERROR_NULLPTR if `handle` is a NULL pointer
   * \returns \ref XRIF_ERROR_INVALID_SIZE if bad values are passed for raw or size
@@ -1058,7 +1075,7 @@ size_t xrif_reordered_buffer_size( xrif_t handle /**< [in] the xrif handle */);
   * \returns \ref XRIF_NOERROR on success
   * 
   * \ingroup xrif_alloc
-  */  
+  */
 xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object to modify
                                   void * reordered, ///< [in] pointer to a pre-allocated block
                                   size_t size       ///< [in] the size of the pre-allocated block
@@ -1068,11 +1085,12 @@ xrif_error_t xrif_set_compressed( xrif_t handle,  ///< [in/out] the xrif object 
 /** Must only be called after xrif_set_size and xrif_configure have been called. This is
   * called by xrif_allocate(), and does not normally need to be called individually.
   * 
-  * If handle's compressed_buffer is currently allocated and owned, it is first free()-ed.
+  * An owned compressed_buffer is released only after validation and successful replacement.
+  * Failure preserves the existing pointer, capacity, and ownership.
   * 
   * \returns \ref XRIF_ERROR_NULLPTR if \p handle is a null pointer
   * \returns \ref XRIF_ERROR_NOT_SETUP if the width, heigh, depth, frames, and data_size parameters have not been set
-  * \returns \ref XRIF_ERROR_MALLOC if malloc returns a null pointer.  In this case own_raw will be set to 0.
+  * \returns \ref XRIF_ERROR_MALLOC if malloc fails; previous storage and ownership are retained.
   * \returns \ref XRIF_NOERROR on success
   * 
   * \ingroup xrif_alloc
@@ -1283,30 +1301,50 @@ int xrif_omp_numthreads( xrif_t handle /**< [in] the xrif handle*/);
 //             Header Read/Write
 //==========================================================
 
-/// Populate a header buffer with the xrif protocol details.
-/**
-  * \returns \ref XRIF_ERROR_NULLPTR if either header or handle is NULL
-  * \returns \ref XRIF_NOERROR on success 
-  * 
+/// Write a version-1, little-endian header with a 64-bit compressed payload length.
+/** The destination must have at least XRIF_HEADER_SIZE bytes. Older readers reject version 1.
+  * Dimensions remain uint32_t. See README.md for both wire layouts and codec option fields.
+  * No data is written on validation failure. Returns XRIF_NOERROR, XRIF_ERROR_NULLPTR,
+  * XRIF_ERROR_NOT_SETUP, XRIF_ERROR_INVALID_SIZE, XRIF_ERROR_INVALID_TYPE, or XRIF_ERROR_INVALIDCONFIG.
   * \ingroup header
   */
-xrif_error_t xrif_write_header( char * header, ///< [out] the buffer to hold the protocol header. Must be at least 48 bytes long.
-                                xrif_t handle  ///< [in] the xrif handle from which to populate the header.  This must have been created with xrif_new.
-                              );
+xrif_error_t xrif_write_header( char  *header /**< [out] Header destination, at least XRIF_HEADER_SIZE bytes. */,
+                                xrif_t handle /**< [in] Initialized handle containing valid stream metadata. */ );
 
-/// Configure an xrif handle by reading a xrif protocol header
-/**
-  * \returns \ref XRIF_ERROR_NULLPTR if any of the arguments are NULL
-  * \returns \ref XRIF_ERROR_BADHEADER if the xrif magic number is not the first 4 bytes
-  * \returns \ref XRIF_ERROR_WRONGVERSION if the XRIF version in the header is too high for the compiled library
-  * \returns \ref XRIF_NOERROR on success
-  * 
+/// Write a version-1 header after checking destination capacity.
+/** Same contract as xrif_write_header; additionally returns XRIF_ERROR_INSUFFICIENT_SIZE
+  * if capacity is smaller than XRIF_HEADER_SIZE, without modifying the destination.
   * \ingroup header
   */
-xrif_error_t xrif_read_header( xrif_t handle,          ///< [out] the xrif header to configure.  This must have been created with xrif_new.
-                               uint32_t * header_size, ///< [out] the total size of the header, read from the buffer.
-                               char * header           ///< [in] the buffer containing the header
-                             );
+xrif_error_t xrif_write_header_sized( char  *header /**< [out] Destination buffer. */,
+                                      size_t capacity /**< [in] Available destination bytes. */,
+                                      xrif_t handle /**< [in] Initialized stream handle. */ );
+
+/// Read a complete version-0 or version-1 header into an existing handle.
+/** This compatibility API cannot check the input allocation's length. The caller must supply
+  * the complete header (48 bytes for v0, 56 for v1, plus any declared extension).
+  * Prefer xrif_read_header_sized for file/network input. See that function for errors and state rules.
+  * \ingroup header
+  */
+xrif_error_t xrif_read_header( xrif_t    handle /**< [in/out] Initialized handle; existing storage is retained. */,
+                               uint32_t *header_size /**< [out] Declared header length on success only. */,
+                               char     *header /**< [in] Complete header buffer. */ );
+
+/// Read a header with explicit bounds, validating all dimension and byte-size products.
+/** Version 0 retains native-endian interpretation; version 1 is little-endian. Values exceeding
+  * UINT64_MAX or the host SIZE_MAX are rejected. Success reconstructs raw size and element size.
+  * Failure leaves handle and header_size unchanged. No buffers are allocated, and codec contexts
+  * and direction are retained; configure XRIF_DIRECTION_DECOMPRESS before decoding with zlib/zstd.
+  * Returns XRIF_NOERROR, XRIF_ERROR_NULLPTR, XRIF_ERROR_INSUFFICIENT_SIZE for truncated input,
+  * XRIF_ERROR_BADHEADER for invalid magic/declared length, XRIF_ERROR_WRONGVERSION for a newer
+  * version, or XRIF_ERROR_INVALID_SIZE / XRIF_ERROR_INVALID_TYPE for invalid stream geometry.
+  * Bytes beyond the version's fixed fields are skipped according to the declared header length.
+  * \ingroup header
+  */
+xrif_error_t xrif_read_header_sized( xrif_t      handle /**< [in/out] Initialized stream handle. */,
+                                     uint32_t   *header_size /**< [out] Declared header length on success only. */,
+                                     const char *header /**< [in] Header bytes; alignment is unrestricted. */,
+                                     size_t      available /**< [in] Number of readable bytes in header. */ );
 
 //==========================================================
 //             Encode/Decode

@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 // Set the zstd compression level
 xrif_error_t xrif_set_zstd_level( xrif_t handle,   // [in/out] the xrif handle to be configured
@@ -261,115 +262,53 @@ xrif_error_t xrif_shutdown_zstd(xrif_t handle )
 
 size_t xrif_min_compressed_size_zstd(xrif_t handle)
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_zstd", "can not configure null pointer");
-      return 0;
-   }
-
-   size_t rsz = xrif_min_reordered_size(handle); 
-
-   if(rsz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_min_compressed_size_zstd", "xrif_min_reordered_size failed");
-      return 0;
-   }
-
-   //We compress the reordered buffer, and it can be the largest buffer.
-   return ZSTD_compressBound(rsz);
+    size_t bytes = xrif_min_reordered_size( handle );
+    if( bytes == 0 )
+        return 0;
+    size_t bound = ZSTD_compressBound( bytes );
+    return ZSTD_isError( bound ) ? 0 : bound;
 }
 
 //Compress using zstd
 xrif_error_t xrif_compress_zstd( xrif_t handle )
 {
-   char *m_compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zstd", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->m_compress_direction != XRIF_DIRECTION_COMPRESS || handle->m_zstd_cctx == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zstd", "not configured for compression by zstd");
-      return XRIF_ERROR_INVALIDCONFIG;
-   }
-
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-      compressed_size = handle->m_raw_buffer_size;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-      compressed_size = handle->m_compressed_buffer_size;
-   }
-   
-   size_t srcSize = xrif_min_reordered_size(handle); //This tells us how much memory is actually used by the reordering algorithm.
-   
-   if(compressed_size < xrif_min_compressed_size_zstd(handle))
-   {
-      XRIF_ERROR_PRINT("xrif_compress_zstd", "compressed_size is not large enough.");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   size_t zrv = ZSTD_compress2(handle->m_zstd_cctx, m_compressed_buffer, compressed_size, handle->m_reordered_buffer, srcSize);
-   
-   if(ZSTD_isError(zrv))
-   {
-      handle->m_compressed_size = 0;
-      XRIF_ERROR_PRINT("xrif_compress_zstd", "compression failed");
-      return XRIF_ERROR_FAILURE;
-   }
-
-   handle->m_compressed_size = zrv;
-   
-   return XRIF_NOERROR;
+    size_t       bytes = xrif_min_reordered_size( handle );
+    size_t       bound = xrif_min_compressed_size_zstd( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, bound, 0 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    if( handle->m_compress_direction != XRIF_DIRECTION_COMPRESS || handle->m_zstd_cctx == NULL )
+        return XRIF_ERROR_INVALIDCONFIG;
+    if( bytes > PTRDIFF_MAX || bound > PTRDIFF_MAX )
+        return XRIF_ERROR_INVALID_SIZE;
+    char  *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    size_t result = ZSTD_compress2( handle->m_zstd_cctx, buffer, bound, handle->m_reordered_buffer, bytes );
+    if( ZSTD_isError( result ) )
+    {
+        handle->m_compressed_size = 0;
+        return XRIF_ERROR_FAILURE;
+    }
+    handle->m_compressed_size = (size_t)result;
+    return XRIF_NOERROR;
 }
 
 //Decompress using zstd
 xrif_error_t xrif_decompress_zstd( xrif_t handle )
 {
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zstd", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_compress_direction != XRIF_DIRECTION_DECOMPRESS || handle->m_zstd_dctx == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zstd", "not configured for decompression by zstd");
-      return XRIF_ERROR_INVALIDCONFIG;
-   }
-
-   char *m_compressed_buffer;
-   
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-   }
-   
-   size_t size_decomp = ZSTD_decompressDCtx(handle->m_zstd_dctx, handle->m_reordered_buffer, handle->m_reordered_buffer_size, m_compressed_buffer, handle->m_compressed_size);
-
-   if( ZSTD_isError(size_decomp))
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zstd", "error in ZSTD_decompressDCtx");
-      return XRIF_ERROR_LIBERR;
-   }
-   
-   //Make sure we have the correct amount of data
-   if(xrif_min_reordered_size(handle) != size_decomp) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_zstd", "size mismatch after decompression.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    size_t bytes = xrif_min_reordered_size( handle );
+    if( handle->m_compress_direction != XRIF_DIRECTION_DECOMPRESS || handle->m_zstd_dctx == NULL )
+        return XRIF_ERROR_INVALIDCONFIG;
+    if( bytes > PTRDIFF_MAX || handle->m_compressed_size > PTRDIFF_MAX )
+        return XRIF_ERROR_INVALID_SIZE;
+    xrif_error_t rv = xrif_validate_codec( handle, bytes, 0, 1 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char  *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    size_t result = ZSTD_decompressDCtx(
+        handle->m_zstd_dctx, handle->m_reordered_buffer, bytes, buffer, handle->m_compressed_size );
+    if( ZSTD_isError( result ) )
+        return XRIF_ERROR_LIBERR;
+    return (size_t)result == bytes ? XRIF_NOERROR : XRIF_ERROR_INVALID_SIZE;
 }

@@ -134,3 +134,17 @@ if(LIBZSTD)
     target_link_libraries(xrif_test_difference_pixelL_whitenoise ${LIBZSTD})
     target_link_libraries(xrif_test_ascii ${LIBZSTD})
 endif()
+
+# Boundary tests use the static archive so the second target can substitute only
+# the zlib adapter, forcing small windows without allocating multi-gigabyte data.
+add_executable(xrif_test_sizes xrif_test_sizes.c)
+add_executable(xrif_test_sizes_zlib_windows xrif_test_sizes.c ../src/xrif_compress_zlib.c)
+target_compile_definitions(xrif_test_sizes_zlib_windows PRIVATE XRIF_ZLIB_WINDOW_SIZE=17)
+foreach(size_target xrif_test_sizes xrif_test_sizes_zlib_windows)
+    target_link_libraries(${size_target} xrif-static ${CHECK_LIBRARIES} ${SUBUNIT_LIBRARIES})
+    foreach(optional_library LIBRT LIBM LIBPTHREAD LIBZ LIBZSTD)
+        if(${optional_library})
+            target_link_libraries(${size_target} ${${optional_library}})
+        endif()
+    endforeach()
+endforeach()

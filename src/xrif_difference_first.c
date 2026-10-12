@@ -85,26 +85,30 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
-
-
+#include "xrif_size_internal.h"
 
 xrif_error_t xrif_difference_first_sint16( xrif_t handle )
 {
-   size_t npix = handle->m_width*handle->m_height;
-   
-   int16_t * rb = (int16_t *) handle->m_raw_buffer;
-   
-   for(int n=0; n < handle->m_frames-1; ++n)
-   {
-      size_t n_stride0 = 0;
-      size_t n_stride =  (handle->m_frames - 1 - n) * npix*handle->m_depth;
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 2 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
 
-      for(int kk=0; kk< handle->m_depth; ++kk)
-      {
-         size_t kk_stride = kk*npix;
+    size_t npix = geometry.m_plane_pixels;
 
-         int16_t * rb0 = &rb[n_stride0 + kk_stride];
-         int16_t * rb1 = &rb[n_stride + kk_stride];
+    int16_t *rb = (int16_t *)handle->m_raw_buffer;
+
+    for( size_t n = 0; n < handle->m_frames - 1; ++n )
+    {
+        size_t n_stride0 = 0;
+        size_t n_stride  = ( handle->m_frames - 1 - n ) * npix * handle->m_depth;
+
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            size_t kk_stride = kk * npix;
+
+            int16_t *rb0 = &rb[n_stride0 + kk_stride];
+            int16_t *rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0)
@@ -115,10 +119,10 @@ xrif_error_t xrif_difference_first_sint16( xrif_t handle )
          #pragma omp for
          #endif
 
-         for(int qq=0; qq < npix; ++qq)
-         {
-            rb1[qq] = (rb1[qq] - rb0[qq]);
-         }
+             for( size_t qq = 0; qq < npix; ++qq )
+             {
+                 rb1[qq] = ( rb1[qq] - rb0[qq] );
+             }
          
          #ifndef XRIF_NO_OMP
          }
@@ -131,21 +135,26 @@ xrif_error_t xrif_difference_first_sint16( xrif_t handle )
 
 xrif_error_t xrif_difference_first_sint32( xrif_t handle )
 {
-   size_t npix = handle->m_width*handle->m_height;
-   
-   int32_t * rb = (int32_t *) handle->m_raw_buffer;
-   
-   for(int n=0; n < handle->m_frames-1; ++n)
-   {
-      size_t n_stride0 = 0;
-      size_t n_stride =  (handle->m_frames - 1 - n) * npix*handle->m_depth;
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 4 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
 
-      for(int kk=0; kk< handle->m_depth; ++kk)
-      {
-         size_t kk_stride = kk*npix;
-   
-         int32_t * rb0 = &rb[n_stride0 + kk_stride];
-         int32_t * rb1 = &rb[n_stride + kk_stride];
+    size_t npix = geometry.m_plane_pixels;
+
+    int32_t *rb = (int32_t *)handle->m_raw_buffer;
+
+    for( size_t n = 0; n < handle->m_frames - 1; ++n )
+    {
+        size_t n_stride0 = 0;
+        size_t n_stride  = ( handle->m_frames - 1 - n ) * npix * handle->m_depth;
+
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            size_t kk_stride = kk * npix;
+
+            int32_t *rb0 = &rb[n_stride0 + kk_stride];
+            int32_t *rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0)
@@ -155,11 +164,11 @@ xrif_error_t xrif_difference_first_sint32( xrif_t handle )
          #ifndef XRIF_NO_OMP
          #pragma omp for
          #endif
-            
-         for(int qq=0; qq < npix; ++qq)
-         {
-            rb1[qq] = (rb1[qq] - rb0[qq]);
-         } 
+
+             for( size_t qq = 0; qq < npix; ++qq )
+             {
+                 rb1[qq] = ( rb1[qq] - rb0[qq] );
+             }
          
          #ifndef XRIF_NO_OMP
          }
@@ -172,21 +181,26 @@ xrif_error_t xrif_difference_first_sint32( xrif_t handle )
 
 xrif_error_t xrif_difference_first_sint64( xrif_t handle )
 {
-   size_t npix = handle->m_width*handle->m_height;
-   
-   int64_t * rb = (int64_t *) handle->m_raw_buffer;
-   
-   for(int n=0; n < handle->m_frames-1; ++n)
-   {
-      size_t n_stride0 = 0;
-      size_t n_stride =  (handle->m_frames - 1 - n) * npix*handle->m_depth;
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 8 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
 
-      for(int kk=0; kk< handle->m_depth; ++kk)
-      {
-         size_t kk_stride = kk*npix;
-         
-         int64_t * rb0 = &rb[n_stride0 + kk_stride];
-         int64_t * rb1 = &rb[n_stride + kk_stride];
+    size_t npix = geometry.m_plane_pixels;
+
+    int64_t *rb = (int64_t *)handle->m_raw_buffer;
+
+    for( size_t n = 0; n < handle->m_frames - 1; ++n )
+    {
+        size_t n_stride0 = 0;
+        size_t n_stride  = ( handle->m_frames - 1 - n ) * npix * handle->m_depth;
+
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            size_t kk_stride = kk * npix;
+
+            int64_t *rb0 = &rb[n_stride0 + kk_stride];
+            int64_t *rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0)
@@ -196,11 +210,11 @@ xrif_error_t xrif_difference_first_sint64( xrif_t handle )
          #ifndef XRIF_NO_OMP
          #pragma omp for
          #endif
-            
-         for(int qq=0; qq< npix;++qq)
-         {
-            rb1[qq] = (rb1[qq] - rb0[qq]);
-         }
+
+             for( size_t qq = 0; qq < npix; ++qq )
+             {
+                 rb1[qq] = ( rb1[qq] - rb0[qq] );
+             }
          
          #ifndef XRIF_NO_OMP
          }
@@ -215,24 +229,17 @@ xrif_error_t xrif_difference_first_sint64( xrif_t handle )
 //Dispatch differencing w.r.t. previous according to type
 xrif_error_t xrif_difference_first( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_difference_first", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_difference_first", "handle not set up");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-      
-   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
-   {
-      XRIF_ERROR_PRINT("xrif_difference_first", "raw buffer size not sufficient");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_difference_first", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
+
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
       return xrif_difference_first_sint16(handle);
@@ -260,21 +267,26 @@ xrif_error_t xrif_difference_first( xrif_t handle )
 
 xrif_error_t xrif_undifference_first_sint16( xrif_t handle )
 {
-   size_t npix = handle->m_width*handle->m_height;
-   
-   int16_t * rb = (int16_t *) handle->m_raw_buffer;
-   
-   for(int n=1; n < handle->m_frames; ++n)
-   {
-      size_t n_stride0 = 0;
-      size_t n_stride =  n * npix*handle->m_depth;
-      
-      for(int kk=0; kk<handle->m_depth; ++kk)
-      {
-         size_t kk_stride = kk*npix;
-         
-         int16_t * rb0 = &rb[n_stride0 + kk_stride];
-         int16_t * rb1 = &rb[n_stride + kk_stride];
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 2 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    size_t npix = geometry.m_plane_pixels;
+
+    int16_t *rb = (int16_t *)handle->m_raw_buffer;
+
+    for( size_t n = 1; n < handle->m_frames; ++n )
+    {
+        size_t n_stride0 = 0;
+        size_t n_stride  = n * npix * handle->m_depth;
+
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            size_t kk_stride = kk * npix;
+
+            int16_t *rb0 = &rb[n_stride0 + kk_stride];
+            int16_t *rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0)
@@ -284,11 +296,11 @@ xrif_error_t xrif_undifference_first_sint16( xrif_t handle )
          #ifndef XRIF_NO_OMP
          #pragma omp for
          #endif
-            
-         for(int qq=0; qq< handle->m_width*handle->m_height; ++qq)
-         {
-            rb1[qq] = rb1[qq] + rb0[qq];
-         }
+
+             for( size_t qq = 0; qq < geometry.m_plane_pixels; ++qq )
+             {
+                 rb1[qq] = rb1[qq] + rb0[qq];
+             }
          
          #ifndef XRIF_NO_OMP
          }
@@ -301,21 +313,26 @@ xrif_error_t xrif_undifference_first_sint16( xrif_t handle )
 
 xrif_error_t xrif_undifference_first_sint32( xrif_t handle )
 {
-   size_t npix = handle->m_width*handle->m_height;
-   
-   int32_t * rb = (int32_t *) handle->m_raw_buffer;
-   
-   for(int n=1; n < handle->m_frames; ++n)
-   {
-      size_t n_stride0 = 0;
-      size_t n_stride =  n * npix*handle->m_depth;
-      
-      for(int kk=0; kk<handle->m_depth; ++kk)
-      {
-         size_t kk_stride = kk*npix;
-         
-         int32_t * rb0 = &rb[n_stride0 + kk_stride];
-         int32_t * rb1 = &rb[n_stride + kk_stride];
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 4 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    size_t npix = geometry.m_plane_pixels;
+
+    int32_t *rb = (int32_t *)handle->m_raw_buffer;
+
+    for( size_t n = 1; n < handle->m_frames; ++n )
+    {
+        size_t n_stride0 = 0;
+        size_t n_stride  = n * npix * handle->m_depth;
+
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            size_t kk_stride = kk * npix;
+
+            int32_t *rb0 = &rb[n_stride0 + kk_stride];
+            int32_t *rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0)
@@ -325,11 +342,11 @@ xrif_error_t xrif_undifference_first_sint32( xrif_t handle )
          #ifndef XRIF_NO_OMP
          #pragma omp for
          #endif
-            
-         for(int qq=0; qq< handle->m_width*handle->m_height; ++qq)
-         {
-            rb1[qq] = rb1[qq] + rb0[qq];
-         }
+
+             for( size_t qq = 0; qq < geometry.m_plane_pixels; ++qq )
+             {
+                 rb1[qq] = rb1[qq] + rb0[qq];
+             }
          
          #ifndef XRIF_NO_OMP
          }
@@ -342,21 +359,26 @@ xrif_error_t xrif_undifference_first_sint32( xrif_t handle )
 
 xrif_error_t xrif_undifference_first_sint64( xrif_t handle )
 {
-   size_t npix = handle->m_width*handle->m_height;
-   
-   int64_t * rb = (int64_t *) handle->m_raw_buffer;
-   
-   for(int n=1; n < handle->m_frames; ++n)
-   {
-      size_t n_stride0 = 0;
-      size_t n_stride =  n * npix*handle->m_depth;
-      
-      for(int kk=0; kk<handle->m_depth; ++kk)
-      {
-         size_t kk_stride = kk*npix;
-         
-         int64_t * rb0 = &rb[n_stride0 + kk_stride];
-         int64_t * rb1 = &rb[n_stride + kk_stride];
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 8 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    size_t npix = geometry.m_plane_pixels;
+
+    int64_t *rb = (int64_t *)handle->m_raw_buffer;
+
+    for( size_t n = 1; n < handle->m_frames; ++n )
+    {
+        size_t n_stride0 = 0;
+        size_t n_stride  = n * npix * handle->m_depth;
+
+        for( size_t kk = 0; kk < handle->m_depth; ++kk )
+        {
+            size_t kk_stride = kk * npix;
+
+            int64_t *rb0 = &rb[n_stride0 + kk_stride];
+            int64_t *rb1 = &rb[n_stride + kk_stride];
          
          #ifndef XRIF_NO_OMP
          #pragma omp parallel if (handle->m_omp_parallel > 0)
@@ -366,11 +388,11 @@ xrif_error_t xrif_undifference_first_sint64( xrif_t handle )
          #ifndef XRIF_NO_OMP
          #pragma omp for
          #endif
-            
-         for(int qq=0; qq< npix; ++qq)
-         {
-            rb1[qq] = rb1[qq] + rb0[qq];
-         }
+
+             for( size_t qq = 0; qq < npix; ++qq )
+             {
+                 rb1[qq] = rb1[qq] + rb0[qq];
+             }
          
          #ifndef XRIF_NO_OMP
          }
@@ -385,24 +407,17 @@ xrif_error_t xrif_undifference_first_sint64( xrif_t handle )
 //Dispatch undifferencing w.r.t. previous according to type
 xrif_error_t xrif_undifference_first( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_undifference_first", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( handle->m_raw_buffer == NULL || handle->m_width*handle->m_height*handle->m_depth*handle->m_frames == 0 || handle->m_type_code == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_undifference_first", "handle not set up");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-      
-   if(handle->m_raw_buffer_size < handle->m_width*handle->m_height*handle->m_depth*handle->m_frames)
-   {
-      XRIF_ERROR_PRINT("xrif_undifference_first", "raw buffer size not sufficient");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_undifference_first", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
+
    if(handle->m_type_code == XRIF_TYPECODE_INT16 || handle->m_type_code == XRIF_TYPECODE_UINT16)
    {
       return xrif_undifference_first_sint16(handle);

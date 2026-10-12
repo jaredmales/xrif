@@ -85,6 +85,7 @@ matter of this Agreement.
 */
 
 #include "xrif.h"
+#include "xrif_size_internal.h"
 
 #define BIT15 (32768)
 #define BIT14 (16384)
@@ -125,47 +126,23 @@ xrif_error_t xrif_new(xrif_t * handle_ptr)
 }
 
 // Set the basic parameters of an xrif handle
-xrif_error_t xrif_set_size( xrif_t handle,
-                            xrif_dimension_t w,
-                            xrif_dimension_t h,
-                            xrif_dimension_t d,
-                            xrif_dimension_t f,
-                            xrif_int_t c
-                          )
+xrif_error_t xrif_set_size(
+    xrif_t handle, xrif_dimension_t w, xrif_dimension_t h, xrif_dimension_t d, xrif_dimension_t f, xrif_int_t c )
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_set_size", "can not size null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   
-   if(w == 0 || h == 0 || d == 0 || f == 0) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_size", "invalid size");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   size_t sz = xrif_typesize(c);
-   
-   if(sz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_set_size", "invalid type");
-      return XRIF_ERROR_INVALID_TYPE;
-   }
-   
-   
-   handle->m_width = w;
-   handle->m_height = h;
-   handle->m_depth = d;
-   handle->m_frames = f;
-   handle->m_type_code = c;
-   
-   handle->m_data_size = sz;
-   
-   handle->m_raw_size = w*h*d*f*sz;
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_geometry_make( &geometry, w, h, d, f, c );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    handle->m_width     = w;
+    handle->m_height    = h;
+    handle->m_depth     = d;
+    handle->m_frames    = f;
+    handle->m_type_code = c;
+    handle->m_data_size = geometry.m_element_bytes;
+    handle->m_raw_size  = geometry.m_raw_bytes;
+    return XRIF_NOERROR;
 }
 
 // Configure the difference, reorder, and compression methods.
@@ -203,15 +180,15 @@ xrif_error_t xrif_allocate( xrif_t handle )
       XRIF_ERROR_PRINT("xrif_allocate", "can not configure null pointer");
       return XRIF_ERROR_NULLPTR;
    }
-   
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0) 
-   {
-      XRIF_ERROR_PRINT("xrif_allocate", "the handle is not setup for allocation");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-   
-   xrif_error_t rv;
-   
+
+   xrif_geometry geometry;
+   xrif_error_t  rv = xrif_geometry_get( handle, &geometry );
+   if( rv != XRIF_NOERROR )
+       return rv;
+   if( xrif_min_raw_size( handle ) == 0 || xrif_min_reordered_size( handle ) == 0 ||
+       xrif_min_compressed_size( handle ) == 0 )
+       return XRIF_ERROR_INVALID_SIZE;
+
    rv = xrif_allocate_raw(handle);
    if(rv < 0) 
    {
@@ -550,60 +527,24 @@ xrif_error_t xrif_set_compress_direction( xrif_t handle,
 // Calculate the minimum size of the raw buffer.
 size_t xrif_min_raw_size(xrif_t handle)
 {
-   if(handle->m_compress_on_raw == 0) //Won't use raw to store compressed data
-   {
-      return handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
-   }
-   else
-   {
-      //In this case it depends on size needed for compression.
-      size_t minSz = xrif_min_compressed_size(handle);
-      
-      if(minSz < handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size) 
-      {
-         minSz = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
-      }
-   
-      return minSz;
-   }
-   
-   return 0;
+    xrif_geometry geometry;
+    if( xrif_geometry_get( handle, &geometry ) != XRIF_NOERROR )
+        return 0;
+    if( !handle->m_compress_on_raw )
+        return geometry.m_raw_bytes;
+    size_t compressed = xrif_min_compressed_size( handle );
+    if( compressed == 0 )
+        return 0;
+    return compressed > geometry.m_raw_bytes ? compressed : geometry.m_raw_bytes;
 }
 
 // Calculate the minimum size of the reordered buffer.
 size_t xrif_min_reordered_size(xrif_t handle)
 {
-   if(handle == NULL) return 0;
-   
-   if(handle->m_reorder_method == XRIF_REORDER_NONE)
-   {
-      return handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
-   }
-   
-   if(handle->m_reorder_method == XRIF_REORDER_BYTEPACK)
-   {
-      size_t one_frame = handle->m_width*handle->m_height*handle->m_depth*handle->m_data_size;
-   
-      return one_frame * (handle->m_frames);
-   }
-   
-   if(handle->m_reorder_method == XRIF_REORDER_BYTEPACK_RENIBBLE)
-   {
-      size_t one_frame = handle->m_width * handle->m_height * handle->m_depth * handle->m_data_size;
-      
-      return one_frame * (handle->m_frames+1); //Allocating an extra frame to allow for odd number of pixels in reorder step   
-   }
-   
-   if(handle->m_reorder_method == XRIF_REORDER_BITPACK)
-   {
-      size_t one_frame = handle->m_width * handle->m_height * handle->m_depth * handle->m_data_size;
-
-      if(one_frame < 16) one_frame = 16; //Handle cases where too little data is available for bitpacking.
-   
-      return one_frame * (handle->m_frames+1); //Allocating an extra frame to allow for odd number of pixels in reorder step   
-   }
-   
-   return 0;
+    xrif_geometry geometry;
+    if( xrif_geometry_get( handle, &geometry ) != XRIF_NOERROR )
+        return 0;
+    return xrif_reordered_bytes( &geometry, handle->m_frames, handle->m_reorder_method );
 }
 
 /// Calculate the minimum size of the compressed buffer.
@@ -645,267 +586,136 @@ size_t xrif_min_compressed_size(xrif_t handle)
 }
 
 // Set the raw data buffer to a pre-allocated pointer
-xrif_error_t xrif_set_raw( xrif_t handle,
-                           void * raw,          
-                           size_t size          
-                         )
+xrif_error_t xrif_set_raw( xrif_t handle, void *buffer, size_t size )
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_set_raw", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_raw_buffer && handle->m_own_raw )
-   {
-      free(handle->m_raw_buffer);
-   }
-
-   handle->m_own_raw = 0;
-
-   handle->m_raw_buffer = raw;
-   
-   handle->m_raw_buffer_size = size;
-   
-   if((handle->m_raw_buffer != NULL && handle->m_raw_buffer_size == 0) || (handle->m_raw_buffer == 0 && handle->m_raw_buffer_size != 0)) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_raw", "the size is not valid");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   //Check if we meet minimum size requirement based on m_compress_on_raw value
-   size_t minSz = xrif_min_raw_size(handle);
-   if(minSz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_set_raw", "error calculating minimum raw buffer size - check configuration.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   if(handle->m_raw_buffer_size < minSz) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_raw", "the raw buffer size is too small for configured parameters");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( ( buffer == NULL ) != ( size == 0 ) )
+        return XRIF_ERROR_INVALID_SIZE;
+    size_t required = xrif_min_raw_size( handle );
+    if( required == 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+    if( size < required )
+        return XRIF_ERROR_INSUFFICIENT_SIZE;
+    /* Passing the existing buffer back must not free it or lose its ownership. */
+    if( buffer != handle->m_raw_buffer )
+    {
+        if( handle->m_own_raw )
+            free( handle->m_raw_buffer );
+        handle->m_raw_buffer = buffer;
+        handle->m_own_raw    = 0;
+    }
+    handle->m_raw_buffer_size = size;
+    return XRIF_NOERROR;
 }
 
 // Allocate the raw buffer based on the already set stream dimensions.
 xrif_error_t xrif_allocate_raw( xrif_t handle )
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_raw", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_raw", "the handle is not setup for allocation");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-   
-   if(handle->m_raw_buffer && handle->m_own_raw )
-   {
-      free(handle->m_raw_buffer);
-   }
-   
-   handle->m_raw_buffer_size = xrif_min_raw_size(handle);
-   if(handle->m_raw_buffer_size == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_raw", "error calculating minimum raw buffer size - check configuration.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   handle->m_raw_buffer = (char *) malloc( handle->m_raw_buffer_size );
-   
-   if(handle->m_raw_buffer == NULL) 
-   {
-      handle->m_own_raw = 0;
-      
-      XRIF_ERROR_PRINT("xrif_allocate_raw", "error from malloc");
-      
-      return XRIF_ERROR_MALLOC;
-   }
-   
-   handle->m_own_raw = 1;
-   
-   return XRIF_NOERROR;
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_geometry_get( handle, &geometry );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    size_t required = xrif_min_raw_size( handle );
+    if( required == 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+    char *buffer = malloc( required );
+    if( buffer == NULL )
+        return XRIF_ERROR_MALLOC;
+    if( handle->m_own_raw )
+        free( handle->m_raw_buffer );
+    handle->m_raw_buffer      = buffer;
+    handle->m_raw_buffer_size = required;
+    handle->m_own_raw         = 1;
+    return XRIF_NOERROR;
 }
 
 // Set the reordered (working) data buffer to a pre-allocated pointer
-xrif_error_t xrif_set_reordered( xrif_t handle,
-                                 void * reordered,
-                                 size_t size
-                               )
+xrif_error_t xrif_set_reordered( xrif_t handle, void *buffer, size_t size )
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_set_reordered", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_reordered_buffer && handle->m_own_reordered )
-   {
-      free(handle->m_reordered_buffer);
-   }
-   
-   handle->m_reordered_buffer = reordered;
-   
-   handle->m_reordered_buffer_size = size;
-   
-   handle->m_own_reordered = 0;
-   
-   if((handle->m_reordered_buffer != NULL && handle->m_reordered_buffer_size == 0) || (handle->m_reordered_buffer == 0 && handle->m_reordered_buffer_size != 0))
-   {
-      XRIF_ERROR_PRINT("xrif_set_reordered", "the size is not valid");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   //Check minimum size for reordering algorithms to work.
-   size_t minSz = xrif_min_reordered_size(handle);
-   if(minSz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_set_reordered", "error calculating minimum reordered buffer size - check configuration.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   if(handle->m_reordered_buffer_size < minSz)
-   {
-      XRIF_ERROR_PRINT("xrif_set_reordered", "the reordered buffer size is too small for configured parameters");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( ( buffer == NULL ) != ( size == 0 ) )
+        return XRIF_ERROR_INVALID_SIZE;
+    size_t required = xrif_min_reordered_size( handle );
+    if( required == 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+    if( size < required )
+        return XRIF_ERROR_INSUFFICIENT_SIZE;
+    /* Passing the existing buffer back must not free it or lose its ownership. */
+    if( buffer != handle->m_reordered_buffer )
+    {
+        if( handle->m_own_reordered )
+            free( handle->m_reordered_buffer );
+        handle->m_reordered_buffer = buffer;
+        handle->m_own_reordered    = 0;
+    }
+    handle->m_reordered_buffer_size = size;
+    return XRIF_NOERROR;
 }
 
 // Allocate the reordered buffer based on the already set stream dimensions.
 xrif_error_t xrif_allocate_reordered( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_reordered", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_reordered", "the handle is not setup for allocation");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-   
-   if(handle->m_reordered_buffer && handle->m_own_reordered)
-   {
-      free(handle->m_reordered_buffer);
-   }
-
-   handle->m_reordered_buffer_size = xrif_min_reordered_size(handle);
-   if(handle->m_reordered_buffer_size == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_reordered", "error calculating minimum reordered buffer size - check configuration.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   handle->m_reordered_buffer = (char *) malloc( handle->m_reordered_buffer_size );
-   
-   if(handle->m_reordered_buffer == NULL) 
-   {
-      handle->m_reordered_buffer_size = 0;
-      handle->m_own_reordered = 0;
-      
-      XRIF_ERROR_PRINT("xrif_allocate_reordered", "error from malloc");
-      return XRIF_ERROR_MALLOC;
-   }
-   
-   handle->m_own_reordered = 1;
-   
-   return XRIF_NOERROR;
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_geometry_get( handle, &geometry );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    size_t required = xrif_min_reordered_size( handle );
+    if( required == 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+    char *buffer = malloc( required );
+    if( buffer == NULL )
+        return XRIF_ERROR_MALLOC;
+    if( handle->m_own_reordered )
+        free( handle->m_reordered_buffer );
+    handle->m_reordered_buffer      = buffer;
+    handle->m_reordered_buffer_size = required;
+    handle->m_own_reordered         = 1;
+    return XRIF_NOERROR;
 }
 
-xrif_error_t xrif_set_compressed( xrif_t handle, 
-                                  void * compressed,    
-                                  size_t size           
-                                )
+xrif_error_t xrif_set_compressed( xrif_t handle, void *buffer, size_t size )
 {
-
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_compressed", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_compressed_buffer && handle->m_own_compressed )
-   {
-      free(handle->m_compressed_buffer);
-   }
-
-   handle->m_own_compressed = 0;
-
-   handle->m_compressed_buffer = compressed;
-   
-   handle->m_compressed_buffer_size = size;
-   
-   if((handle->m_compressed_buffer != NULL && handle->m_compressed_buffer_size == 0) || (handle->m_compressed_buffer == 0 && handle->m_compressed_buffer_size != 0)) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_compressed", "the size is not valid");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   size_t minSz = xrif_min_compressed_size(handle);
-   if(minSz == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_set_compressed", "error calculating minimum compressed buffer size - check configuration.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-   
-   if(handle->m_compressed_buffer_size < minSz) 
-   {
-      XRIF_ERROR_PRINT("xrif_set_compressed", "the compressed buffer size is too small for configured parameters");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   return XRIF_NOERROR;
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( ( buffer == NULL ) != ( size == 0 ) )
+        return XRIF_ERROR_INVALID_SIZE;
+    size_t required = xrif_min_compressed_size( handle );
+    if( required == 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+    if( size < required )
+        return XRIF_ERROR_INSUFFICIENT_SIZE;
+    /* Passing the existing buffer back must not free it or lose its ownership. */
+    if( buffer != handle->m_compressed_buffer )
+    {
+        if( handle->m_own_compressed )
+            free( handle->m_compressed_buffer );
+        handle->m_compressed_buffer = buffer;
+        handle->m_own_compressed    = 0;
+    }
+    handle->m_compressed_buffer_size = size;
+    return XRIF_NOERROR;
 }
 
 xrif_error_t xrif_allocate_compressed( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_compressed", "can not configure null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if(handle->m_compressed_buffer && handle->m_own_compressed )
-   {
-      free(handle->m_compressed_buffer);
-   }
-   
-   if(handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size == 0) 
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_compressed", "the handle is not setup for allocation");
-      return XRIF_ERROR_NOT_SETUP;
-   }
-   
-   handle->m_compressed_buffer_size = xrif_min_compressed_size(handle);
-   if(handle->m_compressed_buffer_size == 0)
-   {
-      XRIF_ERROR_PRINT("xrif_allocate_compressed", "error calculating minimum compressed buffer size - check configuration.");
-      return XRIF_ERROR_INVALID_SIZE;
-   }
-      
-   handle->m_compressed_buffer = (char *) malloc( handle->m_compressed_buffer_size );
-   
-   if(handle->m_compressed_buffer == NULL) 
-   {
-      handle->m_own_compressed = 0;
-      
-      XRIF_ERROR_PRINT("xrif_allocate_compressed", "error from malloc");
-      return XRIF_ERROR_MALLOC;
-   }
-   
-   handle->m_own_compressed = 1;
-   
-   return XRIF_NOERROR;
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_geometry_get( handle, &geometry );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    size_t required = xrif_min_compressed_size( handle );
+    if( required == 0 )
+        return XRIF_ERROR_INVALID_SIZE;
+    char *buffer = malloc( required );
+    if( buffer == NULL )
+        return XRIF_ERROR_MALLOC;
+    if( handle->m_own_compressed )
+        free( handle->m_compressed_buffer );
+    handle->m_compressed_buffer      = buffer;
+    handle->m_compressed_buffer_size = required;
+    handle->m_own_compressed         = 1;
+    return XRIF_NOERROR;
 }
 
 xrif_dimension_t xrif_width( xrif_t handle )
@@ -1051,179 +861,193 @@ int xrif_omp_numthreads( xrif_t handle )
    return handle->m_omp_numthreads;
 }
 
-// Populate a header buffer with the xrif protocol details.
-xrif_error_t xrif_write_header( char * header,
-                                xrif_t handle 
-                              )
+/// Read an unsigned wire integer; legacy version 0 used native byte order.
+static uint64_t xrif_header_get( const char *header, size_t offset, size_t width, int legacy )
 {
-   if( header == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_write_header", "can not write to a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_write_header", "can not read from a null pointer handle");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   header[0] = 'x';
-   header[1] = 'r';
-   header[2] = 'i';
-   header[3] = 'f';
-   
-   *((uint32_t *) &header[4]) = XRIF_VERSION;
-   
-   *((uint32_t *) &header[8]) = XRIF_HEADER_SIZE; 
-
-   *((uint32_t *) &header[12]) = handle->m_width;
-   
-   *((uint32_t *) &header[16]) = handle->m_height;
-   
-   *((uint32_t *) &header[20]) = handle->m_depth;
-   
-   *((uint32_t *) &header[24]) = handle->m_frames;
-   
-   *((uint16_t *) &header[28]) = handle->m_type_code;
-
-   *((int16_t *) &header[30]) = handle->m_difference_method;
-   
-   *((int16_t *) &header[32]) = handle->m_reorder_method;
-
-   *((int16_t *) &header[34]) = handle->m_compress_method;
-
-   *((uint32_t *) &header[36]) = handle->m_compressed_size;
-   
-   memset(&header[40], 0, 8);
-   
-   if(handle->m_compress_method == XRIF_COMPRESS_LZ4)
-   {
-      *((uint16_t *) &header[40]) = handle->m_lz4_acceleration;
-   }
-   else if(handle->m_compress_method == XRIF_COMPRESS_LZ4HC)
-   {
-      *((uint16_t *) &header[40]) = handle->m_lz4hc_level;
-   }
-   else if (handle->m_compress_method == XRIF_COMPRESS_FASTLZ)
-   {
-      *((uint16_t *) &header[40]) = handle->m_fastlz_level;
-   }
-   else if (handle->m_compress_method == XRIF_COMPRESS_ZLIB)
-   {
-      *((uint8_t *) &header[40]) = handle->m_zlib_level;
-      *((uint8_t *) &header[41]) = handle->m_zlib_strategy;
-   }
-   else if (handle->m_compress_method == XRIF_COMPRESS_ZSTD)
-   {
-      *((int32_t *) &header[40]) = handle->m_zstd_level; //This can be negative down to -131072.  Positive values can only go to +22.
-   }
-
-   return XRIF_NOERROR;
-   
+    if( legacy )
+    {
+        if( width == 2 )
+        {
+            uint16_t value;
+            memcpy( &value, header + offset, sizeof( value ) );
+            return value;
+        }
+        uint32_t value;
+        memcpy( &value, header + offset, sizeof( value ) );
+        return value;
+    }
+    uint64_t value = 0;
+    for( size_t i = 0; i < width; ++i )
+    {
+        value |= (uint64_t)(unsigned char)header[offset + i] << ( 8 * i );
+    }
+    return value;
 }
 
-//Configure an xrif handle by reading a xrif protocol header
-xrif_error_t xrif_read_header( xrif_t handle,
-                               uint32_t * header_size,
-                               char * header
-                             )
+/// Store an unsigned version-1 integer in little-endian order without alignment assumptions.
+static void xrif_header_put( char *header, size_t offset, size_t width, uint64_t value )
 {
-   if( handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_read_header", "can not configure a null pointer handle");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( header_size == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_read_header", "can not configure a null pointer uint32_t");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( header == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_read_header", "can not read from a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( header[0] != 'x' || header[1] != 'r' || header[2] != 'i' || header[3] != 'f')
-   {
-      XRIF_ERROR_PRINT("xrif_read_header", "xrif magic number not present");
-      return XRIF_ERROR_BADHEADER;
-   }
-   
-   if( *((uint32_t *) &header[4]) > XRIF_VERSION)
-   {
-      XRIF_ERROR_PRINT("xrif_read_header", "xrif version too high");
-      return XRIF_ERROR_WRONGVERSION;
-   }
-   
-   *header_size = *((uint32_t *) &header[8]); 
+    for( size_t i = 0; i < width; ++i )
+    {
+        header[offset + i] = (char)( value >> ( 8 * i ) );
+    }
+}
 
-   handle->m_width = *((uint32_t *) &header[12]);
-   
-   handle->m_height = *((uint32_t *) &header[16]);
-   
-   handle->m_depth = *((uint32_t *) &header[20]);
-   
-   handle->m_frames = *((uint32_t *) &header[24]);
-   
-   handle->m_type_code = *((uint16_t *) &header[28]);
+/// Decode a two's-complement method identifier without unsigned-to-signed narrowing.
+static int xrif_header_method( const char *header, size_t offset, int legacy )
+{
+    uint32_t value = (uint32_t)xrif_header_get( header, offset, 2, legacy );
+    return value <= INT16_MAX ? (int)value : (int)value - 65536;
+}
 
-   handle->m_data_size = xrif_typesize(handle->m_type_code);
-   
-   handle->m_difference_method = *((int16_t *) &header[30]);
-   
-   handle->m_reorder_method = *((int16_t *) &header[32]);
+xrif_error_t xrif_write_header_sized( char *header, size_t capacity, xrif_t handle )
+{
+    if( header == NULL || handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( capacity < XRIF_HEADER_SIZE )
+        return XRIF_ERROR_INSUFFICIENT_SIZE;
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_geometry_get( handle, &geometry );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    if( handle->m_compressed_size > UINT64_MAX )
+        return XRIF_ERROR_INVALID_SIZE;
+    if( handle->m_difference_method < INT16_MIN || handle->m_difference_method > INT16_MAX ||
+        handle->m_reorder_method < INT16_MIN || handle->m_reorder_method > INT16_MAX ||
+        handle->m_compress_method < INT16_MIN || handle->m_compress_method > INT16_MAX )
+        return XRIF_ERROR_INVALIDCONFIG;
 
-   handle->m_compress_method = *((int16_t *) &header[34]);
+    memset( header, 0, XRIF_HEADER_SIZE );
+    memcpy( header, "xrif", 4 );
+    xrif_header_put( header, 4, 4, XRIF_VERSION );
+    xrif_header_put( header, 8, 4, XRIF_HEADER_SIZE );
+    xrif_header_put( header, 12, 4, handle->m_width );
+    xrif_header_put( header, 16, 4, handle->m_height );
+    xrif_header_put( header, 20, 4, handle->m_depth );
+    xrif_header_put( header, 24, 4, handle->m_frames );
+    xrif_header_put( header, 28, 2, handle->m_type_code );
+    xrif_header_put( header, 30, 2, (uint16_t)handle->m_difference_method );
+    xrif_header_put( header, 32, 2, (uint16_t)handle->m_reorder_method );
+    xrif_header_put( header, 34, 2, (uint16_t)handle->m_compress_method );
+    /* Bytes 36..39 are reserved; the 64-bit payload length starts at byte 40. */
+    xrif_header_put( header, 40, 8, handle->m_compressed_size );
+    if( handle->m_compress_method == XRIF_COMPRESS_LZ4 )
+        xrif_header_put( header, 48, 2, handle->m_lz4_acceleration );
+    else if( handle->m_compress_method == XRIF_COMPRESS_LZ4HC )
+        xrif_header_put( header, 48, 2, handle->m_lz4hc_level );
+    else if( handle->m_compress_method == XRIF_COMPRESS_FASTLZ )
+        xrif_header_put( header, 48, 2, handle->m_fastlz_level );
+    else if( handle->m_compress_method == XRIF_COMPRESS_ZLIB )
+    {
+        xrif_header_put( header, 48, 1, handle->m_zlib_level );
+        xrif_header_put( header, 49, 1, handle->m_zlib_strategy );
+    }
+    else if( handle->m_compress_method == XRIF_COMPRESS_ZSTD )
+        xrif_header_put( header, 48, 4, (uint32_t)handle->m_zstd_level );
+    return XRIF_NOERROR;
+}
 
-   handle->m_compressed_size = *((uint32_t *) &header[36]);
-   
-   if(handle->m_compress_method == XRIF_COMPRESS_LZ4)
-   {
-      handle->m_lz4_acceleration = *((uint16_t *) &header[40]);
-   }
-   else if(handle->m_compress_method == XRIF_COMPRESS_LZ4HC)
-   {
-      handle->m_lz4hc_level = *((uint16_t *) &header[40]);
-   }
-   else if(handle->m_compress_method == XRIF_COMPRESS_FASTLZ)
-   {
-      handle->m_fastlz_level = *((uint16_t *) &header[40]);
-   }
-   else if (handle->m_compress_method == XRIF_COMPRESS_ZLIB)
-   {
-      handle->m_zlib_level = *((uint8_t *) &header[40]);
-      handle->m_zlib_strategy = *((uint8_t *) &header[41]);
-   }
-   else if (handle->m_compress_method == XRIF_COMPRESS_ZSTD)
-   {
-      handle->m_zstd_level = *((int32_t *) &header[40]); 
-   }
+xrif_error_t xrif_write_header( char *header, xrif_t handle )
+{
+    return xrif_write_header_sized( header, XRIF_HEADER_SIZE, handle );
+}
 
-   return XRIF_NOERROR;
+xrif_error_t xrif_read_header_sized( xrif_t handle, uint32_t *header_size, const char *header, size_t available )
+{
+    if( handle == NULL || header_size == NULL || header == NULL )
+        return XRIF_ERROR_NULLPTR;
+    if( available < 12 )
+        return XRIF_ERROR_INSUFFICIENT_SIZE;
+    if( memcmp( header, "xrif", 4 ) != 0 )
+        return XRIF_ERROR_BADHEADER;
+    uint64_t version = xrif_header_get( header, 4, 4, 0 );
+    if( version > XRIF_VERSION )
+        return XRIF_ERROR_WRONGVERSION;
+    int      legacy = version == 0;
+    uint32_t length = (uint32_t)xrif_header_get( header, 8, 4, legacy );
+    if( length < ( legacy ? XRIF_HEADER_SIZE_V0 : XRIF_HEADER_SIZE ) )
+        return XRIF_ERROR_BADHEADER;
+    if( available < length )
+        return XRIF_ERROR_INSUFFICIENT_SIZE;
+
+    /* Stage metadata; failed parsing must not disturb buffers or codec contexts. */
+    xrif_handle  parsed = *handle;
+    xrif_error_t rv     = xrif_set_size( &parsed,
+                                     (uint32_t)xrif_header_get( header, 12, 4, legacy ),
+                                     (uint32_t)xrif_header_get( header, 16, 4, legacy ),
+                                     (uint32_t)xrif_header_get( header, 20, 4, legacy ),
+                                     (uint32_t)xrif_header_get( header, 24, 4, legacy ),
+                                     (int)xrif_header_get( header, 28, 2, legacy ) );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    uint64_t compressed = xrif_header_get( header, legacy ? 36 : 40, legacy ? 4 : 8, legacy );
+    if( compressed > SIZE_MAX )
+        return XRIF_ERROR_INVALID_SIZE;
+    parsed.m_compressed_size   = (size_t)compressed;
+    parsed.m_difference_method = xrif_header_method( header, 30, legacy );
+    parsed.m_reorder_method    = xrif_header_method( header, 32, legacy );
+    parsed.m_compress_method   = xrif_header_method( header, 34, legacy );
+    size_t options             = legacy ? 40 : 48;
+    if( parsed.m_compress_method == XRIF_COMPRESS_LZ4 )
+        parsed.m_lz4_acceleration = (int)xrif_header_get( header, options, 2, legacy );
+    else if( parsed.m_compress_method == XRIF_COMPRESS_LZ4HC )
+        parsed.m_lz4hc_level = (int)xrif_header_get( header, options, 2, legacy );
+    else if( parsed.m_compress_method == XRIF_COMPRESS_FASTLZ )
+        parsed.m_fastlz_level = (int)xrif_header_get( header, options, 2, legacy );
+    else if( parsed.m_compress_method == XRIF_COMPRESS_ZLIB )
+    {
+        parsed.m_zlib_level    = (unsigned char)header[options];
+        parsed.m_zlib_strategy = (unsigned char)header[options + 1];
+    }
+    else if( parsed.m_compress_method == XRIF_COMPRESS_ZSTD )
+    {
+        uint64_t value      = xrif_header_get( header, options, 4, legacy );
+        parsed.m_zstd_level = value <= INT32_MAX ? (int32_t)value : (int32_t)( (int64_t)value - INT64_C( 4294967296 ) );
+    }
+    *handle      = parsed;
+    *header_size = length;
+    return XRIF_NOERROR;
+}
+
+xrif_error_t xrif_read_header( xrif_t handle, uint32_t *header_size, char *header )
+{
+    /* The historical API has no capacity; callers must provide a complete header. */
+    return xrif_read_header_sized( handle, header_size, header, SIZE_MAX );
 }
 
 xrif_error_t xrif_encode( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_encode", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_encode", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
-   xrif_error_t rv; 
-   
+   xrif_error_t rv;
+
+   if( xrif_min_compressed_size( handle ) == 0 )
+       return XRIF_ERROR_INVALID_SIZE;
+
    clock_gettime(CLOCK_REALTIME, &handle->m_ts_difference_start);
    
    if( handle->m_difference_method == XRIF_DIFFERENCE_NONE && handle->m_reorder_method == XRIF_REORDER_NONE && handle->m_compress_method == XRIF_COMPRESS_NONE)
    {
       //Set compressed size.
-      handle->m_compressed_size = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames * handle->m_data_size;
+      if( !handle->m_compress_on_raw )
+      {
+          if( handle->m_compressed_buffer == NULL )
+              return XRIF_ERROR_NOT_SETUP;
+          if( handle->m_compressed_buffer_size < geometry.m_raw_bytes )
+              return XRIF_ERROR_INSUFFICIENT_SIZE;
+          memmove( handle->m_compressed_buffer, handle->m_raw_buffer, geometry.m_raw_bytes );
+      }
+      handle->m_compressed_size = geometry.m_raw_bytes;
 
-            
       if(handle->m_calc_performance)
       {
          //So that we have some non-inifinities in the performance metrics.
@@ -1285,11 +1109,16 @@ xrif_error_t xrif_encode( xrif_t handle )
 
 xrif_error_t xrif_decode( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_encode", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_encode", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    xrif_error_t rv;
    
@@ -1297,6 +1126,17 @@ xrif_error_t xrif_decode( xrif_t handle )
    
    if( handle->m_difference_method == XRIF_DIFFERENCE_NONE && handle->m_reorder_method == XRIF_REORDER_NONE && handle->m_compress_method == XRIF_COMPRESS_NONE)
    {
+       if( handle->m_compressed_size != geometry.m_raw_bytes )
+           return XRIF_ERROR_INVALID_SIZE;
+       if( !handle->m_compress_on_raw )
+       {
+           if( handle->m_compressed_buffer == NULL )
+               return XRIF_ERROR_NOT_SETUP;
+           if( handle->m_compressed_buffer_size < geometry.m_raw_bytes )
+               return XRIF_ERROR_INSUFFICIENT_SIZE;
+           memmove( handle->m_raw_buffer, handle->m_compressed_buffer, geometry.m_raw_bytes );
+       }
+
       if(handle->m_calc_performance)
       {
          //So that we have some non-inifinities in the performance metrics.
@@ -1344,11 +1184,16 @@ xrif_error_t xrif_decode( xrif_t handle )
 
 xrif_error_t xrif_difference( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_difference", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_difference", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    int method = handle->m_difference_method;
    
@@ -1375,11 +1220,16 @@ xrif_error_t xrif_difference( xrif_t handle )
 
 xrif_error_t xrif_undifference( xrif_t handle )
 {
-   if( handle == NULL) 
-   {
-      XRIF_ERROR_PRINT("xrif_undifference", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
+    xrif_geometry geometry;
+    xrif_error_t  size_rv = xrif_validate_raw( handle, &geometry, 0 );
+    if( size_rv != XRIF_NOERROR )
+        return size_rv;
+
+    if( handle == NULL )
+    {
+        XRIF_ERROR_PRINT( "xrif_undifference", "can not use a null pointer" );
+        return XRIF_ERROR_NULLPTR;
+    }
    
    int method = handle->m_difference_method;
    
@@ -1406,73 +1256,72 @@ xrif_error_t xrif_undifference( xrif_t handle )
 
 xrif_error_t xrif_reorder( xrif_t handle )
 {
-   int method = handle->m_reorder_method;
-   
-   if(method == 0) method = XRIF_REORDER_DEFAULT;
-   
-   switch( method )
-   {
-      case XRIF_REORDER_NONE:
-         return xrif_reorder_none(handle);
-      case XRIF_REORDER_BYTEPACK:
-         return xrif_reorder_bytepack(handle);
-      case XRIF_REORDER_BYTEPACK_RENIBBLE:
-         return xrif_reorder_bytepack_renibble(handle);
-      case XRIF_REORDER_BITPACK:
-         return xrif_reorder_bitpack(handle);
-      default:
-         return XRIF_ERROR_NOTIMPL;
-   }
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+
+    int method = handle->m_reorder_method;
+
+    if( method == 0 )
+        method = XRIF_REORDER_DEFAULT;
+
+    switch( method )
+    {
+    case XRIF_REORDER_NONE:
+        return xrif_reorder_none( handle );
+    case XRIF_REORDER_BYTEPACK:
+        return xrif_reorder_bytepack( handle );
+    case XRIF_REORDER_BYTEPACK_RENIBBLE:
+        return xrif_reorder_bytepack_renibble( handle );
+    case XRIF_REORDER_BITPACK:
+        return xrif_reorder_bitpack( handle );
+    default:
+        return XRIF_ERROR_NOTIMPL;
+    }
 }
 
 xrif_error_t xrif_unreorder( xrif_t handle )
 {
-   int method = handle->m_reorder_method;
-   
-   if(method == 0) method = XRIF_REORDER_DEFAULT;
-   
-   switch( method )
-   {
-      case XRIF_REORDER_NONE:
-         return xrif_unreorder_none(handle);
-      case XRIF_REORDER_BYTEPACK:
-         return xrif_unreorder_bytepack(handle);
-      case XRIF_REORDER_BYTEPACK_RENIBBLE:
-         return xrif_unreorder_bytepack_renibble(handle);
-      case XRIF_REORDER_BITPACK:
-         return xrif_unreorder_bitpack(handle); 
-      default:
-         return XRIF_ERROR_NOTIMPL;
-   }
+    if( handle == NULL )
+        return XRIF_ERROR_NULLPTR;
+
+    int method = handle->m_reorder_method;
+
+    if( method == 0 )
+        method = XRIF_REORDER_DEFAULT;
+
+    switch( method )
+    {
+    case XRIF_REORDER_NONE:
+        return xrif_unreorder_none( handle );
+    case XRIF_REORDER_BYTEPACK:
+        return xrif_unreorder_bytepack( handle );
+    case XRIF_REORDER_BYTEPACK_RENIBBLE:
+        return xrif_unreorder_bytepack_renibble( handle );
+    case XRIF_REORDER_BITPACK:
+        return xrif_unreorder_bitpack( handle );
+    default:
+        return XRIF_ERROR_NOTIMPL;
+    }
 }
 
 /// Perform no re-ordering, simply copy raw to reordered.
 xrif_error_t xrif_reorder_none( xrif_t handle )
 {
-   size_t npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames; 
-   
-   if( handle == NULL)
-   {
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( handle->m_raw_buffer_size < npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   if( handle->m_reordered_buffer_size < npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   memcpy(handle->m_reordered_buffer, handle->m_raw_buffer, npix*handle->m_data_size);
-   
-   //Zero the rest of the reordered buffer.
-   if(handle->m_reordered_buffer_size > npix*handle->m_data_size)
-   {
-      memset(handle->m_reordered_buffer + npix*handle->m_data_size, 0, handle->m_reordered_buffer_size-npix*handle->m_data_size); 
-   }
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_validate_reorder( handle, &geometry, 0, XRIF_REORDER_NONE );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    size_t npix = geometry.m_total_pixels;
+
+    memcpy( handle->m_reordered_buffer, handle->m_raw_buffer, npix * handle->m_data_size );
+
+    //Zero the rest of the reordered buffer.
+    if( handle->m_reordered_buffer_size > npix * handle->m_data_size )
+    {
+        memset( handle->m_reordered_buffer + npix * handle->m_data_size,
+                0,
+                handle->m_reordered_buffer_size - npix * handle->m_data_size );
+    }
    
    return XRIF_NOERROR;
 }
@@ -1484,30 +1333,21 @@ xrif_error_t xrif_reorder_none( xrif_t handle )
 /// Perform no unreordering, simply copy reordered to raw.
 xrif_error_t xrif_unreorder_none( xrif_t handle )
 {
-   size_t npix = handle->m_width * handle->m_height * handle->m_depth * handle->m_frames; 
-   
-   if( handle == NULL)
-   {
-      return XRIF_ERROR_NULLPTR;
-   }
-   
-   if( handle->m_raw_buffer_size < npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   if( handle->m_reordered_buffer_size < npix*handle->m_data_size )
-   {
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   memcpy(handle->m_raw_buffer, handle->m_reordered_buffer, npix*handle->m_data_size);
-   
-   //Zero the rest of the raw buffer.
-   if(handle->m_raw_buffer_size > npix*handle->m_data_size)
-   {
-      memset(handle->m_raw_buffer + npix*handle->m_data_size, 0, handle->m_raw_buffer_size-npix*handle->m_data_size); 
-   }
+    xrif_geometry geometry;
+    xrif_error_t  rv = xrif_validate_reorder( handle, &geometry, 0, XRIF_REORDER_NONE );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    size_t npix = geometry.m_total_pixels;
+
+    memcpy( handle->m_raw_buffer, handle->m_reordered_buffer, npix * handle->m_data_size );
+
+    //Zero the rest of the raw buffer.
+    if( handle->m_raw_buffer_size > npix * handle->m_data_size )
+    {
+        memset( handle->m_raw_buffer + npix * handle->m_data_size,
+                0,
+                handle->m_raw_buffer_size - npix * handle->m_data_size );
+    }
    
    return XRIF_NOERROR;
 
@@ -1587,94 +1427,27 @@ xrif_error_t xrif_decompress( xrif_t handle )
 
 xrif_error_t xrif_compress_none( xrif_t handle )
 {
-   char *m_compressed_buffer;
-   size_t compressed_size;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_compress_none", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-      compressed_size = handle->m_raw_buffer_size;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-      compressed_size = handle->m_compressed_buffer_size;
-   }
-   
-   //Make sure there is enough space
-   if( compressed_size < handle->m_reordered_buffer_size )
-   {
-      if(handle->m_compress_on_raw) 
-      {
-         XRIF_ERROR_PRINT("xrif_compress_none", "not enough space in raw buffer for compressed data");
-      }
-      else
-      {
-         XRIF_ERROR_PRINT("xrif_compress_none", "not enough space in compressed buffer for compressed data");
-      }
-
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-
-   //Zero extra pixels
-   if(compressed_size > handle->m_reordered_buffer_size)
-   {
-      ///\todo this can be just the xtra pixels
-      memset(m_compressed_buffer, 0, compressed_size);
-   }
-   
-   handle->m_compressed_size = handle->m_reordered_buffer_size;
-   
-   memcpy( m_compressed_buffer, handle->m_reordered_buffer, handle->m_compressed_size);
-   
-   return XRIF_NOERROR;
-
+    size_t       bytes = xrif_min_reordered_size( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, bytes, 0 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    char *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    memcpy( buffer, handle->m_reordered_buffer, bytes );
+    handle->m_compressed_size = bytes;
+    return XRIF_NOERROR;
 } //xrif_error_t xrif_compress_none( xrif_t handle )
 
 xrif_error_t xrif_decompress_none( xrif_t handle )
 {
-   char *m_compressed_buffer;
-   
-   if(handle == NULL)
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_none", "can not use a null pointer");
-      return XRIF_ERROR_NULLPTR;
-   }
-
-   if(handle->m_compress_on_raw) 
-   {
-      m_compressed_buffer = handle->m_raw_buffer;
-   }
-   else 
-   {
-      m_compressed_buffer = handle->m_compressed_buffer;
-   }
-   
-   //The reordered buffer must be big enough to old the compressed data
-   if(handle->m_reordered_buffer_size < handle->m_compressed_size) 
-   {
-      XRIF_ERROR_PRINT("xrif_decompress_none", "not enough space in reordered buffer for de-compressed data");
-      return XRIF_ERROR_INSUFFICIENT_SIZE;
-   }
-   
-   //If the reordered buffer is larger than needed to hold the compressed buffer, set extras to 0
-   if(handle->m_reordered_buffer_size > handle->m_compressed_size)
-   {
-      ///\todo this can be just the extra bytes
-      memset(handle->m_reordered_buffer, 0, handle->m_reordered_buffer_size);
-   }
-
-   //Now it's just a straight copy from compressed to reordered buffer.
-   memcpy( handle->m_reordered_buffer, m_compressed_buffer, handle->m_compressed_size);
-   
-   return XRIF_NOERROR;
-
+    size_t       bytes = xrif_min_reordered_size( handle );
+    xrif_error_t rv    = xrif_validate_codec( handle, bytes, 0, 1 );
+    if( rv != XRIF_NOERROR )
+        return rv;
+    if( handle->m_compressed_size != bytes )
+        return XRIF_ERROR_INVALID_SIZE;
+    char *buffer = handle->m_compress_on_raw ? handle->m_raw_buffer : handle->m_compressed_buffer;
+    memcpy( handle->m_reordered_buffer, buffer, bytes );
+    return XRIF_NOERROR;
 } //xrif_error_t xrif_decompress_none( xrif_t handle )
 
 //==========================================================

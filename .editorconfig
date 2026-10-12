@@ -1,0 +1,36 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# The formatter configuration is YAML with two-space nesting.
+[.clang-format]
+indent_size = 2
+tab_width = 2
+
+# Markdown uses trailing spaces for explicit line breaks.
+[*.md]
+trim_trailing_whitespace = false
+
+[{Makefile,makefile,GNUmakefile,*.mk}]
+# Make recipes require literal tabs; their display width is independent of C.
+indent_style = tab
+indent_size = tab
+tab_width = 8
+
+# Do not apply project save-time normalization to bundled or generated files.
+# "unset" delegates to editor defaults; it is not a read-only protection.
+[{src/lz4/**,src/fastlz/**,doc/doxygen-awesome-css/**,src/*.inc,*build*/**,**/*build*/**}]
+indent_style = unset
+indent_size = unset
+tab_width = unset
+end_of_line = unset
+charset = unset
+trim_trailing_whitespace = unset
+insert_final_newline = unset

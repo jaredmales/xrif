@@ -1,0 +1,9 @@
+# Bundled dependencies retain their upstream formatting.
+src/lz4/**
+src/fastlz/**
+doc/doxygen-awesome-css/**
+
+# Generated lookup tables and build trees are not formatting targets.
+src/*.inc
+*build*/**
+**/*build*/**

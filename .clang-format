@@ -1,0 +1,49 @@
+# Shared C/C++ defaults. Use clang-format 21 to keep formatting reproducible.
+# Compiler language standards are configured by the build, not this file.
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+LineEnding: LF
+InsertNewlineAtEOF: true
+
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: None
+IndentExternBlock: NoIndent
+IndentPPDirectives: BeforeHash
+
+SpaceBeforeParens: Never
+SpacesInParens: Custom
+SpacesInParensOptions:
+  InConditionalStatements: true
+  InCStyleCasts: false
+  InEmptyParentheses: false
+  Other: true
+
+AlignAfterOpenBracket: Align
+AlignTrailingComments:
+  Kind: Always
+BinPackArguments: false
+BinPackParameters: OnePerLine
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+# Preserve include dependencies, feature-test macros, and template setup order.
+IncludeBlocks: Preserve
+SortIncludes:
+  Enabled: false
+
+# Preserve Doxygen layout and license text; edit their prose deliberately.
+ReflowComments: Never
+
+# Check's END_TEST can be used without a semicolon.
+StatementMacros:
+  - END_TEST
+
+---
+Language: Cpp
+# This option only affects C++ template declarations.
+BreakTemplateDeclarations: Yes
